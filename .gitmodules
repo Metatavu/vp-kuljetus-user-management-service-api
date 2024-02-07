@@ -1,0 +1,6 @@
+[submodule "quarkus-invalid-param-test"]
+	path = quarkus-invalid-param-test
+	url = https://github.com/Metatavu/quarkus-invalid-param-test.git
+[submodule "vp-kuljetus-transport-management-specs"]
+	path = vp-kuljetus-transport-management-specs
+	url = https://github.com/Metatavu/vp-kuljetus-transport-management-specs.git
