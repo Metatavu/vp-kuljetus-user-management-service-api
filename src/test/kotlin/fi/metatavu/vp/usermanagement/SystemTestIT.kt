@@ -1,6 +1,8 @@
 package fi.metatavu.vp.usermanagement
 
+import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
+import io.quarkus.test.junit.TestProfile
 import io.restassured.module.kotlin.extensions.When
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
@@ -9,6 +11,7 @@ import org.junit.jupiter.api.Test
  * System tests
  */
 @QuarkusTest
+@TestProfile(DefaultTestProfile::class)
 class SystemTestIT {
 
     @Test
