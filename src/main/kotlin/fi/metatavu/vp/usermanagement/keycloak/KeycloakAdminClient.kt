@@ -111,7 +111,7 @@ class KeycloakAdminClient : KeycloakClient() {
      *
      * @return base url
      */
-    fun getBaseUrl(): String {
+    private fun getBaseUrl(): String {
         return keycloakUrl.substringBefore("/realms")
     }
 
@@ -120,7 +120,7 @@ class KeycloakAdminClient : KeycloakClient() {
      *
      * @return realm name
      */
-    fun getRealm(): String {
+    private fun getRealm(): String {
         return keycloakUrl.substringAfterLast("realms/").substringBefore("/")
     }
 

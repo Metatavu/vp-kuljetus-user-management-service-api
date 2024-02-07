@@ -75,10 +75,7 @@ abstract class KeycloakClient {
         username: String,
         password: String
     ): Uni<KeycloakAccessToken> {
-       // val baseUrl = if (keycloakUrlOld.endsWith("/")) keycloakUrlOld.dropLast(1) else keycloakUrlOld
-       // println("baseUrl: $baseUrl")
         val url = "${keycloakUrl}/protocol/openid-connect/token"
-        println(url)
         val client = WebClient.create(vertx)
         val form = MultiMap.caseInsensitiveMultiMap()
         form.set("client_id", clientId)

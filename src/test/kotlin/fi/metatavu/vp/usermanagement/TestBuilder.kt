@@ -39,9 +39,8 @@ class TestBuilder(private val config: Map<String, String>): AbstractAccessTokenT
     private fun createTestBuilderAuthentication(username: String, password: String): TestBuilderAuthentication {
         val serverUrl = ConfigProvider.getConfig().getValue("quarkus.oidc.auth-server-url", String::class.java).substringBeforeLast("/").substringBeforeLast("/")
         val realm: String = ConfigProvider.getConfig().getValue("quarkus.keycloak.devservices.realm-name", String::class.java)
-        val clientId = "api"
-        val clientSecret = "test"
-        return TestBuilderAuthentication(this, KeycloakAccessTokenProvider(serverUrl, realm, clientId, username, password, clientSecret))
+        val clientId = "test"
+        return TestBuilderAuthentication(this, KeycloakAccessTokenProvider(serverUrl, realm, clientId, username, password, null))
     }
 
 }
