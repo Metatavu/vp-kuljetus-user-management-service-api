@@ -21,17 +21,13 @@ val jtsVersion: String by project
 
 dependencies {
     implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
-    implementation("io.quarkus:quarkus-hibernate-validator")
-    implementation("io.quarkus:quarkus-hibernate-reactive-panache")
-    implementation("io.quarkus:quarkus-liquibase")
-    implementation("io.quarkus:quarkus-jdbc-mysql")
-    implementation("io.quarkus:quarkus-reactive-mysql-client")
     implementation("io.quarkus:quarkus-undertow")
     implementation("io.quarkus:quarkus-resteasy-reactive")
     implementation("io.quarkus:quarkus-resteasy-reactive-kotlin")
     implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
     implementation("io.quarkus:quarkus-oidc")
     implementation("io.quarkus:quarkus-kotlin")
+ //   implementation("io.quarkus:quarkus-keycloak-admin-client-reactive")
 
     implementation("io.vertx:vertx-core")
     implementation("io.vertx:vertx-lang-kotlin")
@@ -64,6 +60,7 @@ java {
 
 sourceSets["main"].java {
     srcDir("build/generated/api-spec/src/main/kotlin")
+    srcDir("build/generated/keycloak-admin-client/src/main/kotlin")
 }
 sourceSets["test"].java {
     srcDir("build/generated/api-client/src/main/kotlin")
@@ -122,8 +119,25 @@ val generateApiClient = tasks.register("generateApiClient",GenerateTask::class){
     this.configOptions.put("enumPropertyNaming", "UPPERCASE")
 }
 
+val generateKeycloakClient = tasks.register("generateKeycloakAdminClient",GenerateTask::class){
+    setProperty("generatorName", "kotlin")
+    setProperty("library", "jvm-vertx")
+    setProperty("inputSpec",  "$rootDir/src/main/resources/kc-admin.json")
+    setProperty("outputDir", "$buildDir/generated/keycloak-admin-client")
+    setProperty("packageName", "fi.metatavu.keycloak.adminclient")
+
+    this.configOptions.put("useCoroutines", "true")
+    this.configOptions.put("dateLibrary", "string")
+    this.configOptions.put("collectionType", "array")
+    this.configOptions.put("serializationLibrary", "jackson")
+    this.configOptions.put("enumPropertyNaming", "UPPERCASE")
+    this.configOptions.put("useCoroutines", "true")
+    this.configOptions.put("additionalModelTypeAnnotations", "@io.quarkus.runtime.annotations.RegisterForReflection")
+}
+
 tasks.named("compileKotlin") {
     dependsOn(generateApiSpec)
+    dependsOn(generateKeycloakClient)
 }
 
 tasks.named("compileTestKotlin") {
