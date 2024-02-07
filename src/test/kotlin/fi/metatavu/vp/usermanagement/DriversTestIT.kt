@@ -4,7 +4,9 @@ import fi.metatavu.invalid.InvalidValueTestScenarioBuilder
 import fi.metatavu.invalid.InvalidValueTestScenarioPath
 import fi.metatavu.invalid.InvalidValues
 import fi.metatavu.vp.deliveryinfo.functional.settings.ApiTestSettings
+import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
+import io.quarkus.test.junit.TestProfile
 import io.restassured.http.Method
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.Test
  * Drivers API tests
  */
 @QuarkusTest
+@TestProfile(DefaultTestProfile::class)
 class DriversTestIT : AbstractFunctionalTest() {
 
     @Test
