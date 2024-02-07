@@ -83,11 +83,6 @@ abstract class KeycloakClient {
         form.set("grant_type", "password")
         form.set("username", username)
         form.set("password", password)
-        val resp =  client
-            .postAbs(url)
-            .sendForm(form)
-            .onItem().transform { it.bodyAsString() }
-            .subscribe().with({ println(it) }, { println(it) })
         return client
             .postAbs(url)
             .sendForm(form)
