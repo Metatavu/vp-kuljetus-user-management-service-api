@@ -1,11 +1,10 @@
 package fi.metatavu.vp.usermanagement.drivers
 
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
-import fi.metatavu.vp.deliveryinfo.rest.AbstractApi
+import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.keycloak.KeycloakAdminClient
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.eclipse.microprofile.config.inject.ConfigProperty
 import java.util.*
 
 /**

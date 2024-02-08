@@ -1,7 +1,7 @@
 package fi.metatavu.vp.usermanagement.impl
 
 import fi.metatavu.jaxrs.test.functional.builder.auth.AccessTokenProvider
-import fi.metatavu.vp.deliveryinfo.functional.settings.ApiTestSettings
+import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import fi.metatavu.vp.test.client.apis.DriversApi
 import fi.metatavu.vp.test.client.infrastructure.ApiClient
 import fi.metatavu.vp.test.client.infrastructure.ClientException

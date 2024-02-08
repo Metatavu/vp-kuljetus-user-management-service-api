@@ -3,7 +3,7 @@ package fi.metatavu.vp.usermanagement
 import fi.metatavu.invalid.InvalidValueTestScenarioBuilder
 import fi.metatavu.invalid.InvalidValueTestScenarioPath
 import fi.metatavu.invalid.InvalidValues
-import fi.metatavu.vp.deliveryinfo.functional.settings.ApiTestSettings
+import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile

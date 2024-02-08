@@ -1,7 +1,7 @@
 package fi.metatavu.vp.usermanagement.drivers
 
 import fi.metatavu.vp.api.spec.DriversApi
-import fi.metatavu.vp.deliveryinfo.rest.AbstractApi
+import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import io.smallrye.mutiny.Uni
 import io.smallrye.mutiny.coroutines.asUni
 import io.vertx.core.Vertx

@@ -1,4 +1,4 @@
-package fi.metatavu.vp.deliveryinfo.functional.settings
+package fi.metatavu.vp.usermanagement.settings
 
 /**
  * Settings implementation for test builder

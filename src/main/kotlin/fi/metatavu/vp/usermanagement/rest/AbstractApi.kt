@@ -1,4 +1,4 @@
-package fi.metatavu.vp.deliveryinfo.rest
+package fi.metatavu.vp.usermanagement.rest
 
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
