@@ -35,8 +35,8 @@ class DriversApiImpl: DriversApi, AbstractApi() {
     }.asUni()
 
     @RolesAllowed(MANAGER_ROLE)
-    override fun listDrivers(first: Int?, max: Int?): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
-        val ( drivers, count ) = driverController.listDrivers(first, max)
+    override fun listDrivers(archived: Boolean?, first: Int?, max: Int?): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
+        val ( drivers, count ) = driverController.listDrivers(archived, first, max)
         createOk(drivers.map { driverTranslator.translate(it) }, count.toLong())
     }.asUni()
 

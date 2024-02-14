@@ -34,16 +34,32 @@ class DriverController {
     /**
      * Lists drivers
      *
+     * @param archived archived status
      * @param first first result
      * @param max max results
      * @return drivers and total count
      */
-    suspend fun listDrivers(first: Int?, max: Int?): Pair<Array<UserRepresentation>, Int> {
-        return keycloakAdminClient.listUsersOfRole(
+    suspend fun listDrivers(archived: Boolean?, first: Int?, max: Int?): Pair<List<UserRepresentation>, Int> {
+        val allRoleUsers = keycloakAdminClient.listUsersOfRole(
             role = AbstractApi.DRIVER_ROLE,
-            first = first,
-            max = max
-        )
+        ).toList()
+
+        val pagedUsers = if (first != null && max != null) {
+            val maxIndex = if (allRoleUsers.size < first + max) {
+                allRoleUsers.size
+            } else {
+                max
+            }
+            allRoleUsers.subList(first, maxIndex)
+        } else {
+            allRoleUsers
+        }
+
+        return if (archived == true) {
+            pagedUsers.filter { it.enabled == false } to allRoleUsers.filter { it.enabled == false }.size
+        } else {
+            pagedUsers.filter { it.enabled == true } to allRoleUsers.filter { it.enabled == true }.size
+        }
     }
 
 }

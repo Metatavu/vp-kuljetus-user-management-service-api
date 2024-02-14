@@ -35,12 +35,13 @@ class DriverTestBuilderResource(
     /**
      * Lists drivers
      *
+     * @param archived archived filter
      * @param first first result
      * @param last last result
      * @return drivers
      */
-    fun listDrivers(first: Int? = null, last: Int? = null): Array<Driver> {
-        return api.listDrivers(first, last)
+    fun listDrivers(archived: Boolean? = null, first: Int? = null, last: Int? = null): Array<Driver> {
+        return api.listDrivers(archived, first, last)
     }
 
     /**

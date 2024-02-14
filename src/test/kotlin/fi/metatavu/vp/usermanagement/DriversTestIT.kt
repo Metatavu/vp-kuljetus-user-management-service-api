@@ -23,11 +23,20 @@ class DriversTestIT : AbstractFunctionalTest() {
         val drivers = it.manager.drivers.listDrivers()
         assertEquals(2, drivers.size)
 
-        val driversWithPagination1 = it.manager.drivers.listDrivers(0, 1)
+        val driversWithPagination1 = it.manager.drivers.listDrivers(null, 0, 1)
         assertEquals(1, driversWithPagination1.size)
 
-        val driversWithPagination2 = it.manager.drivers.listDrivers(0, 3)
+        val driversWithPagination2 = it.manager.drivers.listDrivers(null, 0, 5)
         assertEquals(2, driversWithPagination2.size)
+
+        val driversWithPagination3 = it.manager.drivers.listDrivers(null, 1, 1)
+        assertEquals(0, driversWithPagination3.size)
+
+        val driversWithPagination4 = it.manager.drivers.listDrivers(false, 1, 2)
+        assertEquals(1, driversWithPagination4.size)
+
+        val inactiveDrivers = it.manager.drivers.listDrivers(true)
+        assertEquals(1, inactiveDrivers.size)
     }
 
     @Test
