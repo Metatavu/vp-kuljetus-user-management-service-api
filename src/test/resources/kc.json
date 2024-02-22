@@ -462,6 +462,24 @@
     "notBefore" : 0,
     "groups" : [ ]
   }, {
+    "id" : "b1b4eb6b-e639-47ca-b67a-8fd015dd8c4f",
+    "createdTimestamp" : 1708338766990,
+    "username" : "driver3",
+    "enabled" : false,
+    "totp" : false,
+    "emailVerified" : true,
+    "firstName" : "inactive",
+    "lastName" : "driver",
+    "attributes" : {
+      "archivedAt" : [ "2024-02-20T09:32:46.063449777+02:00" ]
+    },
+    "credentials" : [ ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "default-roles-usermanagement", "driver" ],
+    "notBefore" : 0,
+    "groups" : [ ]
+  }, {
     "id" : "e0bce2bc-1fb5-4aa2-a956-8e0bc3eb8f6a",
     "createdTimestamp" : 1707313100276,
     "username" : "manager",
@@ -787,9 +805,10 @@
     "protocol" : "openid-connect",
     "attributes" : {
       "oidc.ciba.grant.enabled" : "false",
+      "backchannel.logout.session.required" : "true",
+      "post.logout.redirect.uris" : "+",
       "oauth2.device.authorization.grant.enabled" : "false",
       "display.on.consent.screen" : "false",
-      "backchannel.logout.session.required" : "true",
       "backchannel.logout.revoke.offline.tokens" : "false"
     },
     "authenticationFlowBindingOverrides" : { },
@@ -1319,7 +1338,7 @@
       "subType" : "authenticated",
       "subComponents" : { },
       "config" : {
-        "allowed-protocol-mapper-types" : [ "saml-user-property-mapper", "saml-user-attribute-mapper", "oidc-sha256-pairwise-sub-mapper", "oidc-address-mapper", "oidc-usermodel-attribute-mapper", "oidc-usermodel-property-mapper", "oidc-full-name-mapper", "saml-role-list-mapper" ]
+        "allowed-protocol-mapper-types" : [ "oidc-sha256-pairwise-sub-mapper", "oidc-usermodel-attribute-mapper", "oidc-full-name-mapper", "saml-user-attribute-mapper", "oidc-address-mapper", "saml-role-list-mapper", "oidc-usermodel-property-mapper", "saml-user-property-mapper" ]
       }
     }, {
       "id" : "fbf09000-67dd-4603-9a9a-0eb28d3c541d",
@@ -1363,7 +1382,7 @@
       "subType" : "anonymous",
       "subComponents" : { },
       "config" : {
-        "allowed-protocol-mapper-types" : [ "oidc-sha256-pairwise-sub-mapper", "saml-user-property-mapper", "oidc-usermodel-attribute-mapper", "oidc-full-name-mapper", "oidc-address-mapper", "saml-role-list-mapper", "oidc-usermodel-property-mapper", "saml-user-attribute-mapper" ]
+        "allowed-protocol-mapper-types" : [ "saml-user-property-mapper", "oidc-usermodel-property-mapper", "oidc-sha256-pairwise-sub-mapper", "saml-role-list-mapper", "saml-user-attribute-mapper", "oidc-address-mapper", "oidc-full-name-mapper", "oidc-usermodel-attribute-mapper" ]
       }
     }, {
       "id" : "f5f592cd-672a-4abb-ab5a-d36ddfb289f3",

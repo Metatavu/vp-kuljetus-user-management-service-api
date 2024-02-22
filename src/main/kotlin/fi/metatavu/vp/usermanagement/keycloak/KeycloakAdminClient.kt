@@ -32,30 +32,22 @@ class KeycloakAdminClient : KeycloakClient() {
     lateinit var vertxCore: io.vertx.core.Vertx
 
     /**
-     * Lists users of a role
+     * Lists users of a role.
+     * All users are listed since keycloak does not provide total count in response headers
+     * -> in order to get paging done it has to be done manually
      *
      * @param role role name
      * @param first first result
      * @param max max results
-     * @return users and total count
+     * @return users and total users
      */
     suspend fun listUsersOfRole(
         role: String,
-        first: Int?,
-        max: Int?
-    ): Pair<Array<UserRepresentation>, Int> {
-        val users = getRoleContainerApi().realmRolesRoleNameUsersGet(
-            realm = getRealm(),
-            roleName = role,
-            first = first ?: 0,
-            max = max ?: 100
-        )
-        // Keycloak REST api does not seem to provide total count in the response headers for this endpoint => new request has to be made to get the total count
-        val count = getRoleContainerApi().realmRolesRoleNameUsersGet(
+    ): Array<UserRepresentation> {
+        return getRoleContainerApi().realmRolesRoleNameUsersGet(
             realm = getRealm(),
             roleName = role
-        ).size
-        return users to count
+        )
     }
 
     /**
