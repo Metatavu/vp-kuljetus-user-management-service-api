@@ -25,23 +25,32 @@ class DriversTestIT : AbstractFunctionalTest() {
         val drivers = it.manager.drivers.listDrivers()
         assertEquals(2, drivers.size)
 
-        val driversWithPagination1 = it.manager.drivers.listDrivers(null, 0, 1)
+        val driversWithPagination1 = it.manager.drivers.listDrivers(archived = null, first = 0, max = 1)
         assertEquals(1, driversWithPagination1.size)
 
-        val driversWithPagination2 = it.manager.drivers.listDrivers(null, 0, 5)
+        val driversWithPagination2 = it.manager.drivers.listDrivers(archived = null, first = 0, max = 5)
         assertEquals(2, driversWithPagination2.size)
 
-        val driversWithPagination3 = it.manager.drivers.listDrivers(null, 1, 1)
+        val driversWithPagination3 = it.manager.drivers.listDrivers(archived = null, first = 1, max = 1)
         assertEquals(0, driversWithPagination3.size)
 
-        val driversWithPagination4 = it.manager.drivers.listDrivers(false, 1, 2)
+        val driversWithPagination4 = it.manager.drivers.listDrivers(archived = false, first = 1, max = 2)
         assertEquals(1, driversWithPagination4.size)
         assertNull(driversWithPagination4[0].archivedAt)
 
-        val inactiveDrivers = it.manager.drivers.listDrivers(true)
+        val inactiveDrivers = it.manager.drivers.listDrivers(archived = true)
         assertEquals(1, inactiveDrivers.size)
         assertEquals(OffsetDateTime.parse("2024-02-20T09:32:46.063449777+02:00").toEpochSecond(),
             OffsetDateTime.parse(inactiveDrivers[0].archivedAt).toEpochSecond())
+
+        val driverCardIdFilter = it.manager.drivers.listDrivers(driverCardId = "001")
+        assertEquals(1, driverCardIdFilter.size)
+
+        val driverCardIdFilter2 = it.manager.drivers.listDrivers(driverCardId = "003", archived = false)
+        assertEquals(0, driverCardIdFilter2.size)
+
+        val driverCardIdFilter3 = it.manager.drivers.listDrivers(driverCardId = "003", archived = true)
+        assertEquals(1, driverCardIdFilter3.size)
     }
 
     @Test

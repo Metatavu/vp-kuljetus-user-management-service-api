@@ -34,12 +34,23 @@ class DriverController {
     /**
      * Lists drivers
      *
+     * @param driverCardId driver card id
      * @param archived archived status
      * @param first first result
      * @param max max results
      * @return drivers and total count
      */
-    suspend fun listDrivers(archived: Boolean?, first: Int?, max: Int?): Pair<List<UserRepresentation>, Int> {
+    suspend fun listDrivers(driverCardId: String?, archived: Boolean?, first: Int?, max: Int?): Pair<List<UserRepresentation>, Int> {
+        if (driverCardId != null) {
+            // no need for paging when driver card id is filtered
+            keycloakAdminClient.findUserByDriverId(driverCardId).let {
+                val users = if (archived != null) {
+                    it.filter { user -> user.enabled != archived }
+                } else it.toList()
+                return users to users.size
+            }
+        }
+
         val allRoleUsers = keycloakAdminClient.listUsersOfRole(
             role = AbstractApi.DRIVER_ROLE,
         ).toList()
