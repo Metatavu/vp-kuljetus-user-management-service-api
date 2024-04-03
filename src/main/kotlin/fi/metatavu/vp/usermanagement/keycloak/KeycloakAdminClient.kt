@@ -2,6 +2,7 @@ package fi.metatavu.vp.usermanagement.keycloak
 
 import fi.metatavu.keycloak.adminclient.apis.RoleContainerApi
 import fi.metatavu.keycloak.adminclient.apis.UserApi
+import fi.metatavu.keycloak.adminclient.apis.UsersApi
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
 import io.smallrye.mutiny.Uni
 import jakarta.enterprise.context.ApplicationScoped
@@ -61,6 +62,16 @@ class KeycloakAdminClient : KeycloakClient() {
     }
 
     /**
+     * Lists users by driver card id
+     *
+     * @param driverCardId driver id
+     * @return list of users
+     */
+    suspend fun findUserByDriverId(driverCardId: String): Array<UserRepresentation> {
+        return getUsersApi().realmUsersGet(realm = getRealm(), q = "driverCardId:$driverCardId")
+    }
+
+    /**
      * Requests a new access token
      *
      * @return new access token
@@ -88,6 +99,25 @@ class KeycloakAdminClient : KeycloakClient() {
         )
     }
 
+    /**
+     * Gets users api with valid access token
+     *
+     * @return Api with valid access token
+     */
+    suspend fun getUsersApi(): UsersApi {
+        val baseUrl = getBaseUrl()
+        return UsersApi(
+            basePath = "${baseUrl}/admin/realms",
+            accessToken = getAccessToken(),
+            vertx = vertxCore
+        )
+    }
+
+    /**
+     * Gets RoleContainerApi with valid access token
+     *
+     * @return Api with valid access token
+     */
     suspend fun getRoleContainerApi(): RoleContainerApi {
         val baseUrl = getBaseUrl()
 
