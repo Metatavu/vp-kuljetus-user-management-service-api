@@ -84,5 +84,5 @@ jobs:
         context: .
         push: true
         file: src/main/docker/Dockerfile.native
-        tags: ${{ steps.meta.outputs.tags }}:latest
+        tags: ${{ steps.meta.outputs.tags }},${{ env.REGISTRY }}/${{ steps.image_name.outputs.IMAGE_NAME }}:latest
         labels: ${{ steps.meta.outputs.labels }}
