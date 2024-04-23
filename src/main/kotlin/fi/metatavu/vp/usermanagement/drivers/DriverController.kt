@@ -55,13 +55,16 @@ class DriverController {
             role = AbstractApi.DRIVER_ROLE,
         ).toList()
 
-        val pagedUsers = if (first != null && max != null) {
-            val maxIndex = if (allRoleUsers.size < first + max) {
+        val pagedUsers = if (first != null || max != null) {
+            val firstResult = first ?: 0
+            val maxResults = max ?: 10
+            val maxIndex = if (allRoleUsers.size < firstResult + maxResults) {
                 allRoleUsers.size
             } else {
-                max
+                maxResults + firstResult
             }
-            allRoleUsers.subList(first, maxIndex)
+            if (maxIndex < firstResult) return emptyList<UserRepresentation>() to 0
+            allRoleUsers.subList(firstResult, maxIndex)
         } else {
             allRoleUsers
         }
