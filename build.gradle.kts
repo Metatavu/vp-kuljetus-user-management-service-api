@@ -57,6 +57,10 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
 sourceSets["main"].java {
     srcDir("build/generated/api-spec/src/main/kotlin")
     srcDir("build/generated/keycloak-admin-client/src/main/kotlin")

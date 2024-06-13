@@ -34,8 +34,11 @@ class DriversApiImpl: DriversApi, AbstractApi() {
         createOk(driverTranslator.translate(driver))
     }.asUni()
 
-    @RolesAllowed(MANAGER_ROLE)
     override fun listDrivers(driverCardId: String?, archived: Boolean?, first: Int?, max: Int?): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
+        if (loggedUserId == null && requestApiKey == null) return@async createUnauthorized(UNAUTHORIZED)
+        if (requestApiKey != null && requestApiKey != apiKey) return@async createForbidden(INVALID_API_KEY)
+        if (loggedUserId != null && !hasRealmRole(MANAGER_ROLE)) return@async createForbidden(FORBIDDEN)
+
         val ( drivers, count ) = driverController.listDrivers(driverCardId, archived, first, max)
         createOk(drivers.map { driverTranslator.translate(it) }, count.toLong())
     }.asUni()

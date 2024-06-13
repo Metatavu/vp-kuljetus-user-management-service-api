@@ -9,7 +9,6 @@ import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
 import io.restassured.http.Method
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import java.time.OffsetDateTime
 
@@ -56,6 +55,10 @@ class DriversTestIT : AbstractFunctionalTest() {
 
         val driverCardIdFilter3 = it.manager.drivers.listDrivers(driverCardId = "003", archived = true)
         assertEquals(1, driverCardIdFilter3.size)
+
+        // Test that one can list drivers with API key
+        val driversWithApiKey = it.setApiKey().drivers.listDrivers()
+        assertEquals(2, driversWithApiKey.size)
     }
 
     @Test
