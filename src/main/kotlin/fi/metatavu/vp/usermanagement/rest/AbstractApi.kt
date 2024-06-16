@@ -61,9 +61,7 @@ abstract class AbstractApi {
      */
     protected fun hasRealmRole(vararg realmRoles: String): Boolean {
         if (jsonWebToken.subject == null) return false
-        println("subject ${jsonWebToken.subject}")
-        println("jwt: ${jsonWebToken}")
-        println("isUserInRole DRIVER_ROLE ${securityContext.isUserInRole(DRIVER_ROLE)}")
+
         return realmRoles.any { securityContext.isUserInRole(it) }
     }
 
