@@ -5,6 +5,7 @@ import fi.metatavu.jaxrs.test.functional.builder.AbstractTestBuilder
 import fi.metatavu.jaxrs.test.functional.builder.auth.AccessTokenProvider
 import fi.metatavu.jaxrs.test.functional.builder.auth.AuthorizedTestBuilderAuthentication
 import fi.metatavu.jaxrs.test.functional.builder.auth.KeycloakAccessTokenProvider
+import fi.metatavu.jaxrs.test.functional.builder.auth.NullAccessTokenProvider
 import fi.metatavu.vp.usermanagement.auth.TestBuilderAuthentication
 import fi.metatavu.vp.test.client.infrastructure.ApiClient
 import org.eclipse.microprofile.config.ConfigProvider
@@ -26,7 +27,18 @@ class TestBuilder(private val config: Map<String, String>): AbstractAccessTokenT
         abstractTestBuilder: AbstractTestBuilder<ApiClient, AccessTokenProvider>,
         authProvider: AccessTokenProvider
     ): AuthorizedTestBuilderAuthentication<ApiClient, AccessTokenProvider> {
-        return TestBuilderAuthentication(this, authProvider)
+        return TestBuilderAuthentication(this, authProvider, null)
+    }
+
+    /**
+     * Returns authentication with api key
+     *
+     * @param apiKey device key
+     * @return authorized client
+     */
+    fun setApiKey(apiKey: String? = null): TestBuilderAuthentication {
+        val key = apiKey ?: "test-api-key"
+        return TestBuilderAuthentication(this, NullAccessTokenProvider(), key)
     }
 
     /**
@@ -40,7 +52,7 @@ class TestBuilder(private val config: Map<String, String>): AbstractAccessTokenT
         val serverUrl = ConfigProvider.getConfig().getValue("quarkus.oidc.auth-server-url", String::class.java).substringBeforeLast("/").substringBeforeLast("/")
         val realm: String = ConfigProvider.getConfig().getValue("quarkus.keycloak.devservices.realm-name", String::class.java)
         val clientId = "test"
-        return TestBuilderAuthentication(this, KeycloakAccessTokenProvider(serverUrl, realm, clientId, username, password, null))
+        return TestBuilderAuthentication(this, KeycloakAccessTokenProvider(serverUrl, realm, clientId, username, password, null), null)
     }
 
 }

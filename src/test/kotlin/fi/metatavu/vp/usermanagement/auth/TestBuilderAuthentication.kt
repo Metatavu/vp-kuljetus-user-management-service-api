@@ -15,13 +15,15 @@ import fi.metatavu.vp.usermanagement.impl.DriverTestBuilderResource
  *
  * @param testBuilder test builder instance
  * @param accessTokenProvider access token provider
+ * @param apiKey api key
  */
 class TestBuilderAuthentication(
     private val testBuilder: TestBuilder,
-    val accessTokenProvider: AccessTokenProvider
+    val accessTokenProvider: AccessTokenProvider,
+    private val apiKey: String?
 ) : AccessTokenTestBuilderAuthentication<ApiClient>(testBuilder, accessTokenProvider) {
 
-    val drivers = DriverTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
+    val drivers = DriverTestBuilderResource(testBuilder, accessTokenProvider, this.apiKey, createClient(accessTokenProvider))
 
     override fun createClient(authProvider: AccessTokenProvider): ApiClient {
         val result = ApiClient(ApiTestSettings.apiBasePath)
