@@ -241,10 +241,10 @@ abstract class AbstractApi {
         const val MISSING_REQUEST_BODY = "Missing request body"
         const val INVALID_REQUEST_BODY = "Invalid request body"
         const val INVALID_API_KEY = "Invalid API key"
-
-        const val DRIVER = "Driver"
+        const val DRIVER_ENTITY = "Driver"
 
         const val DRIVER_ROLE = "driver"
+        const val EMPLOYEE_ROLE = "employee"
         const val MANAGER_ROLE = "manager"
     }
 

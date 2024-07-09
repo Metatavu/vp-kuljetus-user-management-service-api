@@ -1,9 +1,11 @@
 package fi.metatavu.vp.usermanagement.keycloak
 
 import fi.metatavu.keycloak.adminclient.apis.RoleContainerApi
+import fi.metatavu.keycloak.adminclient.apis.RoleMapperApi
 import fi.metatavu.keycloak.adminclient.apis.UserApi
 import fi.metatavu.keycloak.adminclient.apis.UsersApi
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
+import fi.metatavu.vp.usermanagement.users.UserController.Companion.DRIVER_CARD_ID_ATTRIBUTE
 import io.smallrye.mutiny.Uni
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -68,7 +70,7 @@ class KeycloakAdminClient : KeycloakClient() {
      * @return list of users
      */
     suspend fun findUserByDriverId(driverCardId: String): Array<UserRepresentation> {
-        return getUsersApi().realmUsersGet(realm = getRealm(), q = "driverCardId:$driverCardId")
+        return getUsersApi().realmUsersGet(realm = getRealm(), q = "$DRIVER_CARD_ID_ATTRIBUTE:$driverCardId")
     }
 
     /**
@@ -129,6 +131,20 @@ class KeycloakAdminClient : KeycloakClient() {
     }
 
     /**
+     * Gets role mapper api
+     *
+     * @return Api with valid access token
+     */
+    suspend fun getRoleMapperApi(): RoleMapperApi {
+        val baseUrl = getBaseUrl()
+        return RoleMapperApi(
+            basePath = "${baseUrl}/admin/realms",
+            accessToken = getAccessToken(),
+            vertx = vertxCore
+        )
+    }
+
+    /**
      * Gets base url
      *
      * @return base url
@@ -142,7 +158,7 @@ class KeycloakAdminClient : KeycloakClient() {
      *
      * @return realm name
      */
-    private fun getRealm(): String {
+    fun getRealm(): String {
         return keycloakUrl.substringAfterLast("realms/").substringBefore("/")
     }
 
