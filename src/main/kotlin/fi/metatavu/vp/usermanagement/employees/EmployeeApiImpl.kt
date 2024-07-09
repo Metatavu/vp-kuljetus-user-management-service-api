@@ -20,6 +20,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import java.util.*
+import kotlin.jvm.optionals.getOrNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RequestScoped
@@ -35,7 +36,7 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
     lateinit var vertx: Vertx
 
     @ConfigProperty(name = "env")
-    lateinit var env: String
+    lateinit var env: Optional<String>
 
     @RolesAllowed(MANAGER_ROLE)
     override fun listEmployees(
@@ -75,7 +76,7 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
 
     @RolesAllowed(MANAGER_ROLE)
     override fun deleteEmployee(employeeId: UUID): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
-        if (env != "TEST") {
+        if (env.isEmpty || env.getOrNull() != "TEST") {
             return@async createForbidden("Deleting employees is disabled")
         }
         usersController.deleteEmployee(employeeId)
