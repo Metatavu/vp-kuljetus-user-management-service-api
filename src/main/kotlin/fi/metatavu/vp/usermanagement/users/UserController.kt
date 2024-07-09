@@ -115,7 +115,7 @@ class UserController {
     ): Pair<List<UserRepresentation>, Int> {
         if (driverCardId != null) {
             // no need for paging when driver card id is filtered because 1 result is expected
-            keycloakAdminClient.findUserByDriverId(driverCardId).let {
+            keycloakAdminClient.findUserByDriverCardId(driverCardId).let {
                 val users = if (archived != null) {
                     it.filter { user -> user.enabled != archived }
                 } else it.toList()
