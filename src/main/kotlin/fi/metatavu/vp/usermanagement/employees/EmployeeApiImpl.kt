@@ -68,9 +68,7 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
     @RolesAllowed(MANAGER_ROLE)
     override fun updateEmployee(employeeId: UUID, employee: Employee): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
         usersController.findEmployeeNumberDuplicate(employee.employeeNumber).let {
-            if (it.isNotEmpty() && it.find { d -> d.id == employeeId.toString() } == null) return@async createBadRequest(
-                "Employee number already exists"
-            )
+            if (it.isNotEmpty() && it.none { d -> d.id == employeeId.toString() }) return@async createBadRequest("Employee number already exists")
         }
         val found = usersController.find(employeeId, EMPLOYEE_ROLE) ?: return@async createNotFound("Employee not found")
         if (found.enabled == false && employee.archivedAt != null) return@async createBadRequest("Cannot update archived employee")
