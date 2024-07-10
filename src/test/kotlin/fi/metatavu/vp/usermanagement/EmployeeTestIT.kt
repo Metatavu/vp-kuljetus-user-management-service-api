@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import java.time.OffsetDateTime
+import java.util.*
 
 /**
  * Tests for Employee API
@@ -105,6 +106,11 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         assertEquals(testEmployee.employeeNumber, created.employeeNumber)
         assertEquals(testEmployee.phoneNumber, created.phoneNumber)
         assertEquals(testEmployee.email, created.email)
+    }
+
+    @Test
+    fun findFail() = createTestBuilder().use {
+        it.manager.employees.assertFindServerFail(UUID.fromString("95dd89a2-da9a-4ce4-979d-8897b7603b2e"), 500)
     }
 
     @Test

@@ -4,10 +4,15 @@ import fi.metatavu.jaxrs.test.functional.builder.auth.AccessTokenProvider
 import fi.metatavu.vp.test.client.apis.EmployeesApi
 import fi.metatavu.vp.test.client.infrastructure.ApiClient
 import fi.metatavu.vp.test.client.infrastructure.ClientException
-import fi.metatavu.vp.test.client.models.*
+import fi.metatavu.vp.test.client.infrastructure.ServerException
+import fi.metatavu.vp.test.client.models.Employee
+import fi.metatavu.vp.test.client.models.EmployeeType
+import fi.metatavu.vp.test.client.models.Office
+import fi.metatavu.vp.test.client.models.SalaryGroup
 import fi.metatavu.vp.usermanagement.TestBuilder
 import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import org.junit.Assert
+import java.time.OffsetDateTime
 import java.util.*
 
 /**
@@ -60,6 +65,31 @@ class EmployeeTestBuilderResource(
 
     fun createEmployee(employee: Employee): Employee {
         return addClosable(api.createEmployee(employee))
+    }
+
+    fun createEmployee(numer: String): Employee {
+        return createEmployee(
+            Employee(
+                firstName = "Test",
+                lastName = "Employee",
+                type = EmployeeType.AH,
+                office = Office.KOTKA,
+                salaryGroup = SalaryGroup.DRIVER,
+                driverCardLastReadOut = OffsetDateTime.now().toString(),
+                driverCardId = "001",
+                regularWorkingHours = 8.0f,
+                employeeNumber = numer
+            )
+        )
+    }
+
+    fun assertFindServerFail(id: UUID, expectedStatus: Int) {
+        try {
+            api.findEmployee(id)
+            Assert.fail(String.format("Expected create to fail with status %d", expectedStatus))
+        } catch (ex: ServerException) {
+            assertServerExceptionStatus(expectedStatus, ex)
+        }
     }
 
     fun assertCreateFail(employee: Employee, expectedStatus: Int) {
