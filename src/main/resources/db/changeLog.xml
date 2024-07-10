@@ -4,7 +4,7 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
 		http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
-    <changeSet id="truck" author="katja.danilova">
+    <changeSet id="work_entries" author="katja.danilova">
         <createTable tableName="work_type">
             <column name="id" type="binary(16)">
                 <constraints nullable="false" primaryKey="true"/>
@@ -17,6 +17,28 @@
             </column>
         </createTable>
         <addUniqueConstraint tableName="work_type" columnNames="name, category" constraintName="un_worktype_name_category"/>
-    </changeSet>
 
+        <createTable tableName="time_entry">
+            <column name="id" type="binary(16)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="employeeId" type="binary(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="startTime" type="datetime(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="workType_id" type="binary(16)">
+                <constraints nullable="false" foreignKeyName="FK_TIMEENTRY_WORKTYPE_ID" referencedColumnNames="id"
+                             referencedTableName="work_type"/>
+            </column>
+            <column name="endTime" type="datetime(6)"/>
+        </createTable>
+        <createIndex indexName="idx_employeeId_startTime_endTime" tableName="time_entry">
+            <column name="employeeId" type="binary(16)"/>
+            <column name="startTime" type="datetime(6)"/>
+            <column name="endTime" type="datetime(6)"/>
+        </createIndex>
+        <!-- TODO check index -->
+    </changeSet>
 </databaseChangeLog>

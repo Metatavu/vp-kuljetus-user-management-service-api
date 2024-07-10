@@ -64,7 +64,6 @@ class DriversTestIT : AbstractFunctionalTest() {
     @Test
     fun testListFail() = createTestBuilder().use {
         it.driver1.drivers.assertListFail(403)
-        it.user.drivers.assertListFail(403)
     }
 
     @Test

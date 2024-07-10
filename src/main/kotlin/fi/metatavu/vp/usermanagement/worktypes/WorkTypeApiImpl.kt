@@ -4,6 +4,7 @@ import fi.metatavu.vp.api.model.WorkType
 import fi.metatavu.vp.api.model.WorkTypeCategory
 import fi.metatavu.vp.api.spec.WorkTypesApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
+import fi.metatavu.vp.usermanagement.timeentries.TimeEntryController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -24,10 +25,16 @@ import java.util.*
 class WorkTypeApiImpl : WorkTypesApi, AbstractApi() {
 
     @Inject
+    lateinit var vertx: io.vertx.core.Vertx
+
+    @Inject
     lateinit var workTypeController: WorkTypeController
 
     @Inject
     lateinit var workTypeTranslator: WorkTypeTranslator
+
+    @Inject
+    lateinit var timeEntryController: TimeEntryController
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     override fun listWorkTypes(category: WorkTypeCategory?): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
@@ -68,6 +75,12 @@ class WorkTypeApiImpl : WorkTypesApi, AbstractApi() {
                 workTypeId
             )
         )
+        val timeEntries = timeEntryController.listByWorkType(workType = found)
+        if (timeEntries > 0) {
+            return@async createConflict(
+                "Work type with id $workTypeId is in use in time entries"
+            )
+        }
         workTypeController.delete(found)
         createNoContent()
     }.asUni()

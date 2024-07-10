@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.rest
 
+import io.quarkus.security.identity.SecurityIdentity
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.HttpHeaders
@@ -26,8 +27,19 @@ abstract class AbstractApi {
     lateinit var securityContext: SecurityContext
 
     @Inject
+    lateinit var identity: SecurityIdentity
+
+    @Inject
     private lateinit var jsonWebToken: JsonWebToken
 
+    /**
+     * Checks if user is manager
+     *
+     * @return true if manager
+     */
+    protected fun isManager(): Boolean {
+        return identity.hasRole(MANAGER_ROLE)
+    }
 
     /**
      * Returns request api key
@@ -90,6 +102,19 @@ abstract class AbstractApi {
     protected fun createOk(entity: Any?): Response {
         return Response
             .status(Response.Status.OK)
+            .entity(entity)
+            .build()
+    }
+
+    /**
+     * Constructs created response
+     *
+     * @param entity payload
+     * @return response
+     */
+    protected fun createCreated(entity: Any?): Response {
+        return Response
+            .status(Response.Status.CREATED)
             .entity(entity)
             .build()
     }
@@ -242,6 +267,9 @@ abstract class AbstractApi {
         const val INVALID_REQUEST_BODY = "Invalid request body"
         const val INVALID_API_KEY = "Invalid API key"
         const val DRIVER_ENTITY = "Driver"
+        const val EMPLOYEE_ENTITY = "Employee"
+        const val WORK_TYPE = "Work type"
+        const val TIME_ENTRY = "Time entry"
 
         const val DRIVER_ROLE = "driver"
         const val EMPLOYEE_ROLE = "employee"

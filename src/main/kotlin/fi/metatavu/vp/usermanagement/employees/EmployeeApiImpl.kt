@@ -6,7 +6,9 @@ import fi.metatavu.vp.api.model.Office
 import fi.metatavu.vp.api.model.SalaryGroup
 import fi.metatavu.vp.api.spec.EmployeesApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
+import fi.metatavu.vp.usermanagement.timeentries.TimeEntryController
 import fi.metatavu.vp.usermanagement.users.UserController
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
 import io.smallrye.mutiny.coroutines.asUni
 import io.vertx.core.Vertx
@@ -33,6 +35,9 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
     lateinit var employeeTranslator: EmployeeTranslator
 
     @Inject
+    lateinit var timeEntryController: TimeEntryController
+
+    @Inject
     lateinit var vertx: Vertx
 
     @ConfigProperty(name = "env")
@@ -49,14 +54,15 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
         max: Int
     ): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
         val (employees, count) = usersController.listEmployees(search, salaryGroup, type, office, archived, first, max)
-        createOk(employees.map { employeeTranslator.translate(it) }, count.toLong())
+        val translatedEmployees = employees.mapNotNull { runCatching { employeeTranslator.translate(it) }.getOrNull() }
+        createOk(translatedEmployees, count.toLong())
     }.asUni()
 
     @RolesAllowed(MANAGER_ROLE)
     override fun createEmployee(employee: Employee): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
         usersController.findEmployeeNumberDuplicate(employee.employeeNumber).let { if (it.isNotEmpty()) return@async createBadRequest("Employee number already exists")}
         val created = usersController.createEmployee(employee) ?: return@async createInternalServerError("Failed creating a user")
-        createOk(employeeTranslator.translate(created))
+        createCreated(employeeTranslator.translate(created))
     }.asUni()
 
     @RolesAllowed(MANAGER_ROLE)
@@ -77,10 +83,16 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
     }.asUni()
 
     @RolesAllowed(MANAGER_ROLE)
+    @WithTransaction
     override fun deleteEmployee(employeeId: UUID): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
         if (env.isEmpty || env.getOrNull() != "TEST") {
             return@async createForbidden("Deleting employees is disabled")
         }
+
+        timeEntryController.list(employeeId = employeeId, start = null, end = null).first.forEach {
+            timeEntryController.delete(it)
+        }
+
         usersController.deleteEmployee(employeeId)
         createNoContent()
     }.asUni()

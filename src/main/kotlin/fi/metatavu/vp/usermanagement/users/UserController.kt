@@ -27,9 +27,9 @@ class UserController {
      * @param role user role
      * @return found user or null if not found
      */
-    suspend fun find(id: UUID, role: String): UserRepresentation? {
+    suspend fun find(id: UUID, role: String? = null): UserRepresentation? {
         val user = keycloakAdminClient.findUserById(id)
-        if (user?.realmRoles?.contains(role) == false) {
+        if (role != null && user?.realmRoles?.contains(role) == false) {
             return null
         }
 

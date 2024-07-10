@@ -44,12 +44,11 @@ class WorkTypeController {
     }
 
     /**
-     * Updates work type
+     * Finds work type
      *
-     * @param workType work type
-     * @param name work type name
+     * @param workTypeId work type id
      * @param category work type category
-     * @return updated work type
+     * @return found work type
      */
     suspend fun find(workTypeId: String, category: WorkTypeCategory): WorkTypeEntity? {
         return workTypeRepository.find(
@@ -59,12 +58,10 @@ class WorkTypeController {
     }
 
     /**
-     * Updates work type
+     * Finds work type
      *
-     * @param workType work type
-     * @param name work type name
-     * @param category work type category
-     * @return updated work type
+     * @param workTypeId work type id
+     * @return found work type
      */
     suspend fun find(workTypeId: UUID): WorkTypeEntity? {
         return workTypeRepository.findByIdSuspending(workTypeId)

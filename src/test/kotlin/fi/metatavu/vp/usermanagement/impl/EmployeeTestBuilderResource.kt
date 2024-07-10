@@ -16,17 +16,15 @@ import java.time.OffsetDateTime
 import java.util.*
 
 /**
- * Test builder resource for drivers
+ * Test builder resource for employees
  *
  * @param testBuilder test builder
  * @param accessTokenProvider access token provider
- * @param apiKey api key
  * @param apiClient api client
  */
 class EmployeeTestBuilderResource(
     testBuilder: TestBuilder,
     private val accessTokenProvider: AccessTokenProvider?,
-    private val apiKey: String?,
     apiClient: ApiClient
 ) : ApiTestBuilderResource<Employee, ApiClient>(testBuilder, apiClient) {
 
@@ -39,6 +37,18 @@ class EmployeeTestBuilderResource(
         return EmployeesApi(ApiTestSettings.apiBasePath)
     }
 
+    /**
+     * Lists employees
+     *
+     * @param search search
+     * @param type type
+     * @param office office
+     * @param salaryGroup salary group
+     * @param archived archived
+     * @param first first
+     * @param max max
+     * @return list of employees
+     */
     fun listEmployees(
         search: String? = null,
         type: EmployeeType? = null,
@@ -59,14 +69,42 @@ class EmployeeTestBuilderResource(
         )
     }
 
-    fun findEmployee(driverId: UUID): Employee {
-        return api.findEmployee(driverId)
-    }
-
+    /**
+     * Creates new employee
+     *
+     * @param employee employee
+     * @return created employee
+     */
     fun createEmployee(employee: Employee): Employee {
         return addClosable(api.createEmployee(employee))
     }
 
+    /**
+     * Finds employee
+     *
+     * @param driverId driver id
+     * @return found employee
+     */
+    fun findEmployee(driverId: UUID): Employee {
+        return api.findEmployee(driverId)
+    }
+
+    /**
+     * Updates employee
+     *
+     * @param employeeId employee id
+     * @param employee employee
+     * @return updated employee
+     */
+    fun updateEmployee(employeeId: UUID, employee: Employee): Employee {
+        return api.updateEmployee(employeeId, employee)
+    }
+
+    /**
+     * Creates new employee with random values
+     *
+     * @return created employee
+     */
     fun createEmployee(numer: String): Employee {
         return createEmployee(
             Employee(
@@ -83,6 +121,12 @@ class EmployeeTestBuilderResource(
         )
     }
 
+    /**
+     * Asserts find employee fails with expected status
+     *
+     * @param id id
+     * @param expectedStatus expected status
+     */
     fun assertFindServerFail(id: UUID, expectedStatus: Int) {
         try {
             api.findEmployee(id)
@@ -92,6 +136,12 @@ class EmployeeTestBuilderResource(
         }
     }
 
+    /**
+     * Asserts create employee fails with expected status
+     *
+     * @param employee employee
+     * @param expectedStatus expected status
+     */
     fun assertCreateFail(employee: Employee, expectedStatus: Int) {
         try {
             api.createEmployee(employee)
@@ -101,10 +151,13 @@ class EmployeeTestBuilderResource(
         }
     }
 
-    fun updateEmployee(employeeId: UUID, employee: Employee): Employee {
-        return api.updateEmployee(employeeId, employee)
-    }
-
+    /**
+     * Asserts update employee fails with expected status
+     *
+     * @param employeeId employee id
+     * @param employee employee
+     * @param expectedStatus expected status
+     */
     fun assertUpdateFail(employeeId: UUID, employee: Employee, expectedStatus: Int) {
         try {
             api.updateEmployee(employeeId, employee)
