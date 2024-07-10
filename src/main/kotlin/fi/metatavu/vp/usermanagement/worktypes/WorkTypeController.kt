@@ -20,9 +20,7 @@ class WorkTypeController {
     /**
      * Creates a new work type
      *
-     * @param id work type id
-     * @param name work type name
-     * @param category work type category
+     * @param workType work type
      * @return created work type
      */
     suspend fun create(workType: WorkType): WorkTypeEntity {

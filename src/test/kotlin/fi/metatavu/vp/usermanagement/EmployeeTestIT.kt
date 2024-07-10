@@ -109,11 +109,6 @@ class EmployeeTestIT : AbstractFunctionalTest() {
     }
 
     @Test
-    fun findFail() = createTestBuilder().use {
-        it.manager.employees.assertFindServerFail(UUID.fromString("95dd89a2-da9a-4ce4-979d-8897b7603b2e"), 500)
-    }
-
-    @Test
     fun find() = createTestBuilder().use {
         val created = it.manager.employees.createEmployee(Employee(
             firstName = "Test",

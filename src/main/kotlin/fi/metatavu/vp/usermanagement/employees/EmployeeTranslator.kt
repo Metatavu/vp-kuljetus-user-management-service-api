@@ -5,7 +5,6 @@ import fi.metatavu.vp.api.model.Employee
 import fi.metatavu.vp.api.model.EmployeeType
 import fi.metatavu.vp.api.model.Office
 import fi.metatavu.vp.api.model.SalaryGroup
-import fi.metatavu.vp.usermanagement.exceptions.InvalidEmployeeEntityException
 import fi.metatavu.vp.usermanagement.rest.AbstractTranslator
 import fi.metatavu.vp.usermanagement.users.UserController.Companion.ARCHIVED_AT_ATTRIBUTE
 import fi.metatavu.vp.usermanagement.users.UserController.Companion.DRIVER_CARD_ID_ATTRIBUTE
@@ -27,9 +26,9 @@ import java.util.*
 class EmployeeTranslator : AbstractTranslator<UserRepresentation, Employee>() {
 
     override suspend fun translate(entity: UserRepresentation): Employee {
-        val salaryGroup = SalaryGroup.decode(entity.attributes?.get(SALARY_GROUP_ATTRIBUTE)?.firstOrNull()) ?: throw InvalidEmployeeEntityException("Invalid salary group")
-        val type = EmployeeType.decode(entity.attributes?.get(EMPLOYEE_TYPE_ATTRIBUTE)?.firstOrNull()) ?: throw InvalidEmployeeEntityException("Invalid employee type")
-        val office = Office.decode(entity.attributes?.get(OFFICE_ATTRIBUTE)?.firstOrNull()) ?: throw InvalidEmployeeEntityException("Invalid office")
+        val salaryGroup = SalaryGroup.decode(entity.attributes?.get(SALARY_GROUP_ATTRIBUTE)?.firstOrNull()) ?: throw IllegalStateException("Invalid salary group")
+        val type = EmployeeType.decode(entity.attributes?.get(EMPLOYEE_TYPE_ATTRIBUTE)?.firstOrNull()) ?: throw IllegalStateException("Invalid employee type")
+        val office = Office.decode(entity.attributes?.get(OFFICE_ATTRIBUTE)?.firstOrNull()) ?: throw IllegalStateException("Invalid office")
 
         return Employee(
             id = UUID.fromString(entity.id),
