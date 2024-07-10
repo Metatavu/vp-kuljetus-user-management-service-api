@@ -161,7 +161,6 @@ class EmployeeTestIT : AbstractFunctionalTest() {
             driverCardLastReadOut = OffsetDateTime.now().toString(),
             driverCardId = "002",
             regularWorkingHours = 7.5f,
-            employeeNumber = "002",
             phoneNumber = "123456789",
             email = "text@example.com"
         )
