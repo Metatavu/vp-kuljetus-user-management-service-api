@@ -20,7 +20,7 @@ import java.time.OffsetDateTime
 import java.util.*
 
 /**
- * Translates employee representation to employee entity
+ * Translates user representation to employee entity
  */
 @ApplicationScoped
 class EmployeeTranslator : AbstractTranslator<UserRepresentation, Employee?>() {

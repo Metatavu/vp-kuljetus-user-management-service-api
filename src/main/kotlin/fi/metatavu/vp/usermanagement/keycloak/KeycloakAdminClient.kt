@@ -69,7 +69,7 @@ class KeycloakAdminClient : KeycloakClient() {
      * @param driverCardId driver id
      * @return list of users
      */
-    suspend fun findUserByDriverId(driverCardId: String): Array<UserRepresentation> {
+    suspend fun findUserByDriverCardId(driverCardId: String): Array<UserRepresentation> {
         return getUsersApi().realmUsersGet(realm = getRealm(), q = "$DRIVER_CARD_ID_ATTRIBUTE:$driverCardId")
     }
 
