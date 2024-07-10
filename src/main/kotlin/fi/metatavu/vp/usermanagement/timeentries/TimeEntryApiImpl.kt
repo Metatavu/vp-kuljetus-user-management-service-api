@@ -83,8 +83,8 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
                     timeEntry.workTypeId
                 )
             )
-            timeEntryController.validateIncompleteEntries(employee, timeEntry)?.let { return@async createBadRequest(it) }
-            timeEntryController.validateOverlappingEntries(employee, timeEntry)?.let { return@async createBadRequest(it) }
+            timeEntryController.findIncompleteEntries(employee, timeEntry)?.let { return@async createBadRequest("User already has unfinished time entry") }
+            timeEntryController.findOverlappingEntry(employee, timeEntry)?.let { return@async createBadRequest("Time entry overlaps with another entry") }
 
             val created = timeEntryController.create(employee, workType, timeEntry)
             createCreated(timeEntryTranslator.translate(created))
@@ -130,12 +130,15 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
                 )
             }
 
-            //todo do we want to set end time to null ?
             if (foundTimeEntry.endTime != null && timeEntry.endTime == null) {
                 return@async createBadRequest("End time cannot be set to null")
             }
+            timeEntryController.findOverlappingEntry(employee, timeEntry)?.let {
+                if (it.id != timeEntryId) {
+                    return@async createBadRequest("Time entry overlaps with another entry")
+                }
+            }
 
-            timeEntryController.validateOverlappingEntries(employee, timeEntry)?.let { return@async createBadRequest(it) }
             val updatedTimeEntry = timeEntryController.update(foundTimeEntry, newWorkType, timeEntry)
             createOk(timeEntryTranslator.translate(updatedTimeEntry))
         }.asUni()

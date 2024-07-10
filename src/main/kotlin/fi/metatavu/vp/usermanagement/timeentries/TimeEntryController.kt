@@ -62,34 +62,25 @@ class TimeEntryController {
     }
 
     /**
-     * Validates time entry
+     * Finds incomplete time entries
      *
      * @param employee employee
      * @param timeEntry time entry
-     * @return error message if validation fails
+     * @return incomplete time entry or null if not found
      */
-    suspend fun validateIncompleteEntries(employee: UserRepresentation, timeEntry: TimeEntry): String? {
-        val existingEntry = timeEntryRepository.findIncomplete(UUID.fromString(employee.id))
-        if (existingEntry != null) {
-            return("User has an incomplete time entry")
-        }
-
-        return null
+    suspend fun findIncompleteEntries(employee: UserRepresentation, timeEntry: TimeEntry): TimeEntryEntity? {
+        return timeEntryRepository.findIncomplete(UUID.fromString(employee.id))
     }
 
     /**
-     * Validates time entry update
+     * Finds overlapping time entry
      *
      * @param employee employee
      * @param timeEntry time entry
-     * @return error message if validation fails
+     * @return overlapping time entry or null if not found
      */
-    suspend fun validateOverlappingEntries(employee: UserRepresentation, timeEntry: TimeEntry): String? {
-        val overlappingEntry = timeEntryRepository.findOverlapping(UUID.fromString(employee.id), timeEntry.startTime, timeEntry.endTime)
-        if (overlappingEntry != null && overlappingEntry.id != timeEntry.id) {
-            return("Time entry overlaps with another time entry")
-        }
-        return null
+    suspend fun findOverlappingEntry(employee: UserRepresentation, timeEntry: TimeEntry): TimeEntryEntity? {
+        return timeEntryRepository.findOverlapping(UUID.fromString(employee.id), timeEntry.startTime, timeEntry.endTime)
     }
 
     /**
