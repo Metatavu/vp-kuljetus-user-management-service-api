@@ -117,6 +117,23 @@ class TimeEntryTestBuilderResource(
     }
 
     /**
+     * Assert time entry update fails
+     *
+     * @param employeeId employee id
+     * @param id time entry id
+     * @param timeEntry time entry
+     * @param expectedStatus expected status
+     */
+    fun assertUpdateFail(employeeId: UUID, id: UUID, timeEntry: TimeEntry, expectedStatus: Int) {
+        try {
+            api.updateEmployeeTimeEntry(employeeId, id, timeEntry)
+            Assert.fail(String.format("Expected update to fail with status %d", expectedStatus))
+        } catch (ex: ClientException) {
+            assertClientExceptionStatus(expectedStatus, ex)
+        }
+    }
+
+    /**
      * Deletes time entry
      *
      * @param employeeId employee id

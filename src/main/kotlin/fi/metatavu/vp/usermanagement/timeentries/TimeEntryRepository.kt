@@ -62,17 +62,16 @@ class TimeEntryRepository : AbstractRepository<TimeEntryEntity, UUID>() {
     suspend fun findOverlapping(
         employeeId: UUID?,
         startTime: OffsetDateTime,
-        endTime: OffsetDateTime?
+        endTime: OffsetDateTime
     ): TimeEntryEntity? {
-        return find(
-            "employeeId = :employeeId and " +
-                "((startTime BETWEEN :newStartTime AND :newEndTime) OR " +
-                "(endTime BETWEEN :newStartTime AND :newEndTime) OR " +
-                "(startTime <= :newStartTime AND endTime >= :newEndTime)) order by startTime desc limit 1",
+        return find("employeeId = :employeeId AND " +
+                "endTime > :startTime AND " +
+                "startTime < :endTime " +
+                "order by startTime desc limit 1",
             Parameters()
                 .and("employeeId", employeeId)
-                .and("newStartTime", startTime)
-                .and("newEndTime", endTime)
+                .and("startTime", startTime)
+                .and("endTime", endTime)
         ).firstResult<TimeEntryEntity>().awaitSuspending()
     }
 

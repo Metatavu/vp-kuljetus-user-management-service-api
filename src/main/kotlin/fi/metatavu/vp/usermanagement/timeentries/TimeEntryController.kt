@@ -80,7 +80,8 @@ class TimeEntryController {
      * @return overlapping time entry or null if not found
      */
     suspend fun findOverlappingEntry(employee: UserRepresentation, timeEntry: TimeEntry): TimeEntryEntity? {
-        return timeEntryRepository.findOverlapping(UUID.fromString(employee.id), timeEntry.startTime, timeEntry.endTime)
+        val endTime = timeEntry.endTime ?: return null
+        return timeEntryRepository.findOverlapping(UUID.fromString(employee.id), timeEntry.startTime, endTime)
     }
 
     /**

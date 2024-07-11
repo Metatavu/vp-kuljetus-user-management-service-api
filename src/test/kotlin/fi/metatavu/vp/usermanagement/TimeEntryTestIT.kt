@@ -136,7 +136,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
     }
 
     @Test
-    fun testCreateIntersecting() = createTestBuilder().use {
+    fun testOverlapping() = createTestBuilder().use {
         //       1   2   3   4   5   6
         //          [|]         [|]
         //              [s] [e]            (case 1)
@@ -182,7 +182,26 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
                 expectedStatus = 400
             )
 
+            val activeEntry = it.manager.timeEntries.createTimeEntry(
+                employeeId = employee1.id,
+                timeEntry = TimeEntry(
+                    workTypeId = workType.id!!,
+                    startTime = baseTime.plusHours(2).toString(),
+                    employeeId = employee1.id
+                )
+            )
+
+            it.manager.timeEntries.assertUpdateFail(
+                employeeId = employee1.id,
+                id = activeEntry.id!!,
+                timeEntry = activeEntry.copy(
+                    endTime = baseTime.plusHours(5).toString()
+                ),
+                expectedStatus = 400
+            )
+
             it.manager.timeEntries.deleteTimeEntry(employee1.id, existingEntry.id!!)
+            it.manager.timeEntries.deleteTimeEntry(employee1.id, activeEntry.id!!)
         }
     }
 
