@@ -116,7 +116,8 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
         val employee1 = it.manager.employees.createEmployee("1")
 
         val now = OffsetDateTime.now()
-        val created = it.manager.timeEntries.createTimeEntry(
+
+        it.manager.timeEntries.createTimeEntry(
             employee1.id!!, TimeEntry(
                 workTypeId = workType.id!!,
                 startTime = now.toString(),
@@ -127,7 +128,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
         it.manager.timeEntries.assertCreateFail(
             employeeId = employee1.id,
             timeEntry = TimeEntry(
-                workTypeId = workType.id!!,
+                workTypeId = workType.id,
                 startTime = now.toString(),
                 employeeId = employee1.id
             ),
@@ -159,7 +160,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
             Pair(1, 6),
             Pair(1, 4),
             Pair(3, 6)
-        );
+        )
 
         cases.forEach { case ->
             val existingEntry = it.manager.timeEntries.createTimeEntry(
@@ -174,7 +175,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
             it.manager.timeEntries.assertCreateFail(
                 employeeId = employee1.id,
                 timeEntry = TimeEntry(
-                    workTypeId = workType.id!!,
+                    workTypeId = workType.id,
                     startTime = baseTime.plusHours(2).toString(),
                     endTime = baseTime.plusHours(5).toString(),
                     employeeId = employee1.id
@@ -185,7 +186,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
             val activeEntry = it.manager.timeEntries.createTimeEntry(
                 employeeId = employee1.id,
                 timeEntry = TimeEntry(
-                    workTypeId = workType.id!!,
+                    workTypeId = workType.id,
                     startTime = baseTime.plusHours(2).toString(),
                     employeeId = employee1.id
                 )
@@ -201,7 +202,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
             )
 
             it.manager.timeEntries.deleteTimeEntry(employee1.id, existingEntry.id!!)
-            it.manager.timeEntries.deleteTimeEntry(employee1.id, activeEntry.id!!)
+            it.manager.timeEntries.deleteTimeEntry(employee1.id, activeEntry.id)
         }
     }
 
