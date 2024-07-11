@@ -4,20 +4,14 @@ import fi.metatavu.vp.api.spec.DriversApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.users.UserController
 import io.smallrye.mutiny.Uni
-import io.smallrye.mutiny.coroutines.asUni
-import io.vertx.core.Vertx
-import io.vertx.kotlin.coroutines.dispatcher
 import jakarta.annotation.security.RolesAllowed
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
 import java.util.*
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @RequestScoped
+@Suppress("unused")
 class DriversApiImpl: DriversApi, AbstractApi() {
 
     @Inject
@@ -26,22 +20,19 @@ class DriversApiImpl: DriversApi, AbstractApi() {
     @Inject
     lateinit var driverTranslator: DriverTranslator
 
-    @Inject
-    lateinit var vertx: Vertx
-
     @RolesAllowed(DRIVER_ROLE, MANAGER_ROLE)
-    override fun findDriver(driverId: UUID): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
-        val driver = userController.find(driverId, DRIVER_ROLE) ?: return@async createNotFound(createNotFoundMessage(DRIVER_ENTITY, driverId))
+    override fun findDriver(driverId: UUID): Uni<Response> = withCoroutineScope({
+        val driver = userController.find(driverId, DRIVER_ROLE) ?: return@withCoroutineScope createNotFound(createNotFoundMessage(DRIVER_ENTITY, driverId))
         createOk(driverTranslator.translate(driver))
-    }.asUni()
+    })
 
-    override fun listDrivers(driverCardId: String?, archived: Boolean?, first: Int?, max: Int?): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
-        if (loggedUserId == null && requestApiKey == null) return@async createUnauthorized(UNAUTHORIZED)
-        if (requestApiKey != null && requestApiKey != apiKey) return@async createForbidden(INVALID_API_KEY)
-        if (loggedUserId != null && !hasRealmRole(MANAGER_ROLE)) return@async createForbidden(FORBIDDEN)
+    override fun listDrivers(driverCardId: String?, archived: Boolean?, first: Int?, max: Int?): Uni<Response> = withCoroutineScope({
+        if (loggedUserId == null && requestApiKey == null) return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
+        if (requestApiKey != null && requestApiKey != apiKey) return@withCoroutineScope createForbidden(INVALID_API_KEY)
+        if (loggedUserId != null && !hasRealmRole(MANAGER_ROLE)) return@withCoroutineScope createForbidden(FORBIDDEN)
 
         val ( drivers, count ) = userController.listDrivers(driverCardId, archived, first, max)
         createOk(drivers.map { driverTranslator.translate(it) }, count.toLong())
-    }.asUni()
+    })
 
 }

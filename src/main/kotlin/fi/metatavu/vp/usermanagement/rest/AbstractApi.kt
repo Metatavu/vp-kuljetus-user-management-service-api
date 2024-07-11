@@ -1,14 +1,22 @@
 package fi.metatavu.vp.usermanagement.rest
 
 import io.quarkus.security.identity.SecurityIdentity
+import io.smallrye.mutiny.Uni
+import io.vertx.core.Vertx
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.HttpHeaders
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.SecurityContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withTimeout
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.eclipse.microprofile.jwt.JsonWebToken
 import java.util.*
+import io.vertx.kotlin.coroutines.dispatcher
+import kotlinx.coroutines.async
+import io.smallrye.mutiny.coroutines.asUni
 
 /**
  * Abstract base class for all API services
@@ -16,6 +24,9 @@ import java.util.*
  * @author Jari Nykänen
  */
 abstract class AbstractApi {
+
+    @Inject
+    lateinit var vertx: Vertx
 
     @Context
     lateinit var headers: HttpHeaders
@@ -232,6 +243,20 @@ abstract class AbstractApi {
      */
     protected fun createUnauthorized(message: String): Response {
         return createError(Response.Status.UNAUTHORIZED, message)
+    }
+
+    /**
+     * Wraps a block of code in a coroutine scope using a vertx dispatcher and a timeout
+     *
+     * @param block block of code to run
+     * @param requestTimeOut request timeout in milliseconds. Defaults to 10 seconds
+     * @return Uni
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    protected fun <T> withCoroutineScope(block: suspend () -> T, requestTimeOut: Long = 10000L): Uni<T> {
+        return CoroutineScope(vertx.dispatcher())
+            .async { withTimeout(requestTimeOut) { block() } }
+            .asUni()
     }
 
     /**
