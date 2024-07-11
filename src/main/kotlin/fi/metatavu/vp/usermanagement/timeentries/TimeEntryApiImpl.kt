@@ -43,6 +43,10 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
         first: Int,
         max: Int
     ): Uni<Response> = withCoroutineScope({
+        if (!isManager() && loggedUserId != employeeId) {
+            return@withCoroutineScope createForbidden(FORBIDDEN)
+        }
+
         val (timeEntries, count) = timeEntryController.list(employeeId, start, end, first, max)
         createOk(timeEntryTranslator.translate(timeEntries), count)
     })
@@ -104,6 +108,11 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
             if (employeeId != timeEntry.employeeId) {
                 return@withCoroutineScope createBadRequest("Employee id in path and in body do not match")
             }
+
+            if (!isManager() && loggedUserId != employeeId) {
+                return@withCoroutineScope createForbidden(FORBIDDEN)
+            }
+
             if (timeEntry.endTime != null && timeEntry.startTime >= timeEntry.endTime) {
                 return@withCoroutineScope createBadRequest("End time must be after start time")
             }
@@ -127,6 +136,7 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
             if (foundTimeEntry.endTime != null && timeEntry.endTime == null) {
                 return@withCoroutineScope createBadRequest("End time cannot be set to null")
             }
+
             timeEntryController.findOverlappingEntry(employee, timeEntry)?.let {
                 if (it.id != timeEntryId) {
                     return@withCoroutineScope createBadRequest("Time entry overlaps with another entry")
@@ -141,6 +151,10 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
     @WithTransaction
     override fun deleteEmployeeTimeEntry(employeeId: UUID, timeEntryId: UUID): Uni<Response> =
         withCoroutineScope({
+            if (!isManager() && loggedUserId != employeeId) {
+                return@withCoroutineScope createForbidden(FORBIDDEN)
+            }
+
             val foundTimeEntry = timeEntryController.find(timeEntryId, employeeId) ?: return@withCoroutineScope createNotFound(
                 createNotFoundMessage(
                     TIME_ENTRY,
