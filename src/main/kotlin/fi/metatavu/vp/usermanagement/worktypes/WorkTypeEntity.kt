@@ -5,7 +5,7 @@ import jakarta.persistence.*
 import java.util.*
 
 @Entity
-@Table(name = "work_type")
+@Table(name = "worktype")
 class WorkTypeEntity {
 
     @Id

@@ -58,7 +58,6 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
                 return@withCoroutineScope createBadRequest("End time must be after start time")
             }
 
-            //todo can not managers create records for others?
             if (!isManager() && loggedUserId != employeeId) {
                 return@withCoroutineScope createForbidden(FORBIDDEN)
             }
@@ -85,7 +84,10 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     override fun findEmployeeTimeEntry(employeeId: UUID, timeEntryId: UUID): Uni<Response> =
         withCoroutineScope({
-            //todo can not managers see records of others?
+            if (!isManager() && loggedUserId != employeeId) {
+                return@withCoroutineScope createForbidden(FORBIDDEN)
+            }
+
             val timeEntry = timeEntryController.find(timeEntryId, employeeId) ?: return@withCoroutineScope createNotFound(
                 createNotFoundMessage(
                     TIME_ENTRY,

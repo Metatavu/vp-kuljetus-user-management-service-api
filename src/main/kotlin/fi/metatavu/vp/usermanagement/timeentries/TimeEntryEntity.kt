@@ -13,7 +13,7 @@ import java.util.*
  * Entity for time entries
  */
 @Entity
-@Table(name = "time_entry")
+@Table(name = "timeentry")
 class TimeEntryEntity {
 
     @Id

@@ -87,14 +87,8 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
         assertEquals(data.employeeId, created.employeeId)
     }
 
-    /**
-     * tests:
-     * - 1 creating entry while another unfinished entry is present
-     * - 2 creating entry which intersects with existing entry
-     * - 3 creating entry with invalid dates
-     */
     @Test
-    fun testCreateFail() = createTestBuilder().use {
+    fun testCreateStartAfterEnd() = createTestBuilder().use {
         val workType = it.manager.workTypes.createWorkType()
         val employee1 = it.manager.employees.createEmployee("1")
 
@@ -107,26 +101,6 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
             )
         )
 
-        //case 1
-        it.manager.timeEntries.assertCreateFail(
-            employee1.id, created, 400
-        )
-
-        //case 2
-        it.manager.timeEntries.updateTimeEntry(
-            employee1.id, created.id!!, created.copy(
-                endTime = now.plusHours(1).toString()
-            )
-        )
-        it.manager.timeEntries.assertCreateFail(
-            employee1.id,
-            created.copy(
-                startTime = now.toString(),
-                endTime = now.plusHours(3).toString()
-            ), 400
-        )
-
-        //case 3
         it.manager.timeEntries.assertCreateFail(
             employee1.id,
             created.copy(
@@ -134,7 +108,82 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
                 endTime = now.plusHours(10).toString()
             ), 400
         )
+    }
 
+    @Test
+    fun testCreateWithRunningTimer() = createTestBuilder().use {
+        val workType = it.manager.workTypes.createWorkType()
+        val employee1 = it.manager.employees.createEmployee("1")
+
+        val now = OffsetDateTime.now()
+        val created = it.manager.timeEntries.createTimeEntry(
+            employee1.id!!, TimeEntry(
+                workTypeId = workType.id!!,
+                startTime = now.toString(),
+                employeeId = employee1.id
+            )
+        )
+
+        it.manager.timeEntries.assertCreateFail(
+            employeeId = employee1.id,
+            timeEntry = TimeEntry(
+                workTypeId = workType.id!!,
+                startTime = now.toString(),
+                employeeId = employee1.id
+            ),
+            expectedStatus = 400
+        )
+    }
+
+    @Test
+    fun testCreateIntersecting() = createTestBuilder().use {
+        //       1   2   3   4   5   6
+        //          [|]         [|]
+        //              [s] [e]            (case 1)
+        //      [s]                 [e]    (case 2)
+        //      [s]         [e]            (case 3)
+        //              [s]         [e]    (case 4)
+
+        // Intersecting time entries:
+        //   1) Starts after new entry and ends before new entry ends
+        //   2) Starts before new entry and ends after new entry ends
+        //   3) Starts before new entry and ends before new entry ends
+        //   4) Starts after new entry and ends after new entry ends
+
+        val baseTime = OffsetDateTime.now().minusHours(8)
+        val workType = it.manager.workTypes.createWorkType()
+        val employee1 = it.manager.employees.createEmployee("1")
+
+        val cases = arrayOf(
+            Pair(3, 4),
+            Pair(1, 6),
+            Pair(1, 4),
+            Pair(3, 6)
+        );
+
+        cases.forEach { case ->
+            val existingEntry = it.manager.timeEntries.createTimeEntry(
+                employee1.id!!, TimeEntry(
+                    workTypeId = workType.id!!,
+                    startTime = baseTime.plusHours(case.first.toLong()).toString(),
+                    endTime = baseTime.plusHours(case.second.toLong()).toString(),
+                    employeeId = employee1.id
+                )
+            )
+
+            it.manager.timeEntries.assertCreateFail(
+                employeeId = employee1.id,
+                timeEntry = TimeEntry(
+                    workTypeId = workType.id!!,
+                    startTime = baseTime.plusHours(2).toString(),
+                    endTime = baseTime.plusHours(5).toString(),
+                    employeeId = employee1.id
+                ),
+                expectedStatus = 400
+            )
+
+            it.manager.timeEntries.deleteTimeEntry(employee1.id, existingEntry.id!!)
+        }
     }
 
     @Test
@@ -216,6 +265,5 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
         )
         assertEquals(0, all.size)
     }
-
 
 }
