@@ -1,0 +1,39 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+		http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+    <changeSet id="work_entries" author="katja.danilova">
+        <createTable tableName="worktype">
+            <column name="id" type="binary(16)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="name" type="varchar(191)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="varchar(191)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="worktype" columnNames="name, category" constraintName="un_worktype_name_category"/>
+
+        <createTable tableName="timeentry">
+            <column name="id" type="binary(16)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="employeeId" type="binary(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="startTime" type="datetime(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="workType_id" type="binary(16)">
+                <constraints nullable="false" foreignKeyName="FK_TIMEENTRY_WORKTYPE_ID" referencedColumnNames="id"
+                             referencedTableName="worktype"/>
+            </column>
+            <column name="endTime" type="datetime(6)"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

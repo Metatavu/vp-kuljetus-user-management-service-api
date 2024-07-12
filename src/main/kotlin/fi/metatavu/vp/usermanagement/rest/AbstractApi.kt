@@ -1,13 +1,22 @@
 package fi.metatavu.vp.usermanagement.rest
 
+import io.quarkus.security.identity.SecurityIdentity
+import io.smallrye.mutiny.Uni
+import io.vertx.core.Vertx
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.HttpHeaders
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.SecurityContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withTimeout
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.eclipse.microprofile.jwt.JsonWebToken
 import java.util.*
+import io.vertx.kotlin.coroutines.dispatcher
+import kotlinx.coroutines.async
+import io.smallrye.mutiny.coroutines.asUni
 
 /**
  * Abstract base class for all API services
@@ -15,6 +24,9 @@ import java.util.*
  * @author Jari Nykänen
  */
 abstract class AbstractApi {
+
+    @Inject
+    lateinit var vertx: Vertx
 
     @Context
     lateinit var headers: HttpHeaders
@@ -26,8 +38,19 @@ abstract class AbstractApi {
     lateinit var securityContext: SecurityContext
 
     @Inject
+    lateinit var identity: SecurityIdentity
+
+    @Inject
     private lateinit var jsonWebToken: JsonWebToken
 
+    /**
+     * Checks if user is manager
+     *
+     * @return true if manager
+     */
+    protected fun isManager(): Boolean {
+        return identity.hasRole(MANAGER_ROLE)
+    }
 
     /**
      * Returns request api key
@@ -90,6 +113,19 @@ abstract class AbstractApi {
     protected fun createOk(entity: Any?): Response {
         return Response
             .status(Response.Status.OK)
+            .entity(entity)
+            .build()
+    }
+
+    /**
+     * Constructs created response
+     *
+     * @param entity payload
+     * @return response
+     */
+    protected fun createCreated(entity: Any?): Response {
+        return Response
+            .status(Response.Status.CREATED)
             .entity(entity)
             .build()
     }
@@ -210,6 +246,20 @@ abstract class AbstractApi {
     }
 
     /**
+     * Wraps a block of code in a coroutine scope using a vertx dispatcher and a timeout
+     *
+     * @param block block of code to run
+     * @param requestTimeOut request timeout in milliseconds. Defaults to 10 seconds
+     * @return Uni
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    protected fun <T> withCoroutineScope(block: suspend () -> T, requestTimeOut: Long = 10000L): Uni<T> {
+        return CoroutineScope(vertx.dispatcher())
+            .async { withTimeout(requestTimeOut) { block() } }
+            .asUni()
+    }
+
+    /**
      * Constructs an error response
      *
      * @param status status code
@@ -242,6 +292,9 @@ abstract class AbstractApi {
         const val INVALID_REQUEST_BODY = "Invalid request body"
         const val INVALID_API_KEY = "Invalid API key"
         const val DRIVER_ENTITY = "Driver"
+        const val EMPLOYEE_ENTITY = "Employee"
+        const val WORK_TYPE = "Work type"
+        const val TIME_ENTRY = "Time entry"
 
         const val DRIVER_ROLE = "driver"
         const val EMPLOYEE_ROLE = "employee"

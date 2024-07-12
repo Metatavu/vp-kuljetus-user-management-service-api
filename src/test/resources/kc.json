@@ -514,27 +514,7 @@
     "realmRoles" : [ "default-roles-usermanagement", "manager" ],
     "notBefore" : 0,
     "groups" : [ ]
-  }, {
-    "id" : "90d6480c-335e-416f-9271-bc6f591e2514",
-    "createdTimestamp" : 1707314710823,
-    "username" : "user",
-    "enabled" : true,
-    "totp" : false,
-    "emailVerified" : true,
-    "credentials" : [ {
-      "id" : "2023b17d-6575-485e-b28d-0aad6aa12ee7",
-      "type" : "password",
-      "userLabel" : "My password",
-      "createdDate" : 1707314719323,
-      "secretData" : "{\"value\":\"fELrRNqlaBLGZ5CEk8rHjjJe6zk5UgGCMG45qq/FaEo=\",\"salt\":\"K860uSmpTVQu8Xs5i3b9RA==\",\"additionalParameters\":{}}",
-      "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
-    } ],
-    "disableableCredentialTypes" : [ ],
-    "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-usermanagement" ],
-    "notBefore" : 0,
-    "groups" : [ ]
-  } ],
+  }],
   "scopeMappings" : [ {
     "clientScope" : "offline_access",
     "roles" : [ "offline_access" ]

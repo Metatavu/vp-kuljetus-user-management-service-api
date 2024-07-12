@@ -6,24 +6,20 @@ import fi.metatavu.vp.api.model.Office
 import fi.metatavu.vp.api.model.SalaryGroup
 import fi.metatavu.vp.api.spec.EmployeesApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
+import fi.metatavu.vp.usermanagement.timeentries.TimeEntryController
 import fi.metatavu.vp.usermanagement.users.UserController
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
-import io.smallrye.mutiny.coroutines.asUni
-import io.vertx.core.Vertx
-import io.vertx.kotlin.coroutines.dispatcher
 import jakarta.annotation.security.RolesAllowed
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import java.util.*
 import kotlin.jvm.optionals.getOrNull
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @RequestScoped
+@Suppress("unused")
 class EmployeeApiImpl: EmployeesApi, AbstractApi() {
 
     @Inject
@@ -33,7 +29,7 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
     lateinit var employeeTranslator: EmployeeTranslator
 
     @Inject
-    lateinit var vertx: Vertx
+    lateinit var timeEntryController: TimeEntryController
 
     @ConfigProperty(name = "env")
     lateinit var env: Optional<String>
@@ -47,41 +43,48 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
         archived: Boolean?,
         first: Int,
         max: Int
-    ): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
+    ): Uni<Response> = withCoroutineScope({
         val (employees, count) = usersController.listEmployees(search, salaryGroup, type, office, archived, first, max)
-        createOk(employees.map { employeeTranslator.translate(it) }, count.toLong())
-    }.asUni()
+        val translatedEmployees = employees.mapNotNull { runCatching { employeeTranslator.translate(it) }.getOrNull() }
+        createOk(translatedEmployees, count.toLong())
+    })
 
     @RolesAllowed(MANAGER_ROLE)
-    override fun createEmployee(employee: Employee): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
-        usersController.findEmployeeNumberDuplicate(employee.employeeNumber).let { if (it.isNotEmpty()) return@async createBadRequest("Employee number already exists")}
-        val created = usersController.createEmployee(employee) ?: return@async createInternalServerError("Failed creating a user")
-        createOk(employeeTranslator.translate(created))
-    }.asUni()
+    override fun createEmployee(employee: Employee): Uni<Response> = withCoroutineScope({
+        usersController.findEmployeeNumberDuplicate(employee.employeeNumber).let { if (it.isNotEmpty()) return@withCoroutineScope createBadRequest("Employee number already exists")}
+        val created = usersController.createEmployee(employee) ?: return@withCoroutineScope createInternalServerError("Failed creating a user")
+        createCreated(employeeTranslator.translate(created))
+    })
 
     @RolesAllowed(MANAGER_ROLE)
-    override fun findEmployee(employeeId: UUID): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
-        val employee = usersController.find(employeeId, EMPLOYEE_ROLE) ?: return@async createNotFound("Employee not found")
+    override fun findEmployee(employeeId: UUID): Uni<Response> = withCoroutineScope({
+        val employee = usersController.find(employeeId, EMPLOYEE_ROLE) ?: return@withCoroutineScope createNotFound("Employee not found")
         createOk(employeeTranslator.translate(employee))
-    }.asUni()
+    })
 
     @RolesAllowed(MANAGER_ROLE)
-    override fun updateEmployee(employeeId: UUID, employee: Employee): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
+    override fun updateEmployee(employeeId: UUID, employee: Employee): Uni<Response> = withCoroutineScope({
         usersController.findEmployeeNumberDuplicate(employee.employeeNumber).let {
-            if (it.isNotEmpty() && it.none { d -> d.id == employeeId.toString() }) return@async createBadRequest("Employee number already exists")
+            if (it.isNotEmpty() && it.none { d -> d.id == employeeId.toString() }) return@withCoroutineScope createBadRequest("Employee number already exists")
         }
-        val found = usersController.find(employeeId, EMPLOYEE_ROLE) ?: return@async createNotFound("Employee not found")
-        if (found.enabled == false && employee.archivedAt != null) return@async createBadRequest("Cannot update archived employee")
-        val updated = usersController.updateEmployee(found, employee) ?: return@async createInternalServerError("Failed updating a user")
+        val found = usersController.find(employeeId, EMPLOYEE_ROLE) ?: return@withCoroutineScope createNotFound("Employee not found")
+        if (found.enabled == false && employee.archivedAt != null) return@withCoroutineScope createBadRequest("Cannot update archived employee")
+        val updated = usersController.updateEmployee(found, employee) ?: return@withCoroutineScope createInternalServerError("Failed updating a user")
         createOk(employeeTranslator.translate(updated))
-    }.asUni()
+    })
 
     @RolesAllowed(MANAGER_ROLE)
-    override fun deleteEmployee(employeeId: UUID): Uni<Response> = CoroutineScope(vertx.dispatcher()).async {
+    @WithTransaction
+    override fun deleteEmployee(employeeId: UUID): Uni<Response> = withCoroutineScope({
         if (env.isEmpty || env.getOrNull() != "TEST") {
-            return@async createForbidden("Deleting employees is disabled")
+            return@withCoroutineScope createForbidden("Deleting employees is disabled")
         }
+
+        timeEntryController.list(employeeId = employeeId, start = null, end = null).first.forEach {
+            timeEntryController.delete(it)
+        }
+
         usersController.deleteEmployee(employeeId)
         createNoContent()
-    }.asUni()
+    })
 }

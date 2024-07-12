@@ -23,27 +23,27 @@ import java.util.*
  * Translates user representation to employee entity
  */
 @ApplicationScoped
-class EmployeeTranslator : AbstractTranslator<UserRepresentation, Employee?>() {
+class EmployeeTranslator : AbstractTranslator<UserRepresentation, Employee>() {
 
-    override suspend fun translate(entity: UserRepresentation): Employee? {
-        val salaryGroup = SalaryGroup.decode(entity.attributes?.get(SALARY_GROUP_ATTRIBUTE)?.firstOrNull()) ?: return null
-        val type = EmployeeType.decode(entity.attributes?.get(EMPLOYEE_TYPE_ATTRIBUTE)?.firstOrNull()) ?: return null
-        val office = Office.decode(entity.attributes?.get(OFFICE_ATTRIBUTE)?.firstOrNull()) ?: return null
+    override suspend fun translate(entity: UserRepresentation): Employee {
+        val salaryGroup = SalaryGroup.valueOf(entity.attributes!![SALARY_GROUP_ATTRIBUTE]!!.first())
+        val type = EmployeeType.valueOf(entity.attributes[EMPLOYEE_TYPE_ATTRIBUTE]!!.first())
+        val office = Office.valueOf(entity.attributes[OFFICE_ATTRIBUTE]!!.first())
 
         return Employee(
             id = UUID.fromString(entity.id),
             firstName = entity.firstName ?: "",
             lastName = entity.lastName ?: "",
-            employeeNumber = entity.attributes?.get(EMPLOYEE_NUMBER_ATTRIBUTE)?.firstOrNull() ?: "",
+            employeeNumber = entity.attributes[EMPLOYEE_NUMBER_ATTRIBUTE]?.firstOrNull() ?: "",
             salaryGroup = salaryGroup,
             type = type,
-            driverCardLastReadOut = entity.attributes?.get(LAST_READ_OUT_ATTRIBUTE)?.get(0)?.let { OffsetDateTime.parse(it) },
+            driverCardLastReadOut = entity.attributes[LAST_READ_OUT_ATTRIBUTE]?.get(0)?.let { OffsetDateTime.parse(it) },
             office = office,
-            driverCardId = entity.attributes?.get(DRIVER_CARD_ID_ATTRIBUTE)?.firstOrNull() ?: "",
-            regularWorkingHours = entity.attributes?.get(REGULAR_WORKING_HOURS_ATTRIBUTE)?.firstOrNull()?.toFloat(),
-            archivedAt = entity.attributes?.get(ARCHIVED_AT_ATTRIBUTE)?.get(0)?.let { OffsetDateTime.parse(it) },
+            driverCardId = entity.attributes[DRIVER_CARD_ID_ATTRIBUTE]?.firstOrNull() ?: "",
+            regularWorkingHours = entity.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat(),
+            archivedAt = entity.attributes[ARCHIVED_AT_ATTRIBUTE]?.get(0)?.let { OffsetDateTime.parse(it) },
             email = entity.email,
-            phoneNumber = entity.attributes?.get(PHONE_NUMBER_ATTRIBUTE)?.firstOrNull(),
+            phoneNumber = entity.attributes[PHONE_NUMBER_ATTRIBUTE]?.firstOrNull(),
         )
     }
 
