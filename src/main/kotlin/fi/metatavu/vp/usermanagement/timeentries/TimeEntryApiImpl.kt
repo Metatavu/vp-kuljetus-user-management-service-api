@@ -101,7 +101,7 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
             createOk(timeEntryTranslator.translate(timeEntry))
         })
 
-    @RolesAllowed(MANAGER_ROLE)
+    @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
     @WithTransaction
     override fun updateEmployeeTimeEntry(employeeId: UUID, timeEntryId: UUID, timeEntry: TimeEntry): Uni<Response> =
         withCoroutineScope({
