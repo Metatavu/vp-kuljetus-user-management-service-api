@@ -29,14 +29,14 @@ class WorkTypeApiImpl : WorkTypesApi, AbstractApi() {
     lateinit var timeEntryController: TimeEntryController
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
-    override fun listWorkTypes(category: WorkTypeCategory?): Uni<Response> = withCoroutineScope({
+    override fun listWorkTypes(category: WorkTypeCategory?): Uni<Response> = withCoroutineScope {
         val (workTypes, count) = workTypeController.list(category)
         createOk(workTypeTranslator.translate(workTypes), count)
-    })
+    }
 
     @WithTransaction
     @RolesAllowed(MANAGER_ROLE)
-    override fun createWorkType(workType: WorkType): Uni<Response> = withCoroutineScope({
+    override fun createWorkType(workType: WorkType): Uni<Response> = withCoroutineScope {
         val duplicates = workTypeController.find(workType.name, workType.category)
         if (duplicates != null) {
             return@withCoroutineScope createConflict(
@@ -45,10 +45,10 @@ class WorkTypeApiImpl : WorkTypesApi, AbstractApi() {
         }
         val createdWorkType = workTypeController.create(workType = workType)
         createCreated(workTypeTranslator.translate(createdWorkType))
-    })
+    }
 
     @RolesAllowed(MANAGER_ROLE)
-    override fun findWorkType(workTypeId: UUID): Uni<Response> = withCoroutineScope({
+    override fun findWorkType(workTypeId: UUID): Uni<Response> = withCoroutineScope {
         val found = workTypeController.find(workTypeId) ?: return@withCoroutineScope createNotFound(
             createNotFoundMessage(
                 WORK_TYPE,
@@ -56,11 +56,11 @@ class WorkTypeApiImpl : WorkTypesApi, AbstractApi() {
             )
         )
         createOk(workTypeTranslator.translate(found))
-    })
+    }
 
     @WithTransaction
     @RolesAllowed(MANAGER_ROLE)
-    override fun deleteWorkType(workTypeId: UUID): Uni<Response> = withCoroutineScope({
+    override fun deleteWorkType(workTypeId: UUID): Uni<Response> = withCoroutineScope {
         val found = workTypeController.find(workTypeId) ?: return@withCoroutineScope createNotFound(
             createNotFoundMessage(
                 WORK_TYPE,
@@ -75,6 +75,6 @@ class WorkTypeApiImpl : WorkTypesApi, AbstractApi() {
         }
         workTypeController.delete(found)
         createNoContent()
-    })
+    }
 
 }
