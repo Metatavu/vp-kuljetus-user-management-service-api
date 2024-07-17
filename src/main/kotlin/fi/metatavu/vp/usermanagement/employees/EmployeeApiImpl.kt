@@ -43,27 +43,27 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
         archived: Boolean?,
         first: Int,
         max: Int
-    ): Uni<Response> = withCoroutineScope({
+    ): Uni<Response> = withCoroutineScope {
         val (employees, count) = usersController.listEmployees(search, salaryGroup, type, office, archived, first, max)
         val translatedEmployees = employees.mapNotNull { runCatching { employeeTranslator.translate(it) }.getOrNull() }
         createOk(translatedEmployees, count.toLong())
-    })
+    }
 
     @RolesAllowed(MANAGER_ROLE)
-    override fun createEmployee(employee: Employee): Uni<Response> = withCoroutineScope({
+    override fun createEmployee(employee: Employee): Uni<Response> = withCoroutineScope {
         usersController.findEmployeeNumberDuplicate(employee.employeeNumber).let { if (it.isNotEmpty()) return@withCoroutineScope createBadRequest("Employee number already exists")}
         val created = usersController.createEmployee(employee) ?: return@withCoroutineScope createInternalServerError("Failed creating a user")
         createCreated(employeeTranslator.translate(created))
-    })
+    }
 
     @RolesAllowed(MANAGER_ROLE)
-    override fun findEmployee(employeeId: UUID): Uni<Response> = withCoroutineScope({
+    override fun findEmployee(employeeId: UUID): Uni<Response> = withCoroutineScope {
         val employee = usersController.find(employeeId, EMPLOYEE_ROLE) ?: return@withCoroutineScope createNotFound("Employee not found")
         createOk(employeeTranslator.translate(employee))
-    })
+    }
 
     @RolesAllowed(MANAGER_ROLE)
-    override fun updateEmployee(employeeId: UUID, employee: Employee): Uni<Response> = withCoroutineScope({
+    override fun updateEmployee(employeeId: UUID, employee: Employee): Uni<Response> = withCoroutineScope {
         usersController.findEmployeeNumberDuplicate(employee.employeeNumber).let {
             if (it.isNotEmpty() && it.none { d -> d.id == employeeId.toString() }) return@withCoroutineScope createBadRequest("Employee number already exists")
         }
@@ -71,11 +71,11 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
         if (found.enabled == false && employee.archivedAt != null) return@withCoroutineScope createBadRequest("Cannot update archived employee")
         val updated = usersController.updateEmployee(found, employee) ?: return@withCoroutineScope createInternalServerError("Failed updating a user")
         createOk(employeeTranslator.translate(updated))
-    })
+    }
 
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
-    override fun deleteEmployee(employeeId: UUID): Uni<Response> = withCoroutineScope({
+    override fun deleteEmployee(employeeId: UUID): Uni<Response> = withCoroutineScope {
         if (env.isEmpty || env.getOrNull() != "TEST") {
             return@withCoroutineScope createForbidden("Deleting employees is disabled")
         }
@@ -86,5 +86,6 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
 
         usersController.deleteEmployee(employeeId)
         createNoContent()
-    })
+    }
+
 }

@@ -42,19 +42,19 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
         end: OffsetDateTime?,
         first: Int,
         max: Int
-    ): Uni<Response> = withCoroutineScope({
+    ): Uni<Response> = withCoroutineScope {
         if (!isManager() && loggedUserId != employeeId) {
             return@withCoroutineScope createForbidden(FORBIDDEN)
         }
 
         val (timeEntries, count) = timeEntryController.list(employeeId, start, end, first, max)
         createOk(timeEntryTranslator.translate(timeEntries), count)
-    })
+    }
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     @WithTransaction
     override fun createEmployeeTimeEntry(employeeId: UUID, timeEntry: TimeEntry): Uni<Response> =
-        withCoroutineScope({
+        withCoroutineScope {
             if (employeeId != timeEntry.employeeId) {
                 return@withCoroutineScope createBadRequest("Employee id in path and in body do not match")
             }
@@ -83,11 +83,11 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
 
             val created = timeEntryController.create(employee, workType, timeEntry)
             createCreated(timeEntryTranslator.translate(created))
-        })
+        }
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     override fun findEmployeeTimeEntry(employeeId: UUID, timeEntryId: UUID): Uni<Response> =
-        withCoroutineScope({
+        withCoroutineScope {
             if (!isManager() && loggedUserId != employeeId) {
                 return@withCoroutineScope createForbidden(FORBIDDEN)
             }
@@ -99,12 +99,12 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
                 )
             )
             createOk(timeEntryTranslator.translate(timeEntry))
-        })
+        }
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
     @WithTransaction
     override fun updateEmployeeTimeEntry(employeeId: UUID, timeEntryId: UUID, timeEntry: TimeEntry): Uni<Response> =
-        withCoroutineScope({
+        withCoroutineScope {
             if (employeeId != timeEntry.employeeId) {
                 return@withCoroutineScope createBadRequest("Employee id in path and in body do not match")
             }
@@ -145,12 +145,12 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
 
             val updatedTimeEntry = timeEntryController.update(foundTimeEntry, newWorkType, timeEntry)
             createOk(timeEntryTranslator.translate(updatedTimeEntry))
-        })
+        }
 
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
     override fun deleteEmployeeTimeEntry(employeeId: UUID, timeEntryId: UUID): Uni<Response> =
-        withCoroutineScope({
+        withCoroutineScope {
             if (!isManager() && loggedUserId != employeeId) {
                 return@withCoroutineScope createForbidden(FORBIDDEN)
             }
@@ -163,5 +163,5 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
             )
             timeEntryController.delete(foundTimeEntry)
             createNoContent()
-        })
+        }
 }

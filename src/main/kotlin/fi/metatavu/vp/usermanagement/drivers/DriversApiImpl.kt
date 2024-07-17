@@ -21,18 +21,18 @@ class DriversApiImpl: DriversApi, AbstractApi() {
     lateinit var driverTranslator: DriverTranslator
 
     @RolesAllowed(DRIVER_ROLE, MANAGER_ROLE)
-    override fun findDriver(driverId: UUID): Uni<Response> = withCoroutineScope({
+    override fun findDriver(driverId: UUID): Uni<Response> = withCoroutineScope {
         val driver = userController.find(driverId, DRIVER_ROLE) ?: return@withCoroutineScope createNotFound(createNotFoundMessage(DRIVER_ENTITY, driverId))
         createOk(driverTranslator.translate(driver))
-    })
+    }
 
-    override fun listDrivers(driverCardId: String?, archived: Boolean?, first: Int?, max: Int?): Uni<Response> = withCoroutineScope({
+    override fun listDrivers(driverCardId: String?, archived: Boolean?, first: Int?, max: Int?): Uni<Response> = withCoroutineScope {
         if (loggedUserId == null && requestApiKey == null) return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
         if (requestApiKey != null && requestApiKey != apiKey) return@withCoroutineScope createForbidden(INVALID_API_KEY)
         if (loggedUserId != null && !hasRealmRole(MANAGER_ROLE)) return@withCoroutineScope createForbidden(FORBIDDEN)
 
         val ( drivers, count ) = userController.listDrivers(driverCardId, archived, first, max)
         createOk(drivers.map { driverTranslator.translate(it) }, count.toLong())
-    })
+    }
 
 }
