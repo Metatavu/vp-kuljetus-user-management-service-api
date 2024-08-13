@@ -24,6 +24,7 @@ class RabbitMQTestProfile: QuarkusTestProfile {
         config["mp.messaging.outgoing.vp-out.connector"]="smallrye-rabbitmq"
         config["mp.messaging.outgoing.vp-out.exchange.name"]="test-exchange"
 
+        config["quarkus.profile"]="test"   // manually set the profile so that in native tests the TestEndpoint is activated by "test" profile
         config["env"] = "TEST"
         return config
     }
