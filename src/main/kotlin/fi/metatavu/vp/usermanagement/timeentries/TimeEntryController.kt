@@ -65,10 +65,9 @@ class TimeEntryController {
      * Finds incomplete time entries
      *
      * @param employee employee
-     * @param timeEntry time entry
      * @return incomplete time entry or null if not found
      */
-    suspend fun findIncompleteEntries(employee: UserRepresentation, timeEntry: TimeEntry): TimeEntryEntity? {
+    suspend fun findIncompleteEntries(employee: UserRepresentation): TimeEntryEntity? {
         return timeEntryRepository.findIncomplete(UUID.fromString(employee.id))
     }
 
@@ -111,6 +110,20 @@ class TimeEntryController {
         foundTimeEntry.workType = newWorkType
         foundTimeEntry.startTime = timeEntry.startTime
         foundTimeEntry.endTime = timeEntry.endTime
+        return timeEntryRepository.persistSuspending(foundTimeEntry)
+    }
+
+    /**
+     * Updates time entry
+     *
+     * @param foundTimeEntry found time entry
+     * @param newStartTime new start time
+     * @param newEndTime new end time
+     * @return updated time entry
+     */
+    suspend fun update(foundTimeEntry: TimeEntryEntity, newStartTime: OffsetDateTime, newEndTime: OffsetDateTime): TimeEntryEntity {
+        foundTimeEntry.startTime = newStartTime
+        foundTimeEntry.endTime = newEndTime
         return timeEntryRepository.persistSuspending(foundTimeEntry)
     }
 

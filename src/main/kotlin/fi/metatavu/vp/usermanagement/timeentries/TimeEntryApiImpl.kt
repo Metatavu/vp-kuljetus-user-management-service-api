@@ -78,7 +78,7 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
                     timeEntry.workTypeId
                 )
             )
-            timeEntryController.findIncompleteEntries(employee, timeEntry)?.let { return@withCoroutineScope createBadRequest("User already has unfinished time entry") }
+            timeEntryController.findIncompleteEntries(employee)?.let { return@withCoroutineScope createBadRequest("User already has unfinished time entry") }
             timeEntryController.findOverlappingEntry(employee, timeEntry)?.let { return@withCoroutineScope createBadRequest("Time entry overlaps with another entry") }
 
             val created = timeEntryController.create(employee, workType, timeEntry)
