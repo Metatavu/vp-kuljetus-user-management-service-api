@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.testcontainers.shaded.org.awaitility.Awaitility
 import java.time.Duration
+import java.time.OffsetDateTime
 
 /**
  * Tests events that are arriving from messaging service
@@ -28,7 +29,7 @@ class MessageEventsTestIT : AbstractFunctionalTest() {
         val driverId = drivers[0].id!!
         val workType = tb.manager.workTypes.createWorkType()
 
-        val startWorkEvent = DriverWorkingStateChangeGlobalEvent(driverId, workType.id!!, WorkingState.WORKING)
+        val startWorkEvent = DriverWorkingStateChangeGlobalEvent(driverId, workType.id!!, WorkingState.WORKING, OffsetDateTime.now())
         RestAssured.given()
             .contentType("application/json")
             .body(jacksonObjectMapper().writeValueAsString(startWorkEvent))
@@ -50,7 +51,7 @@ class MessageEventsTestIT : AbstractFunctionalTest() {
         assertNotNull(startedTimeEntry.startTime)
         assertNull(startedTimeEntry.endTime)
 
-        val endWorkDayEvent = DriverWorkingStateChangeGlobalEvent(driverId, workType.id!!, WorkingState.NOT_WORKING)
+        val endWorkDayEvent = DriverWorkingStateChangeGlobalEvent(driverId, workType.id!!, WorkingState.NOT_WORKING, OffsetDateTime.now())
         RestAssured.given()
             .contentType("application/json")
             .body(jacksonObjectMapper().writeValueAsString(endWorkDayEvent))

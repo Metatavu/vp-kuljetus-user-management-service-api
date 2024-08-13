@@ -71,22 +71,22 @@ class MessagingController {
                         foundDriver, workType, TimeEntry(
                             employeeId = parsed.driverId,
                             workTypeId = workType.id,
-                            startTime = OffsetDateTime.now()
+                            startTime = parsed.time
                         )
                     )
                 }
 
                 WorkingState.NOT_WORKING -> {
                     val latest = timeEntryController.findIncompleteEntries(employee = foundDriver)
-                    if (latest != null) {
+                    if (latest != null && latest.startTime < parsed.time) {
                         latest.endTime = OffsetDateTime.now()
                         timeEntryController.update(
                             latest,
                             latest.startTime,
-                            OffsetDateTime.now()
+                            parsed.time
                         )
                     } else {
-                        logger.error("No incomplete time entries found for driver ${foundDriver.id}")
+                        logger.error("No incomplete valid time entries found for driver ${foundDriver.id}")
                     }
                 }
             }
