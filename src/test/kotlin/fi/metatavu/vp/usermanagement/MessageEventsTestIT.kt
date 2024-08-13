@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import fi.metatavu.vp.messaging.events.DriverWorkingStateChangeGlobalEvent
 import fi.metatavu.vp.messaging.events.WorkingState
@@ -28,11 +29,12 @@ class MessageEventsTestIT : AbstractFunctionalTest() {
         val drivers = tb.manager.drivers.listDrivers()
         val driverId = drivers[0].id!!
         val workType = tb.manager.workTypes.createWorkType()
+        val objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule())
 
         val startWorkEvent = DriverWorkingStateChangeGlobalEvent(driverId, workType.id!!, WorkingState.WORKING, OffsetDateTime.now())
         RestAssured.given()
             .contentType("application/json")
-            .body(jacksonObjectMapper().writeValueAsString(startWorkEvent))
+            .body(objectMapper.writeValueAsString(startWorkEvent))
             .`when`().post("/test-rabbitmq")
             .then()
             .statusCode(200)
@@ -54,7 +56,7 @@ class MessageEventsTestIT : AbstractFunctionalTest() {
         val endWorkDayEvent = DriverWorkingStateChangeGlobalEvent(driverId, workType.id!!, WorkingState.NOT_WORKING, OffsetDateTime.now())
         RestAssured.given()
             .contentType("application/json")
-            .body(jacksonObjectMapper().writeValueAsString(endWorkDayEvent))
+            .body(objectMapper.writeValueAsString(endWorkDayEvent))
             .`when`().post("/test-rabbitmq")
             .then()
             .statusCode(200)
