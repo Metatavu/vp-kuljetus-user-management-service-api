@@ -2,7 +2,7 @@ package fi.metatavu.vp.usermanagement.messaging
 
 import fi.metatavu.vp.api.model.TimeEntry
 import fi.metatavu.vp.messaging.events.DriverWorkingStateChangeGlobalEvent
-import fi.metatavu.vp.messaging.events.GlobalEvent
+import fi.metatavu.vp.messaging.events.abstracts.GlobalEvent
 import fi.metatavu.vp.messaging.events.WorkingState
 import fi.metatavu.vp.usermanagement.timeentries.TimeEntryController
 import fi.metatavu.vp.usermanagement.users.UserController
@@ -25,6 +25,7 @@ import java.time.OffsetDateTime
  * Controller that listens to events sent by messaging service
  */
 @ApplicationScoped
+@Suppress("unused")
 class MessagingController {
 
     @Inject

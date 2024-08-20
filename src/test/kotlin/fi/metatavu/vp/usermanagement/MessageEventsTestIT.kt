@@ -1,25 +1,24 @@
 package fi.metatavu.vp.usermanagement
 
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import fi.metatavu.vp.messaging.events.DriverWorkingStateChangeGlobalEvent
 import fi.metatavu.vp.messaging.events.WorkingState
+import fi.metatavu.vp.messaging.client.MessagingClient
 import fi.metatavu.vp.usermanagement.settings.RabbitMQTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
-import io.restassured.RestAssured
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.testcontainers.shaded.org.awaitility.Awaitility
 import java.time.Duration
 import java.time.OffsetDateTime
+import java.util.UUID
 
 /**
  * Tests events that are arriving from messaging service
  */
 @QuarkusTest
 @TestProfile(RabbitMQTestProfile::class)
-class MessageEventsTestIT : AbstractFunctionalTest() {
+class MessageEventsTestIT: AbstractFunctionalTest() {
 
     /**
      * Tests driver working state change global event
@@ -29,15 +28,9 @@ class MessageEventsTestIT : AbstractFunctionalTest() {
         val drivers = tb.manager.drivers.listDrivers()
         val driverId = drivers[0].id!!
         val workType = tb.manager.workTypes.createWorkType()
-        val objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule())
+        val startWorkEvent = createWorkingStateEvent(driverId, workType.id!!, WorkingState.WORKING)
 
-        val startWorkEvent = DriverWorkingStateChangeGlobalEvent(driverId, workType.id!!, WorkingState.WORKING, OffsetDateTime.now())
-        RestAssured.given()
-            .contentType("application/json")
-            .body(objectMapper.writeValueAsString(startWorkEvent))
-            .`when`().post("/test-rabbitmq")
-            .then()
-            .statusCode(200)
+        MessagingClient.publishMessage(startWorkEvent)
         Awaitility.await().atMost(Duration.ofMinutes(2)).until {
             tb.manager.timeEntries.listTimeEntries(driverId).isNotEmpty()
         }
@@ -53,13 +46,8 @@ class MessageEventsTestIT : AbstractFunctionalTest() {
         assertNotNull(startedTimeEntry.startTime)
         assertNull(startedTimeEntry.endTime)
 
-        val endWorkDayEvent = DriverWorkingStateChangeGlobalEvent(driverId, workType.id!!, WorkingState.NOT_WORKING, OffsetDateTime.now())
-        RestAssured.given()
-            .contentType("application/json")
-            .body(objectMapper.writeValueAsString(endWorkDayEvent))
-            .`when`().post("/test-rabbitmq")
-            .then()
-            .statusCode(200)
+        val endWorkDayEvent = createWorkingStateEvent(driverId, workType.id, WorkingState.NOT_WORKING)
+        MessagingClient.publishMessage(endWorkDayEvent)
 
         Awaitility.await().atMost(Duration.ofMinutes(2)).until {
             tb.manager.timeEntries.listTimeEntries(driverId)[0].endTime != null
@@ -70,5 +58,13 @@ class MessageEventsTestIT : AbstractFunctionalTest() {
         assertNotNull(finishedTimeEntry.workTypeId)
         assertNotNull(finishedTimeEntry.startTime)
         assertNotNull(finishedTimeEntry.endTime)
+    }
+
+    private fun createWorkingStateEvent(
+        driverId: UUID,
+        workTypeId: UUID,
+        workingState: WorkingState
+    ): DriverWorkingStateChangeGlobalEvent {
+        return DriverWorkingStateChangeGlobalEvent(driverId, workTypeId, workingState, OffsetDateTime.now())
     }
 }

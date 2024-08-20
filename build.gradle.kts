@@ -77,6 +77,7 @@ sourceSets["main"].java {
 sourceSets["test"].java {
     srcDir("build/generated/api-client/src/main/kotlin")
     srcDir("quarkus-invalid-param-test/src/main/kotlin")
+    srcDir("vp-kuljetus-messaging-service-api/src/test/kotlin")
 }
 
 allOpen {
