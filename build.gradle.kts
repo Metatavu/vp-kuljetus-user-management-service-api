@@ -55,6 +55,7 @@ dependencies {
     testImplementation("org.testcontainers:mysql")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("fi.metatavu.jaxrs.testbuilder:jaxrs-functional-test-builder:$jaxrsFunctionalTestBuilderVersion")
+    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 }
 
 group = "fi.metatavu.vp"
