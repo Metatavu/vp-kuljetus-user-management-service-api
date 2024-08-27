@@ -1,23 +1,16 @@
 package fi.metatavu.vp.usermanagement.messaging
 
-import fi.metatavu.vp.api.model.TimeEntry
-import fi.metatavu.vp.messaging.events.DriverWorkingStateChangeGlobalEvent
+import fi.metatavu.vp.messaging.events.DriverWorkEventGlobalEvent
 import fi.metatavu.vp.messaging.events.abstracts.GlobalEvent
-import fi.metatavu.vp.messaging.events.WorkingState
+import fi.metatavu.vp.usermanagement.WithCoroutineScope
 import fi.metatavu.vp.usermanagement.timeentries.TimeEntryController
 import fi.metatavu.vp.usermanagement.users.UserController
-import fi.metatavu.vp.usermanagement.worktypes.WorkTypeController
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.vertx.ConsumeEvent
 import io.smallrye.mutiny.Uni
-import io.smallrye.mutiny.coroutines.asUni
 import io.vertx.core.Vertx
-import io.vertx.kotlin.coroutines.dispatcher
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
 import org.jboss.logging.Logger
 import java.time.OffsetDateTime
 
@@ -26,16 +19,13 @@ import java.time.OffsetDateTime
  */
 @ApplicationScoped
 @Suppress("unused")
-class MessagingController {
+class MessagingController: WithCoroutineScope() {
 
     @Inject
     lateinit var timeEntryController: TimeEntryController
 
     @Inject
     lateinit var userController: UserController
-
-    @Inject
-    lateinit var workTypeController: WorkTypeController
 
     @Inject
     lateinit var vertx: Vertx
@@ -48,50 +38,34 @@ class MessagingController {
      *
      * @param event event to process
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
     @ConsumeEvent("DRIVER_WORKING_STATE_CHANGE")
     @WithTransaction
-    fun processWorkingStateChangeEvent(event: GlobalEvent): Uni<Void> {
-        return CoroutineScope(vertx.dispatcher()).async {
-            val parsed = event as DriverWorkingStateChangeGlobalEvent
+    fun processWorkingStateChangeEvent(event: GlobalEvent): Uni<Void> = withCoroutineScope {
+            logger.info("Processing event ${event.type}")
+            val parsed = event as DriverWorkEventGlobalEvent
             val foundDriver = userController.find(parsed.driverId)
             if (foundDriver == null) {
                 logger.error("Driver with id ${parsed.driverId} not found")
-                return@async
+                return@withCoroutineScope
+            }
+            val latestTimeEntry = timeEntryController.findIncompleteEntries(employee = foundDriver)
+            if (latestTimeEntry != null && latestTimeEntry.startTime < parsed.time) {
+                logger.debug("Found incomplete time entry for driver ${foundDriver.id} with id ${latestTimeEntry.id}")
+                latestTimeEntry.endTime = OffsetDateTime.now()
+                timeEntryController.updateEndTime(
+                    timeEntry = latestTimeEntry,
+                    newEndTime = parsed.time
+                )
+            } else {
+                logger.debug("No incomplete valid time entries found for driver ${foundDriver.id}")
             }
 
-            val workType = workTypeController.find(parsed.workTypeId)
-            if (workType == null) {
-                logger.error("WorkType with id ${parsed.workTypeId} not found")
-                return@async
-            }
+            timeEntryController.create(
+                employee = foundDriver,
+                startTime = parsed.time,
+                workEventType = parsed.workEventType
+            )
+            logger.debug("Event ${event.type} processed. Created new time entry (${event.workEventType}) for driver ${foundDriver.id}")
 
-            when (parsed.workingStateNew) {
-                WorkingState.WORKING -> {
-                    timeEntryController.create(
-                        foundDriver, workType, TimeEntry(
-                            employeeId = parsed.driverId,
-                            workTypeId = workType.id,
-                            startTime = parsed.time
-                        )
-                    )
-                }
-
-                WorkingState.NOT_WORKING -> {
-                    val latest = timeEntryController.findIncompleteEntries(employee = foundDriver)
-                    if (latest != null && latest.startTime < parsed.time) {
-                        latest.endTime = OffsetDateTime.now()
-                        timeEntryController.update(
-                            latest,
-                            latest.startTime,
-                            parsed.time
-                        )
-                    } else {
-                        logger.error("No incomplete valid time entries found for driver ${foundDriver.id}")
-                    }
-                }
-            }
-
-        }.asUni().replaceWithVoid()
-    }
+        }.replaceWithVoid()
 }

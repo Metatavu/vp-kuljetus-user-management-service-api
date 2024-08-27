@@ -8,7 +8,6 @@ import fi.metatavu.vp.usermanagement.TestBuilder
 import fi.metatavu.vp.usermanagement.impl.DriverTestBuilderResource
 import fi.metatavu.vp.usermanagement.impl.EmployeeTestBuilderResource
 import fi.metatavu.vp.usermanagement.impl.TimeEntryTestBuilderResource
-import fi.metatavu.vp.usermanagement.impl.WorkTypeTestBuilderResource
 
 /**
  * Test builder authentication
@@ -28,7 +27,6 @@ class TestBuilderAuthentication(
 
     val drivers = DriverTestBuilderResource(testBuilder, accessTokenProvider, this.apiKey, createClient(accessTokenProvider))
     val employees = EmployeeTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
-    val workTypes = WorkTypeTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
     val timeEntries = TimeEntryTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
 
     override fun createClient(authProvider: AccessTokenProvider): ApiClient {

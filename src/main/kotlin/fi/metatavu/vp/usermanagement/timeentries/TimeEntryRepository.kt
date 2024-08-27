@@ -1,7 +1,7 @@
 package fi.metatavu.vp.usermanagement.timeentries
 
+import fi.metatavu.vp.api.model.WorkEventType
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
-import fi.metatavu.vp.usermanagement.worktypes.WorkTypeEntity
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.smallrye.mutiny.coroutines.awaitSuspending
@@ -18,7 +18,7 @@ class TimeEntryRepository : AbstractRepository<TimeEntryEntity, UUID>() {
      * @param id id
      * @param employeeId employee id
      * @param startTime start time
-     * @param workType work type
+     * @param workEventType work event type
      * @param endTime end time
      * @return created time entry
      */
@@ -26,14 +26,14 @@ class TimeEntryRepository : AbstractRepository<TimeEntryEntity, UUID>() {
         id: UUID,
         employeeId: UUID,
         startTime: OffsetDateTime,
-        workType: WorkTypeEntity,
+        workEventType: WorkEventType,
         endTime: OffsetDateTime?
     ): TimeEntryEntity {
         val timeEntryEntity = TimeEntryEntity()
         timeEntryEntity.id = id
         timeEntryEntity.employeeId = employeeId
         timeEntryEntity.startTime = startTime
-        timeEntryEntity.workType = workType
+        timeEntryEntity.workEventType = workEventType
         timeEntryEntity.endTime = endTime
         return persistSuspending(timeEntryEntity)
     }

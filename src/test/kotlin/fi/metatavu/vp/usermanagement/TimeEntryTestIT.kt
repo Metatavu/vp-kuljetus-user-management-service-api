@@ -1,6 +1,7 @@
 package fi.metatavu.vp.usermanagement
 
 import fi.metatavu.vp.test.client.models.TimeEntry
+import fi.metatavu.vp.test.client.models.WorkEventType
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
@@ -19,15 +20,13 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
 
     @Test
     fun testList() = createTestBuilder().use {
-        val workType = it.manager.workTypes.createWorkType()
-
         val employee1 = it.manager.employees.createEmployee("1")
         val employee2 = it.manager.employees.createEmployee("2")
 
         val now = OffsetDateTime.now()
         it.manager.timeEntries.createTimeEntry(
             employee1.id!!, TimeEntry(
-                workTypeId = workType.id!!,
+                workEventType = WorkEventType.MEAT_CELLAR,
                 startTime = now.toString(),
                 endTime = now.plusMinutes(1).toString(),
                 employeeId = employee1.id,
@@ -36,7 +35,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
         )
         it.manager.timeEntries.createTimeEntry(
             employee1.id, TimeEntry(
-                workTypeId = workType.id,
+                workEventType = WorkEventType.OTHER_WORK,
                 startTime = now.plusDays(1).toString(),
                 endTime = now.plusDays(2).toString(),
                 employeeId = employee1.id,
@@ -45,7 +44,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
         )
         it.manager.timeEntries.createTimeEntry(
             employee2.id!!, TimeEntry(
-                workTypeId = workType.id,
+                workEventType = WorkEventType.BREWERY,
                 startTime = now.toString(),
                 endTime = now.plusMinutes(1).toString(),
                 employeeId = employee2.id,
@@ -66,11 +65,10 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
 
     @Test
     fun testCreate() = createTestBuilder().use { tb ->
-        val workType = tb.manager.workTypes.createWorkType()
         val employee1 = tb.manager.employees.createEmployee("1")
 
         val data = TimeEntry(
-            workTypeId = workType.id!!,
+            workEventType = WorkEventType.DRY,
             startTime = OffsetDateTime.now().toString(),
             employeeId = employee1.id!!
         )
@@ -79,7 +77,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
         )
 
         assertNotNull(created.id)
-        assertEquals(data.workTypeId, created.workTypeId)
+        assertEquals(data.workEventType, created.workEventType)
         assertEquals(
             OffsetDateTime.parse(data.startTime).toEpochSecond(),
             OffsetDateTime.parse(created.startTime).toEpochSecond()
@@ -89,13 +87,12 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
 
     @Test
     fun testCreateStartAfterEnd() = createTestBuilder().use {
-        val workType = it.manager.workTypes.createWorkType()
         val employee1 = it.manager.employees.createEmployee("1")
 
         val now = OffsetDateTime.now()
         val created = it.manager.timeEntries.createTimeEntry(
             employee1.id!!, TimeEntry(
-                workTypeId = workType.id!!,
+                workEventType = WorkEventType.FROZEN,
                 startTime = now.toString(),
                 employeeId = employee1.id
             )
@@ -112,14 +109,13 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
 
     @Test
     fun testCreateWithRunningTimer() = createTestBuilder().use {
-        val workType = it.manager.workTypes.createWorkType()
         val employee1 = it.manager.employees.createEmployee("1")
 
         val now = OffsetDateTime.now()
 
         it.manager.timeEntries.createTimeEntry(
             employee1.id!!, TimeEntry(
-                workTypeId = workType.id!!,
+                workEventType = WorkEventType.GREASE,
                 startTime = now.toString(),
                 employeeId = employee1.id
             )
@@ -128,7 +124,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
         it.manager.timeEntries.assertCreateFail(
             employeeId = employee1.id,
             timeEntry = TimeEntry(
-                workTypeId = workType.id,
+                workEventType = WorkEventType.MEAT_CELLAR,
                 startTime = now.toString(),
                 employeeId = employee1.id
             ),
@@ -152,7 +148,6 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
         //   4) Starts after new entry and ends after new entry ends
 
         val baseTime = OffsetDateTime.now().minusHours(8)
-        val workType = it.manager.workTypes.createWorkType()
         val employee1 = it.manager.employees.createEmployee("1")
 
         val cases = arrayOf(
@@ -165,7 +160,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
         cases.forEach { case ->
             val existingEntry = it.manager.timeEntries.createTimeEntry(
                 employee1.id!!, TimeEntry(
-                    workTypeId = workType.id!!,
+                    workEventType = WorkEventType.MEIRA,
                     startTime = baseTime.plusHours(case.first.toLong()).toString(),
                     endTime = baseTime.plusHours(case.second.toLong()).toString(),
                     employeeId = employee1.id
@@ -175,7 +170,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
             it.manager.timeEntries.assertCreateFail(
                 employeeId = employee1.id,
                 timeEntry = TimeEntry(
-                    workTypeId = workType.id,
+                    workEventType = WorkEventType.VEGETABLE,
                     startTime = baseTime.plusHours(2).toString(),
                     endTime = baseTime.plusHours(5).toString(),
                     employeeId = employee1.id
@@ -186,7 +181,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
             val activeEntry = it.manager.timeEntries.createTimeEntry(
                 employeeId = employee1.id,
                 timeEntry = TimeEntry(
-                    workTypeId = workType.id,
+                    workEventType = WorkEventType.MEAT_CELLAR,
                     startTime = baseTime.plusHours(2).toString(),
                     employeeId = employee1.id
                 )
@@ -208,11 +203,10 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
 
     @Test
     fun testFind() = createTestBuilder().use {
-        val workType = it.manager.workTypes.createWorkType()
         val employee1 = it.manager.employees.createEmployee("1")
         val created = it.manager.timeEntries.createTimeEntry(
             employee1.id!!, TimeEntry(
-                workTypeId = workType.id!!,
+                workEventType = WorkEventType.SHIFT_END,
                 startTime = OffsetDateTime.now().toString(),
                 endTime = OffsetDateTime.now().toString(),
                 employeeId = employee1.id
@@ -221,7 +215,7 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
         val found = it.manager.timeEntries.findTimeEntry(employee1.id, created.id!!)
 
         assertEquals(created.id, found.id)
-        assertEquals(created.workTypeId, found.workTypeId)
+        assertEquals(created.workEventType, found.workEventType)
         assertEquals(
             OffsetDateTime.parse(created.startTime).toEpochSecond(),
             OffsetDateTime.parse(found.startTime).toEpochSecond()
@@ -235,25 +229,24 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
 
     @Test
     fun testUpdate() = createTestBuilder().use {
-        val workType = it.manager.workTypes.createWorkType()
         val employee1 = it.manager.employees.createEmployee("1")
         val created = it.manager.timeEntries.createTimeEntry(
             employee1.id!!, TimeEntry(
-                workTypeId = workType.id!!,
+                workEventType = WorkEventType.UNLOADING,
                 startTime = OffsetDateTime.now().toString(),
                 endTime = OffsetDateTime.now().toString(),
                 employeeId = employee1.id
             )
         )
         val updateData = created.copy(
-            workTypeId = workType.id,
+            workEventType = WorkEventType.MEAT_CELLAR,
             startTime = OffsetDateTime.now().toString(),
             endTime = OffsetDateTime.now().toString()
         )
         val updated = it.manager.timeEntries.updateTimeEntry(employee1.id, created.id!!, updateData)
 
         assertEquals(updateData.id, updated.id)
-        assertEquals(updateData.workTypeId, updated.workTypeId)
+        assertEquals(updateData.workEventType, updated.workEventType)
         assertEquals(
             OffsetDateTime.parse(updateData.startTime).toEpochSecond(),
             OffsetDateTime.parse(updated.startTime).toEpochSecond()
@@ -267,11 +260,10 @@ class TimeEntryTestIT : AbstractFunctionalTest() {
 
     @Test
     fun testDelete() = createTestBuilder().use {
-        val workType = it.manager.workTypes.createWorkType()
         val employee1 = it.manager.employees.createEmployee("1")
         val created = it.manager.timeEntries.createTimeEntry(
             employee1.id!!, TimeEntry(
-                workTypeId = workType.id!!,
+                workEventType = WorkEventType.VEGETABLE,
                 startTime = OffsetDateTime.now().toString(),
                 endTime = OffsetDateTime.now().toString(),
                 employeeId = employee1.id

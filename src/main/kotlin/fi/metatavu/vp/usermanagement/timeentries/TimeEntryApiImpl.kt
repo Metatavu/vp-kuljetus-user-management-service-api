@@ -4,7 +4,6 @@ import fi.metatavu.vp.api.model.TimeEntry
 import fi.metatavu.vp.api.spec.TimeEntriesApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.users.UserController
-import fi.metatavu.vp.usermanagement.worktypes.WorkTypeController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -25,9 +24,6 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
 
     @Inject
     lateinit var userController: UserController
-
-    @Inject
-    lateinit var workTypeController: WorkTypeController
 
     @Inject
     lateinit var timeEntryController: TimeEntryController
@@ -72,16 +68,15 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
                     employeeId
                 )
             )
-            val workType = workTypeController.find(timeEntry.workTypeId) ?: return@withCoroutineScope createNotFound(
-                createNotFoundMessage(
-                    WORK_TYPE,
-                    timeEntry.workTypeId
-                )
-            )
             timeEntryController.findIncompleteEntries(employee)?.let { return@withCoroutineScope createBadRequest("User already has unfinished time entry") }
             timeEntryController.findOverlappingEntry(employee, timeEntry)?.let { return@withCoroutineScope createBadRequest("Time entry overlaps with another entry") }
 
-            val created = timeEntryController.create(employee, workType, timeEntry)
+            val created = timeEntryController.create(
+                employee = employee,
+                startTime = timeEntry.startTime,
+                workEventType = timeEntry.workEventType,
+                endTime = timeEntry.endTime,
+            )
             createCreated(timeEntryTranslator.translate(created))
         }
 
@@ -125,13 +120,6 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
                 createNotFoundMessage(TIME_ENTRY, timeEntryId)
             )
 
-            val newWorkType = if (foundTimeEntry.workType.id == timeEntry.workTypeId) {
-                foundTimeEntry.workType
-            } else {
-                workTypeController.find(timeEntry.workTypeId) ?: return@withCoroutineScope createNotFound(
-                    createNotFoundMessage(WORK_TYPE, timeEntry.workTypeId)
-                )
-            }
 
             if (foundTimeEntry.endTime != null && timeEntry.endTime == null) {
                 return@withCoroutineScope createBadRequest("End time cannot be set to null")
@@ -143,7 +131,7 @@ class TimeEntryApiImpl : TimeEntriesApi, AbstractApi() {
                 }
             }
 
-            val updatedTimeEntry = timeEntryController.update(foundTimeEntry, newWorkType, timeEntry)
+            val updatedTimeEntry = timeEntryController.update(foundTimeEntry, timeEntry)
             createOk(timeEntryTranslator.translate(updatedTimeEntry))
         }
 
