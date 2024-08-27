@@ -14,7 +14,7 @@ class TimeEntryTranslator : AbstractTranslator<TimeEntryEntity, TimeEntry>() {
             id = entity.id,
             employeeId = entity.employeeId,
             startTime = entity.startTime,
-            workTypeId = entity.workType.id,
+            workEventType = entity.workEventType,
             endTime = entity.endTime
         )
     }

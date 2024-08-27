@@ -1,8 +1,8 @@
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-    kotlin("jvm") version "1.9.22"
-    kotlin("plugin.allopen") version "1.9.22"
+    kotlin("jvm") version "2.0.0"
+    kotlin("plugin.allopen") version "2.0.0"
     id("io.quarkus")
     id("org.openapi.generator") version "7.2.0"
 }
@@ -33,6 +33,8 @@ dependencies {
     implementation("io.quarkus:quarkus-liquibase")
     implementation("io.quarkus:quarkus-jdbc-mysql")
     implementation("io.quarkus:quarkus-reactive-mysql-client")
+    implementation("io.quarkus:quarkus-messaging-rabbitmq")
+    implementation("io.quarkus:quarkus-arc")
 
     implementation("io.vertx:vertx-core")
     implementation("io.vertx:vertx-lang-kotlin")
@@ -70,10 +72,12 @@ kotlin {
 sourceSets["main"].java {
     srcDir("build/generated/api-spec/src/main/kotlin")
     srcDir("build/generated/keycloak-admin-client/src/main/kotlin")
+    srcDir("vp-kuljetus-messaging-service-api/src/main/kotlin")
 }
 sourceSets["test"].java {
     srcDir("build/generated/api-client/src/main/kotlin")
     srcDir("quarkus-invalid-param-test/src/main/kotlin")
+    srcDir("vp-kuljetus-messaging-service-api/src/test/kotlin")
 }
 
 allOpen {
@@ -92,7 +96,6 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.compilerArgs.add("-parameters")
 }
-
 
 val generateApiSpec = tasks.register("generateApiSpec",GenerateTask::class){
     setProperty("generatorName", "kotlin-server")

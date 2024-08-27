@@ -1,11 +1,7 @@
 package fi.metatavu.vp.usermanagement.timeentries
 
-import fi.metatavu.vp.usermanagement.worktypes.WorkTypeEntity
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.Id
-import jakarta.persistence.ManyToOne
-import jakarta.persistence.Table
+import fi.metatavu.vp.api.model.WorkEventType
+import jakarta.persistence.*
 import java.time.OffsetDateTime
 import java.util.*
 
@@ -25,8 +21,9 @@ class TimeEntryEntity {
     @Column(nullable = false)
     lateinit var startTime: OffsetDateTime
 
-    @ManyToOne
-    lateinit var workType: WorkTypeEntity
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    lateinit var workEventType: WorkEventType
 
     @Column
     var endTime: OffsetDateTime? = null

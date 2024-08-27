@@ -36,4 +36,16 @@
             <column name="endTime" type="datetime(6)"/>
         </createTable>
     </changeSet>
+
+    <changeSet id="remove_worktype_entity" author="Ville Juutila">
+        <dropForeignKeyConstraint baseTableName="timeentry" constraintName="FK_TIMEENTRY_WORKTYPE_ID"/>
+        <dropColumn tableName="timeentry" columnName="workType_id"/>
+        <dropTable tableName="worktype" />
+        <addColumn tableName="timeentry">
+            <column name="workeventtype" type="varchar(191)">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <sql>UPDATE timeentry SET workeventtype = 'OTHER_WORK'</sql>
+    </changeSet>
 </databaseChangeLog>

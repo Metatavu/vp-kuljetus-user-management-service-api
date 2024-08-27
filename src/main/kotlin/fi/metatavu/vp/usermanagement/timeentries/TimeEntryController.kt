@@ -2,9 +2,7 @@ package fi.metatavu.vp.usermanagement.timeentries
 
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
 import fi.metatavu.vp.api.model.TimeEntry
-import fi.metatavu.vp.usermanagement.worktypes.WorkTypeEntity
-import io.quarkus.panache.common.Parameters
-import io.smallrye.mutiny.coroutines.awaitSuspending
+import fi.metatavu.vp.api.model.WorkEventType
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import java.time.OffsetDateTime
@@ -34,30 +32,26 @@ class TimeEntryController {
     }
 
     /**
-     * Lists time entries by work type
-     *
-     * @param workType work type
-     * @return count of time entries
-     */
-    suspend fun listByWorkType(workType: WorkTypeEntity): Long {
-        return timeEntryRepository.find("workType = :workType", Parameters.with("workType", workType)).count().awaitSuspending()
-    }
-
-    /**
      * Creates a new time entry
      *
      * @param employee employee
-     * @param workType work type
-     * @param timeEntry time entry
+     * @param startTime start time
+     * @param workEventType work event type
+     * @param endTime end time
      * @return created time entry
      */
-    suspend fun create(employee: UserRepresentation, workType: WorkTypeEntity, timeEntry: TimeEntry): TimeEntryEntity {
+    suspend fun create(
+        employee: UserRepresentation,
+        startTime: OffsetDateTime,
+        workEventType: WorkEventType,
+        endTime: OffsetDateTime? = null
+    ): TimeEntryEntity {
         return timeEntryRepository.create(
             id = UUID.randomUUID(),
             employeeId = UUID.fromString(employee.id),
-            startTime = timeEntry.startTime,
-            workType = workType,
-            endTime = timeEntry.endTime
+            startTime = startTime,
+            workEventType = workEventType,
+            endTime = endTime
         )
     }
 
@@ -65,10 +59,9 @@ class TimeEntryController {
      * Finds incomplete time entries
      *
      * @param employee employee
-     * @param timeEntry time entry
      * @return incomplete time entry or null if not found
      */
-    suspend fun findIncompleteEntries(employee: UserRepresentation, timeEntry: TimeEntry): TimeEntryEntity? {
+    suspend fun findIncompleteEntries(employee: UserRepresentation): TimeEntryEntity? {
         return timeEntryRepository.findIncomplete(UUID.fromString(employee.id))
     }
 
@@ -103,15 +96,40 @@ class TimeEntryController {
      * Updates time entry
      *
      * @param foundTimeEntry found time entry
-     * @param newWorkType new work type
      * @param timeEntry time entry
      * @return updated time entry
      */
-    suspend fun update(foundTimeEntry: TimeEntryEntity, newWorkType: WorkTypeEntity, timeEntry: TimeEntry): TimeEntryEntity {
-        foundTimeEntry.workType = newWorkType
+    suspend fun update(foundTimeEntry: TimeEntryEntity, timeEntry: TimeEntry): TimeEntryEntity {
         foundTimeEntry.startTime = timeEntry.startTime
         foundTimeEntry.endTime = timeEntry.endTime
+        foundTimeEntry.workEventType = timeEntry.workEventType
         return timeEntryRepository.persistSuspending(foundTimeEntry)
+    }
+
+    /**
+     * Updates time entry
+     *
+     * @param foundTimeEntry found time entry
+     * @param newStartTime new start time
+     * @param newEndTime new end time
+     * @return updated time entry
+     */
+    suspend fun update(foundTimeEntry: TimeEntryEntity, newStartTime: OffsetDateTime, newEndTime: OffsetDateTime): TimeEntryEntity {
+        foundTimeEntry.startTime = newStartTime
+        foundTimeEntry.endTime = newEndTime
+        return timeEntryRepository.persistSuspending(foundTimeEntry)
+    }
+
+    /**
+     * Updates the end time of the time entry
+     *
+     * @param timeEntry time entry
+     * @param newEndTime new end time
+     * @return updated time entry
+     */
+    suspend fun updateEndTime(timeEntry: TimeEntryEntity, newEndTime: OffsetDateTime): TimeEntryEntity {
+        timeEntry.endTime = newEndTime
+        return timeEntryRepository.persistSuspending(timeEntry)
     }
 
     /**

@@ -24,11 +24,10 @@ class TimeEntryTestBuilderResource(
     apiClient: ApiClient
 ) : ApiTestBuilderResource<TimeEntry, ApiClient>(testBuilder, apiClient) {
 
-    private val timeEntryToEmployeeMap = mutableMapOf<UUID, UUID>()
 
     override fun clean(t: TimeEntry) {
         api.deleteEmployeeTimeEntry(
-            timeEntryToEmployeeMap[t.id]!!,
+            t.employeeId,
             t.id!!
         )
     }
@@ -73,7 +72,6 @@ class TimeEntryTestBuilderResource(
      */
     fun createTimeEntry(employeeId: UUID, timeEntry: TimeEntry): TimeEntry {
         val created = addClosable(api.createEmployeeTimeEntry(employeeId, timeEntry))
-        timeEntryToEmployeeMap[created.id!!] = employeeId
         return created
     }
 
