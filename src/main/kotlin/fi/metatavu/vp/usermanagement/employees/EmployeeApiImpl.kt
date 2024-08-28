@@ -6,7 +6,7 @@ import fi.metatavu.vp.api.model.Office
 import fi.metatavu.vp.api.model.SalaryGroup
 import fi.metatavu.vp.api.spec.EmployeesApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
-import fi.metatavu.vp.usermanagement.timeentries.TimeEntryController
+import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.users.UserController
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -29,7 +29,7 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
     lateinit var employeeTranslator: EmployeeTranslator
 
     @Inject
-    lateinit var timeEntryController: TimeEntryController
+    lateinit var workEventController: WorkEventController
 
     @ConfigProperty(name = "env")
     lateinit var env: Optional<String>
@@ -80,8 +80,8 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
             return@withCoroutineScope createForbidden("Deleting employees is disabled")
         }
 
-        timeEntryController.list(employeeId = employeeId, start = null, end = null).first.forEach {
-            timeEntryController.delete(it)
+        workEventController.list(employeeId = employeeId, start = null).first.forEach {
+            workEventController.delete(it)
         }
 
         usersController.deleteEmployee(employeeId)

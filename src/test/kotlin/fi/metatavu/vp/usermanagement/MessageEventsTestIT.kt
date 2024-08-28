@@ -27,39 +27,36 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
     fun testDriverWorkingStateChangeGlobalEvent() = createTestBuilder().use { tb ->
         val drivers = tb.manager.drivers.listDrivers()
         val driverId = drivers[0].id!!
-        val startWorkEvent = createWorkingStateEvent(driverId, WorkEventType.SHIFT_START)
+        val startWorkEvent = createDriverWorkEvent(driverId, WorkEventType.SHIFT_START)
 
         MessagingClient.publishMessage(startWorkEvent)
         Awaitility.await().atMost(Duration.ofMinutes(2)).until {
-            tb.manager.timeEntries.listTimeEntries(driverId).size == 1
+            tb.manager.workEvents.listWorkEvents(driverId).size == 1
         }
 
-        // Manually add it to closable since the time entries were created off-screen
-        tb.manager.timeEntries.listTimeEntries(driverId).forEach {
-            tb.manager.timeEntries.addClosable(it)
+        // Manually add it to closable since the work events were created off-screen
+        tb.manager.workEvents.listWorkEvents(driverId).forEach {
+            tb.manager.workEvents.addClosable(it)
         }
 
-        val startedTimeEntry = tb.manager.timeEntries.listTimeEntries(driverId)[0]
-        assertEquals(driverId, startedTimeEntry.employeeId)
-        assertNotNull(startedTimeEntry.workEventType)
-        assertNotNull(startedTimeEntry.startTime)
-        assertNull(startedTimeEntry.endTime)
+        val shiftStartedWorkEvent = tb.manager.workEvents.listWorkEvents(driverId)[0]
+        assertEquals(driverId, shiftStartedWorkEvent.employeeId)
+        assertNotNull(shiftStartedWorkEvent.workEventType)
+        assertNotNull(shiftStartedWorkEvent.startTime)
 
-        val endWorkDayEvent = createWorkingStateEvent(driverId, WorkEventType.SHIFT_END)
+        val endWorkDayEvent = createDriverWorkEvent(driverId, WorkEventType.DRIVE)
         MessagingClient.publishMessage(endWorkDayEvent)
 
         Awaitility.await().atMost(Duration.ofMinutes(2)).until {
-            tb.manager.timeEntries.listTimeEntries(driverId).size == 2
+            tb.manager.workEvents.listWorkEvents(driverId).size == 2
         }
-        val finishedTimeEntry = tb.manager.timeEntries.listTimeEntries(driverId)[0]
-        assertEquals(startedTimeEntry.id, finishedTimeEntry.id)
-        assertEquals(driverId, finishedTimeEntry.employeeId)
-        assertNotNull(finishedTimeEntry.workEventType)
-        assertNotNull(finishedTimeEntry.startTime)
-        assertNotNull(finishedTimeEntry.endTime)
+        val driveWorkEvent = tb.manager.workEvents.listWorkEvents(driverId)[0]
+        assertEquals(driverId, driveWorkEvent.employeeId)
+        assertNotNull(driveWorkEvent.workEventType)
+        assertNotNull(driveWorkEvent.startTime)
     }
 
-    private fun createWorkingStateEvent(
+    private fun createDriverWorkEvent(
         driverId: UUID,
         workEventType: WorkEventType
     ): DriverWorkEventGlobalEvent {

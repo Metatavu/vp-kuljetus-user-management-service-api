@@ -1,4 +1,4 @@
-package fi.metatavu.vp.usermanagement.timeentries
+package fi.metatavu.vp.usermanagement.workevents
 
 import fi.metatavu.vp.api.model.WorkEventType
 import jakarta.persistence.*
@@ -6,11 +6,11 @@ import java.time.OffsetDateTime
 import java.util.*
 
 /**
- * Entity for time entries
+ * Entity for work events
  */
 @Entity
-@Table(name = "timeentry")
-class TimeEntryEntity {
+@Table(name = "workevent")
+class WorkEventEntity {
 
     @Id
     lateinit var id: UUID
@@ -24,8 +24,5 @@ class TimeEntryEntity {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     lateinit var workEventType: WorkEventType
-
-    @Column
-    var endTime: OffsetDateTime? = null
 
 }

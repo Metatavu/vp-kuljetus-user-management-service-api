@@ -1,10 +1,10 @@
 package fi.metatavu.vp.usermanagement.impl
 
 import fi.metatavu.jaxrs.test.functional.builder.auth.AccessTokenProvider
-import fi.metatavu.vp.test.client.apis.TimeEntriesApi
+import fi.metatavu.vp.test.client.apis.WorkEventsApi
 import fi.metatavu.vp.test.client.infrastructure.ApiClient
 import fi.metatavu.vp.test.client.infrastructure.ClientException
-import fi.metatavu.vp.test.client.models.TimeEntry
+import fi.metatavu.vp.test.client.models.WorkEvent
 import fi.metatavu.vp.usermanagement.TestBuilder
 import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import org.junit.Assert
@@ -12,102 +12,98 @@ import java.time.OffsetDateTime
 import java.util.*
 
 /**
- * Test builder resource for time entry api
+ * Test builder resource for work event api
  *
  * @param testBuilder test builder
  * @param accessTokenProvider access token provider
  * @param apiClient api client
  */
-class TimeEntryTestBuilderResource(
+class WorkEventTestBuilderResource(
     testBuilder: TestBuilder,
     private val accessTokenProvider: AccessTokenProvider?,
     apiClient: ApiClient
-) : ApiTestBuilderResource<TimeEntry, ApiClient>(testBuilder, apiClient) {
+) : ApiTestBuilderResource<WorkEvent, ApiClient>(testBuilder, apiClient) {
 
 
-    override fun clean(t: TimeEntry) {
-        api.deleteEmployeeTimeEntry(
+    override fun clean(t: WorkEvent) {
+        api.deleteEmployeeWorkEvent(
             t.employeeId,
             t.id!!
         )
     }
 
-    override fun getApi(): TimeEntriesApi {
+    override fun getApi(): WorkEventsApi {
         ApiClient.accessToken = accessTokenProvider?.accessToken
-        return TimeEntriesApi(ApiTestSettings.apiBasePath)
+        return WorkEventsApi(ApiTestSettings.apiBasePath)
     }
 
     /**
-     * Lists time entries
+     * Lists work events
      *
      * @param employeeId employee id
      * @param start start
-     * @param end end
      * @param first first
      * @param max max
-     * @return list of time entries
+     * @return list of work events
      */
-    fun listTimeEntries(
+    fun listWorkEvents(
         employeeId: UUID,
         start: OffsetDateTime? = null,
-        end: OffsetDateTime? = null,
         first: Int = 0,
         max: Int = 10
-    ): Array<TimeEntry> {
-        return api.listEmployeeTimeEntries(
+    ): Array<WorkEvent> {
+        return api.listEmployeeWorkEvents(
             employeeId = employeeId,
             start = start?.toString(),
-            end = end?.toString(),
             first = first,
             max = max
         )
     }
 
     /**
-     * Creates time entry
+     * Creates work event
      *
      * @param employeeId employee id
-     * @param timeEntry time entry
-     * @return created time entry
+     * @param workEvent work event
+     * @return created work event
      */
-    fun createTimeEntry(employeeId: UUID, timeEntry: TimeEntry): TimeEntry {
-        val created = addClosable(api.createEmployeeTimeEntry(employeeId, timeEntry))
-        return created
+    fun createWorkEvent(employeeId: UUID, workEvent: WorkEvent): WorkEvent {
+        return addClosable(api.createEmployeeWorkEvent(employeeId, workEvent))
     }
 
     /**
-     * Finds time entry
+     * Finds work event
      *
      * @param employeeId employee id
-     * @param id time entry id
-     * @return found time entry
+     * @param id work event id
+     * @return found work event
      */
-    fun findTimeEntry(employeeId: UUID, id: UUID): TimeEntry {
-        return api.findEmployeeTimeEntry(employeeId, id)
+    fun findWorkEvent(employeeId: UUID, id: UUID): WorkEvent {
+        return api.findEmployeeWorkEvent(employeeId, id)
     }
 
     /**
-     * Updates time entry
+     * Updates work event
      *
      * @param employeeId employee id
-     * @param id time entry id
-     * @param timeEntry time entry
-     * @return updated time entry
+     * @param id work event
+     * @param workEvent work event
+     * @return updated work event
      */
-    fun updateTimeEntry(employeeId: UUID, id: UUID, timeEntry: TimeEntry): TimeEntry {
-        return api.updateEmployeeTimeEntry(employeeId, id, timeEntry)
+    fun updateWorkEvent(employeeId: UUID, id: UUID, workEvent: WorkEvent): WorkEvent {
+        return api.updateEmployeeWorkEvent(employeeId, id, workEvent)
     }
 
     /**
-     * Asserts time entry create fails
+     * Asserts work event create fails
      *
      * @param employeeId employee id
-     * @param timeEntry time entry
+     * @param workEvent work event
      * @param expectedStatus expected status
      */
-    fun assertCreateFail(employeeId: UUID, timeEntry: TimeEntry, expectedStatus: Int) {
+    fun assertCreateFail(employeeId: UUID, workEvent: WorkEvent, expectedStatus: Int) {
         try {
-            api.createEmployeeTimeEntry(employeeId, timeEntry)
+            api.createEmployeeWorkEvent(employeeId, workEvent)
             Assert.fail(String.format("Expected create to fail with status %d", expectedStatus))
         } catch (ex: ClientException) {
             assertClientExceptionStatus(expectedStatus, ex)
@@ -115,16 +111,16 @@ class TimeEntryTestBuilderResource(
     }
 
     /**
-     * Assert time entry update fails
+     * Assert work event update fails
      *
      * @param employeeId employee id
      * @param id time entry id
-     * @param timeEntry time entry
+     * @param workEvent work event
      * @param expectedStatus expected status
      */
-    fun assertUpdateFail(employeeId: UUID, id: UUID, timeEntry: TimeEntry, expectedStatus: Int) {
+    fun assertUpdateFail(employeeId: UUID, id: UUID, workEvent: WorkEvent, expectedStatus: Int) {
         try {
-            api.updateEmployeeTimeEntry(employeeId, id, timeEntry)
+            api.updateEmployeeWorkEvent(employeeId, id, workEvent)
             Assert.fail(String.format("Expected update to fail with status %d", expectedStatus))
         } catch (ex: ClientException) {
             assertClientExceptionStatus(expectedStatus, ex)
@@ -132,15 +128,15 @@ class TimeEntryTestBuilderResource(
     }
 
     /**
-     * Deletes time entry
+     * Deletes work event
      *
      * @param employeeId employee id
-     * @param id time entry id
+     * @param id work event id
      */
-    fun deleteTimeEntry(employeeId: UUID, id: UUID) {
-        api.deleteEmployeeTimeEntry(employeeId, id)
+    fun deleteWorkEvent(employeeId: UUID, id: UUID) {
+        api.deleteEmployeeWorkEvent(employeeId, id)
         removeCloseable {
-            it is TimeEntry && it.id == id
+            it is WorkEvent && it.id == id
         }
     }
 }

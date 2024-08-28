@@ -103,9 +103,11 @@ class EmployeeTestBuilderResource(
     /**
      * Creates new employee with random values
      *
+     * @param number employee number
+     *
      * @return created employee
      */
-    fun createEmployee(numer: String): Employee {
+    fun createEmployee(number: String): Employee {
         return createEmployee(
             Employee(
                 firstName = "Test",
@@ -116,7 +118,7 @@ class EmployeeTestBuilderResource(
                 driverCardLastReadOut = OffsetDateTime.now().toString(),
                 driverCardId = "001",
                 regularWorkingHours = 8.0f,
-                employeeNumber = numer
+                employeeNumber = number
             )
         )
     }
