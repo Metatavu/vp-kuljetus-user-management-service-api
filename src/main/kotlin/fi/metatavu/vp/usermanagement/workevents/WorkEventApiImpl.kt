@@ -32,7 +32,7 @@ class WorkEventApiImpl : WorkEventsApi, AbstractApi() {
     lateinit var workEventTranslator: WorkEventTranslator
 
 
-    @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
+    @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     @WithTransaction
     override fun createEmployeeWorkEvent(employeeId: UUID, workEvent: WorkEvent): Uni<Response> =
         withCoroutineScope {
@@ -77,7 +77,7 @@ class WorkEventApiImpl : WorkEventsApi, AbstractApi() {
             createNoContent()
         }
 
-    @RolesAllowed(MANAGER_ROLE)
+    @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     override fun findEmployeeWorkEvent(employeeId: UUID, workEventId: UUID): Uni<Response> =
         withCoroutineScope {
             if (!isManager() && loggedUserId != employeeId) {
@@ -93,7 +93,7 @@ class WorkEventApiImpl : WorkEventsApi, AbstractApi() {
             createOk(workEventTranslator.translate(timeEntry))
         }
 
-    @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
+    @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     override fun listEmployeeWorkEvents(employeeId: UUID, start: OffsetDateTime?, first: Int, max: Int): Uni<Response> = withCoroutineScope {
         if (!isManager() && loggedUserId != employeeId) {
             return@withCoroutineScope createForbidden(FORBIDDEN)
@@ -120,7 +120,7 @@ class WorkEventApiImpl : WorkEventsApi, AbstractApi() {
                 return@withCoroutineScope createForbidden(FORBIDDEN)
             }
 
-            val employee = userController.find(employeeId)
+            userController.find(employeeId)
                 ?: return@withCoroutineScope createNotFoundWithMessage(
                     entity = EMPLOYEE_ENTITY,
                     id = employeeId

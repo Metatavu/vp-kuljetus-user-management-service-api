@@ -59,15 +59,15 @@ class WorkEventTestIT : AbstractFunctionalTest() {
     }
 
     @Test
-    fun testCreate() = createTestBuilder().use { tb ->
-        val employee1 = tb.manager.employees.createEmployee("1")
+    fun testCreate() = createTestBuilder().use {
+        val employee1 = it.manager.employees.createEmployee("1")
 
         val data = WorkEvent(
             workEventType = WorkEventType.DRY,
             startTime = OffsetDateTime.now().toString(),
             employeeId = employee1.id!!
         )
-        val created = tb.manager.workEvents.createWorkEvent(
+        val created = it.manager.workEvents.createWorkEvent(
             employeeId = employee1.id,
             workEvent = data
         )
@@ -79,6 +79,12 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             OffsetDateTime.parse(created.startTime).toEpochSecond()
         )
         assertEquals(data.employeeId, created.employeeId)
+
+        it.manager.workEvents.assertCreateFail(
+            employeeId = employee1.id,
+            workEvent = data.copy(employeeId = UUID.randomUUID()),
+            expectedStatus = 400
+        )
     }
 
     @Test
@@ -127,6 +133,13 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             OffsetDateTime.parse(updated.startTime).toEpochSecond()
         )
         assertEquals(updateData.employeeId, updated.employeeId)
+
+        it.manager.workEvents.assertUpdateFail(
+            employeeId = employee1.id,
+            id = created.id,
+            workEvent = updateData.copy(employeeId = UUID.randomUUID()),
+            expectedStatus = 400
+        )
     }
 
     @Test
