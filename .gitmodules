@@ -6,4 +6,4 @@
 	url = https://github.com/Metatavu/vp-kuljetus-transport-management-specs.git
 [submodule "vp-kuljetus-messaging-service"]
 	path = vp-kuljetus-messaging-service
-	url = git@github.com:Metatavu/vp-kuljetus-messaging-service.git
+	url = https://github.com/Metatavu/vp-kuljetus-messaging-service.git
