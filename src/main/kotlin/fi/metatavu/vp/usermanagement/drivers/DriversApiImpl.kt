@@ -1,6 +1,6 @@
 package fi.metatavu.vp.usermanagement.drivers
 
-import fi.metatavu.vp.api.spec.DriversApi
+import fi.metatavu.vp.usermanagement.spec.DriversApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.users.UserController
 import io.smallrye.mutiny.Uni

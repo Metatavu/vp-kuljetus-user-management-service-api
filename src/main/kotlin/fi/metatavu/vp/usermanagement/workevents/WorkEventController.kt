@@ -1,8 +1,8 @@
 package fi.metatavu.vp.usermanagement.workevents
 
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
-import fi.metatavu.vp.api.model.WorkEvent
-import fi.metatavu.vp.api.model.WorkEventType
+import fi.metatavu.vp.usermanagement.model.WorkEvent
+import fi.metatavu.vp.usermanagement.model.WorkEventType
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import java.time.OffsetDateTime

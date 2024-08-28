@@ -1,6 +1,6 @@
 package fi.metatavu.vp.usermanagement.workevents
 
-import fi.metatavu.vp.api.model.WorkEventType
+import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort

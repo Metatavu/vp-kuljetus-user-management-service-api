@@ -62,7 +62,7 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
     ): DriverWorkEventGlobalEvent {
         return DriverWorkEventGlobalEvent(
             driverId = driverId,
-            workEventType = fi.metatavu.vp.api.model.WorkEventType.valueOf(workEventType.name),
+            workEventType = fi.metatavu.vp.usermanagement.model.WorkEventType.valueOf(workEventType.name),
             time = OffsetDateTime.now())
     }
 }

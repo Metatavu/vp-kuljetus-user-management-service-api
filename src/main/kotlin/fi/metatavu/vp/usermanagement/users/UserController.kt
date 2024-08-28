@@ -1,10 +1,10 @@
 package fi.metatavu.vp.usermanagement.users
 
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
-import fi.metatavu.vp.api.model.Employee
-import fi.metatavu.vp.api.model.EmployeeType
-import fi.metatavu.vp.api.model.Office
-import fi.metatavu.vp.api.model.SalaryGroup
+import fi.metatavu.vp.usermanagement.model.Employee
+import fi.metatavu.vp.usermanagement.model.EmployeeType
+import fi.metatavu.vp.usermanagement.model.Office
+import fi.metatavu.vp.usermanagement.model.SalaryGroup
 import fi.metatavu.vp.usermanagement.keycloak.KeycloakAdminClient
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import jakarta.enterprise.context.ApplicationScoped

@@ -1,7 +1,7 @@
 package fi.metatavu.vp.usermanagement.drivers
 
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
-import fi.metatavu.vp.api.model.Driver
+import fi.metatavu.vp.usermanagement.model.Driver
 import fi.metatavu.vp.usermanagement.rest.AbstractTranslator
 import fi.metatavu.vp.usermanagement.users.UserController.Companion.ARCHIVED_AT_ATTRIBUTE
 import jakarta.enterprise.context.ApplicationScoped

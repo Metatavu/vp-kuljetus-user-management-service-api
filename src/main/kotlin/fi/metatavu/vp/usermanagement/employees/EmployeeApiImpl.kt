@@ -1,10 +1,10 @@
 package fi.metatavu.vp.usermanagement.employees
 
-import fi.metatavu.vp.api.model.Employee
-import fi.metatavu.vp.api.model.EmployeeType
-import fi.metatavu.vp.api.model.Office
-import fi.metatavu.vp.api.model.SalaryGroup
-import fi.metatavu.vp.api.spec.EmployeesApi
+import fi.metatavu.vp.usermanagement.model.Employee
+import fi.metatavu.vp.usermanagement.model.EmployeeType
+import fi.metatavu.vp.usermanagement.model.Office
+import fi.metatavu.vp.usermanagement.model.SalaryGroup
+import fi.metatavu.vp.usermanagement.spec.EmployeesApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.users.UserController

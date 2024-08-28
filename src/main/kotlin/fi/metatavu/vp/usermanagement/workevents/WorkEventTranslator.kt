@@ -1,6 +1,6 @@
 package fi.metatavu.vp.usermanagement.workevents
 
-import fi.metatavu.vp.api.model.WorkEvent
+import fi.metatavu.vp.usermanagement.model.WorkEvent
 import fi.metatavu.vp.usermanagement.rest.AbstractTranslator
 import jakarta.enterprise.context.ApplicationScoped
 

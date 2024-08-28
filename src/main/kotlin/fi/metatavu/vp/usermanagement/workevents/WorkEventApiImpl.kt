@@ -1,7 +1,7 @@
 package fi.metatavu.vp.usermanagement.workevents
 
-import fi.metatavu.vp.api.model.WorkEvent
-import fi.metatavu.vp.api.spec.WorkEventsApi
+import fi.metatavu.vp.usermanagement.model.WorkEvent
+import fi.metatavu.vp.usermanagement.spec.WorkEventsApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.users.UserController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
