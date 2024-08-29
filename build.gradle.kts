@@ -72,12 +72,12 @@ kotlin {
 sourceSets["main"].java {
     srcDir("build/generated/api-spec/src/main/kotlin")
     srcDir("build/generated/keycloak-admin-client/src/main/kotlin")
-    srcDir("vp-kuljetus-messaging-service-api/src/main/kotlin")
+    srcDir("vp-kuljetus-messaging-service/src/main/kotlin")
 }
 sourceSets["test"].java {
     srcDir("build/generated/api-client/src/main/kotlin")
     srcDir("quarkus-invalid-param-test/src/main/kotlin")
-    srcDir("vp-kuljetus-messaging-service-api/src/test/kotlin")
+    srcDir("vp-kuljetus-messaging-service/src/test/kotlin")
 }
 
 allOpen {
