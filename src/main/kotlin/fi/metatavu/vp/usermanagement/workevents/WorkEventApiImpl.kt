@@ -20,7 +20,7 @@ import java.util.*
 @RequestScoped
 @WithSession
 @Suppress("unused")
-class WorkEventApiImpl : WorkEventsApi, AbstractApi() {
+class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
 
     @Inject
     lateinit var userController: UserController
@@ -94,15 +94,15 @@ class WorkEventApiImpl : WorkEventsApi, AbstractApi() {
         }
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
-    override fun listEmployeeWorkEvents(employeeId: UUID, start: OffsetDateTime?, first: Int, max: Int): Uni<Response> = withCoroutineScope {
+    override fun listEmployeeWorkEvents(employeeId: UUID, after: OffsetDateTime?, before: OffsetDateTime?, first: Int, max: Int): Uni<Response> = withCoroutineScope {
         if (!isManager() && loggedUserId != employeeId) {
             return@withCoroutineScope createForbidden(FORBIDDEN)
         }
 
         val (timeEntries, count) = workEventController.list(
             employeeId = employeeId,
-            start = start,
-            first = first,
+            after = after,
+            before = before,
             max = max
         )
         createOk(workEventTranslator.translate(timeEntries), count)

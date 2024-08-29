@@ -21,20 +21,23 @@ class WorkEventController {
      * Lists work events and sorts them by start time from new to old
      *
      * @param employeeId employee id
-     * @param start start time
+     * @param after after this time
+     * @param before before this time
      * @param first first result
      * @param max max results
      * @return pair of work events and count
      */
     suspend fun list(
         employeeId: UUID,
-        start: OffsetDateTime?,
+        after: OffsetDateTime? = null,
+        before: OffsetDateTime? = null,
         first: Int? = null,
         max: Int? = null
     ): Pair<List<WorkEventEntity>, Long> {
         return workEventRepository.list(
             employeeId = employeeId,
-            start = start,
+            after = after,
+            before = before,
             first = first,
             max = max
         )

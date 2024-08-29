@@ -80,7 +80,7 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
             return@withCoroutineScope createForbidden("Deleting employees is disabled")
         }
 
-        workEventController.list(employeeId = employeeId, start = null).first.forEach {
+        workEventController.list(employeeId = employeeId).first.forEach {
             workEventController.delete(it)
         }
 

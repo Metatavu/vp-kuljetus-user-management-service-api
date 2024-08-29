@@ -43,6 +43,15 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             )
         )
         it.manager.workEvents.createWorkEvent(
+            employeeId = employee1.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.BREWERY,
+                startTime = now.plusHours(3).toString(),
+                employeeId = employee1.id,
+                id = UUID.randomUUID()
+            )
+        )
+        it.manager.workEvents.createWorkEvent(
             employeeId = employee2.id!!,
             workEvent = WorkEvent(
                 workEventType = WorkEventType.BREWERY,
@@ -53,9 +62,13 @@ class WorkEventTestIT : AbstractFunctionalTest() {
         )
 
         val employee1Records = it.manager.workEvents.listWorkEvents(employee1.id)
-        assertEquals(2, employee1Records.size)
-        val startFilter = it.manager.workEvents.listWorkEvents(employee1.id, start = now.plusHours(1))
-        assertEquals(1, startFilter.size)
+        assertEquals(3, employee1Records.size)
+        val employee2Records = it.manager.workEvents.listWorkEvents(employee2.id)
+        assertEquals(1, employee2Records.size)
+        val afterFilter = it.manager.workEvents.listWorkEvents(employee1.id, after = now.plusHours(2))
+        assertEquals(2, afterFilter.size)
+        val beforeFilter = it.manager.workEvents.listWorkEvents(employee1.id, before = now.plusHours(1))
+        assertEquals(1, beforeFilter.size)
     }
 
     @Test
@@ -154,10 +167,7 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             )
         )
         it.manager.workEvents.deleteWorkEvent(employee1.id, created.id!!)
-        val all = it.manager.workEvents.listWorkEvents(
-            employee1.id,
-            start = OffsetDateTime.now().minusDays(1)
-        )
+        val all = it.manager.workEvents.listWorkEvents(employee1.id)
         assertEquals(0, all.size)
     }
 

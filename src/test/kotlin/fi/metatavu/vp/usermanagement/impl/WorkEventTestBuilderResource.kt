@@ -41,20 +41,23 @@ class WorkEventTestBuilderResource(
      * Lists work events
      *
      * @param employeeId employee id
-     * @param start start
+     * @param after after
+     * @param before before
      * @param first first
      * @param max max
      * @return list of work events
      */
     fun listWorkEvents(
         employeeId: UUID,
-        start: OffsetDateTime? = null,
+        after: OffsetDateTime? = null,
+        before: OffsetDateTime? = null,
         first: Int = 0,
         max: Int = 10
     ): Array<WorkEvent> {
         return api.listEmployeeWorkEvents(
             employeeId = employeeId,
-            start = start?.toString(),
+            after = after?.toString(),
+            before = before?.toString(),
             first = first,
             max = max
         )

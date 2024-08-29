@@ -39,14 +39,16 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
      * Lists work events
      *
      * @param employeeId employee id
-     * @param start start time
+     * @param after after this time
+     * @param before before this time
      * @param first first
      * @param max max
      * @return pair of list of work events and count
      */
     suspend fun list(
         employeeId: UUID,
-        start: OffsetDateTime?,
+        after: OffsetDateTime?,
+        before: OffsetDateTime?,
         first: Int? = null,
         max: Int? = null
     ): Pair<List<WorkEventEntity>, Long> {
@@ -56,9 +58,14 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
         sb.append("employeeId = :employeeId")
         parameters.and("employeeId", employeeId)
 
-        if (start != null) {
-            addCondition(sb, "startTime >= :start")
-            parameters.and("start", start)
+        if (after != null) {
+            addCondition(sb, "startTime >= :after")
+            parameters.and("after", after)
+        }
+
+        if (before != null) {
+            addCondition(sb, "startTime <= :before")
+            parameters.and("before", before)
         }
 
         return queryWithCount(
