@@ -42,7 +42,7 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
         val shiftStartedWorkEvent = tb.manager.workEvents.listWorkEvents(driverId)[0]
         assertEquals(driverId, shiftStartedWorkEvent.employeeId)
         assertNotNull(shiftStartedWorkEvent.workEventType)
-        assertNotNull(shiftStartedWorkEvent.startTime)
+        assertNotNull(shiftStartedWorkEvent.time)
 
         val endWorkDayEvent = createDriverWorkEvent(driverId, WorkEventType.DRIVE)
         MessagingClient.publishMessage(endWorkDayEvent)
@@ -53,7 +53,7 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
         val driveWorkEvent = tb.manager.workEvents.listWorkEvents(driverId)[0]
         assertEquals(driverId, driveWorkEvent.employeeId)
         assertNotNull(driveWorkEvent.workEventType)
-        assertNotNull(driveWorkEvent.startTime)
+        assertNotNull(driveWorkEvent.time)
     }
 
     private fun createDriverWorkEvent(

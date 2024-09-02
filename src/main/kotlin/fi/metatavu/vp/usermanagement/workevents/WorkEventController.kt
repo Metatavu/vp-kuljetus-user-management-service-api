@@ -18,7 +18,7 @@ class WorkEventController {
     lateinit var workEventRepository: WorkEventRepository
 
     /**
-     * Lists work events and sorts them by start time from new to old
+     * Lists work events and sorts them by time from new to old
      *
      * @param employeeId employee id
      * @param after after this time
@@ -47,19 +47,19 @@ class WorkEventController {
      * Creates a new work event
      *
      * @param employee employee
-     * @param startTime start time
+     * @param time time
      * @param workEventType work event type
      * @return created work event
      */
     suspend fun create(
         employee: UserRepresentation,
-        startTime: OffsetDateTime,
+        time: OffsetDateTime,
         workEventType: WorkEventType
     ): WorkEventEntity {
         return workEventRepository.create(
             id = UUID.randomUUID(),
             employeeId = UUID.fromString(employee.id),
-            startTime = startTime,
+            time = time,
             workEventType = workEventType
         )
     }
@@ -87,7 +87,7 @@ class WorkEventController {
      * @return updated work event
      */
     suspend fun update(foundWorkEvent: WorkEventEntity, workEvent: WorkEvent): WorkEventEntity {
-        foundWorkEvent.startTime = workEvent.startTime
+        foundWorkEvent.time = workEvent.time
         foundWorkEvent.workEventType = workEvent.workEventType
 
         return workEventRepository.persistSuspending(foundWorkEvent)
@@ -97,11 +97,11 @@ class WorkEventController {
      * Updates work event
      *
      * @param foundWorkEvent found work event
-     * @param newStartTime new start time
+     * @param newTime new time
      * @return updated time entry
      */
-    suspend fun update(foundWorkEvent: WorkEventEntity, newStartTime: OffsetDateTime): WorkEventEntity {
-        foundWorkEvent.startTime = newStartTime
+    suspend fun update(foundWorkEvent: WorkEventEntity, newTime: OffsetDateTime): WorkEventEntity {
+        foundWorkEvent.time = newTime
 
         return workEventRepository.persistSuspending(foundWorkEvent)
     }

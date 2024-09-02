@@ -49,7 +49,7 @@ class MessagingController: WithCoroutineScope() {
 
             workEventController.create(
                 employee = foundDriver,
-                startTime = event.time,
+                time = event.time,
                 workEventType = event.workEventType
             )
             logger.debug("Event ${event.type} processed. Created new time entry (${event.workEventType}) for driver ${foundDriver.id}")

@@ -52,7 +52,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
 
             val created = workEventController.create(
                 employee = employee,
-                startTime = workEvent.startTime,
+                time = workEvent.time,
                 workEventType = workEvent.workEventType
             )
 

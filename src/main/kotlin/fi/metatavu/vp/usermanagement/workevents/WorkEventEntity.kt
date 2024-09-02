@@ -19,7 +19,7 @@ class WorkEventEntity {
     lateinit var employeeId: UUID
 
     @Column(nullable = false)
-    lateinit var startTime: OffsetDateTime
+    lateinit var time: OffsetDateTime
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)

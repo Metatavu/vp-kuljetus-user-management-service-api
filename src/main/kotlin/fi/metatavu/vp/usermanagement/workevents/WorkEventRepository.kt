@@ -16,20 +16,20 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
      *
      * @param id id
      * @param employeeId employee id
-     * @param startTime start time
+     * @param time time
      * @param workEventType work event type
      * @return created work event
      */
     suspend fun create(
         id: UUID,
         employeeId: UUID,
-        startTime: OffsetDateTime,
+        time: OffsetDateTime,
         workEventType: WorkEventType
     ): WorkEventEntity {
         val workEventEntity = WorkEventEntity()
         workEventEntity.id = id
         workEventEntity.employeeId = employeeId
-        workEventEntity.startTime = startTime
+        workEventEntity.time = time
         workEventEntity.workEventType = workEventType
 
         return persistSuspending(workEventEntity)
@@ -59,17 +59,17 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
         parameters.and("employeeId", employeeId)
 
         if (after != null) {
-            addCondition(sb, "startTime >= :after")
+            addCondition(sb, "time >= :after")
             parameters.and("after", after)
         }
 
         if (before != null) {
-            addCondition(sb, "startTime <= :before")
+            addCondition(sb, "time <= :before")
             parameters.and("before", before)
         }
 
         return queryWithCount(
-            find(sb.toString(), Sort.descending("startTime"), parameters),
+            find(sb.toString(), Sort.descending("time"), parameters),
             first,
             max
         )

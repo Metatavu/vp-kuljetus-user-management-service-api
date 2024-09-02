@@ -28,7 +28,7 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             employeeId = employee1.id!!,
             workEvent = WorkEvent(
                 workEventType = WorkEventType.MEAT_CELLAR,
-                startTime = now.toString(),
+                time = now.toString(),
                 employeeId = employee1.id,
                 id = UUID.randomUUID()
             )
@@ -37,7 +37,7 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             employeeId = employee1.id,
             workEvent =  WorkEvent(
                 workEventType = WorkEventType.OTHER_WORK,
-                startTime = now.plusDays(1).toString(),
+                time = now.plusDays(1).toString(),
                 employeeId = employee1.id,
                 id = UUID.randomUUID()
             )
@@ -46,7 +46,7 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             employeeId = employee1.id,
             workEvent = WorkEvent(
                 workEventType = WorkEventType.BREWERY,
-                startTime = now.plusHours(3).toString(),
+                time = now.plusHours(3).toString(),
                 employeeId = employee1.id,
                 id = UUID.randomUUID()
             )
@@ -55,7 +55,7 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             employeeId = employee2.id!!,
             workEvent = WorkEvent(
                 workEventType = WorkEventType.BREWERY,
-                startTime = now.toString(),
+                time = now.toString(),
                 employeeId = employee2.id,
                 id = UUID.randomUUID()
             )
@@ -77,7 +77,7 @@ class WorkEventTestIT : AbstractFunctionalTest() {
 
         val data = WorkEvent(
             workEventType = WorkEventType.DRY,
-            startTime = OffsetDateTime.now().toString(),
+            time = OffsetDateTime.now().toString(),
             employeeId = employee1.id!!
         )
         val created = it.manager.workEvents.createWorkEvent(
@@ -88,8 +88,8 @@ class WorkEventTestIT : AbstractFunctionalTest() {
         assertNotNull(created.id)
         assertEquals(data.workEventType, created.workEventType)
         assertEquals(
-            OffsetDateTime.parse(data.startTime).toEpochSecond(),
-            OffsetDateTime.parse(created.startTime).toEpochSecond()
+            OffsetDateTime.parse(data.time).toEpochSecond(),
+            OffsetDateTime.parse(created.time).toEpochSecond()
         )
         assertEquals(data.employeeId, created.employeeId)
 
@@ -107,7 +107,7 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             employeeId = employee1.id!!,
             workEvent = WorkEvent(
                 workEventType = WorkEventType.SHIFT_END,
-                startTime = OffsetDateTime.now().toString(),
+                time = OffsetDateTime.now().toString(),
                 employeeId = employee1.id
             )
         )
@@ -116,8 +116,8 @@ class WorkEventTestIT : AbstractFunctionalTest() {
         assertEquals(created.id, found.id)
         assertEquals(created.workEventType, found.workEventType)
         assertEquals(
-            OffsetDateTime.parse(created.startTime).toEpochSecond(),
-            OffsetDateTime.parse(found.startTime).toEpochSecond()
+            OffsetDateTime.parse(created.time).toEpochSecond(),
+            OffsetDateTime.parse(found.time).toEpochSecond()
         )
         assertEquals(created.employeeId, found.employeeId)
     }
@@ -129,21 +129,21 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             employeeId = employee1.id!!,
             workEvent = WorkEvent(
                 workEventType = WorkEventType.UNLOADING,
-                startTime = OffsetDateTime.now().toString(),
+                time = OffsetDateTime.now().toString(),
                 employeeId = employee1.id
             )
         )
         val updateData = created.copy(
             workEventType = WorkEventType.MEAT_CELLAR,
-            startTime = OffsetDateTime.now().toString()
+            time = OffsetDateTime.now().toString()
         )
         val updated = it.manager.workEvents.updateWorkEvent(employee1.id, created.id!!, updateData)
 
         assertEquals(updateData.id, updated.id)
         assertEquals(updateData.workEventType, updated.workEventType)
         assertEquals(
-            OffsetDateTime.parse(updateData.startTime).toEpochSecond(),
-            OffsetDateTime.parse(updated.startTime).toEpochSecond()
+            OffsetDateTime.parse(updateData.time).toEpochSecond(),
+            OffsetDateTime.parse(updated.time).toEpochSecond()
         )
         assertEquals(updateData.employeeId, updated.employeeId)
 
@@ -162,7 +162,7 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             employeeId = employee1.id!!,
             workEvent = WorkEvent(
                 workEventType = WorkEventType.VEGETABLE,
-                startTime = OffsetDateTime.now().toString(),
+                time = OffsetDateTime.now().toString(),
                 employeeId = employee1.id
             )
         )

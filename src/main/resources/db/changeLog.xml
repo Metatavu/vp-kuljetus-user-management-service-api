@@ -87,7 +87,7 @@
             <column name="employeeId" type="binary(16)">
                 <constraints nullable="false"/>
             </column>
-            <column name="startTime" type="datetime(6)">
+            <column name="time" type="datetime(6)">
                 <constraints nullable="false"/>
             </column>
             <column name="workeventtype" type="varchar(191)">
