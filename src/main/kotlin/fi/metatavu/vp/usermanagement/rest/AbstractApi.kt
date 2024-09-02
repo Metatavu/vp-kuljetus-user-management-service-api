@@ -179,6 +179,13 @@ abstract class AbstractApi: WithCoroutineScope() {
         return createError(Response.Status.NOT_FOUND, message)
     }
 
+    /**
+     * Constructs not found response with message e.g. "Entity with id not found"
+     *
+     * @param entity entity
+     * @param id id
+     * @return response
+     */
     protected fun createNotFoundWithMessage(entity: String, id: UUID): Response {
         return createNotFound(createNotFoundMessage(entity, id))
     }
