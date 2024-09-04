@@ -1,6 +1,6 @@
 package fi.metatavu.vp.usermanagement.holidays
 
-import fi.metatavu.vp.api.model.Holiday
+import fi.metatavu.vp.usermanagement.model.Holiday
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import java.time.LocalDate

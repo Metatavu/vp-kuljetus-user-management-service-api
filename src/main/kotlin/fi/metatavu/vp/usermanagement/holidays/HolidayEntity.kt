@@ -1,6 +1,6 @@
 package fi.metatavu.vp.usermanagement.holidays
 
-import fi.metatavu.vp.api.model.CompensationType
+import fi.metatavu.vp.usermanagement.model.CompensationType
 import fi.metatavu.vp.usermanagement.persistence.Metadata
 import jakarta.persistence.*
 import java.time.LocalDate

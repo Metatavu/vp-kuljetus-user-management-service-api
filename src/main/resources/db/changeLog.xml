@@ -75,7 +75,24 @@
             <column name="modifiedat" type="datetime(6)">
                 <constraints nullable="false"/>
             </column>
+        </createTable>
+    </changeSet>
 
+    <changeSet id="replace_timeentry_with_workevent" author="Ville Juutila">
+        <dropTable tableName="timeentry"/>
+        <createTable tableName="workevent">
+            <column name="id" type="binary(16)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="employeeId" type="binary(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="time" type="datetime(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="workeventtype" type="varchar(191)">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
     </changeSet>
 </databaseChangeLog>

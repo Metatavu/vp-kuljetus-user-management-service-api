@@ -101,9 +101,9 @@ val generateApiSpec = tasks.register("generateApiSpec",GenerateTask::class){
     setProperty("generatorName", "kotlin-server")
     setProperty("inputSpec",  "$rootDir/vp-kuljetus-transport-management-specs/services/user-management-services.yaml")
     setProperty("outputDir", "$buildDir/generated/api-spec")
-    setProperty("apiPackage", "${project.group}.api.spec")
-    setProperty("invokerPackage", "${project.group}.api.invoker")
-    setProperty("modelPackage", "${project.group}.api.model")
+    setProperty("apiPackage", "${project.group}.usermanagement.spec")
+    setProperty("invokerPackage", "${project.group}.usermanagement.invoker")
+    setProperty("modelPackage", "${project.group}.usermanagement.model")
     setProperty("templateDir", "$rootDir/openapi/api-spec")
     setProperty("validateSpec", false)
 

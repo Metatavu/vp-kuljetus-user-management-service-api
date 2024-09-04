@@ -1,9 +1,8 @@
 package fi.metatavu.vp.usermanagement.messaging
 
 import fi.metatavu.vp.messaging.events.DriverWorkEventGlobalEvent
-import fi.metatavu.vp.messaging.events.abstracts.GlobalEvent
 import fi.metatavu.vp.usermanagement.WithCoroutineScope
-import fi.metatavu.vp.usermanagement.timeentries.TimeEntryController
+import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.users.UserController
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.vertx.ConsumeEvent
@@ -12,7 +11,6 @@ import io.vertx.core.Vertx
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
-import java.time.OffsetDateTime
 
 /**
  * Controller that listens to events sent by messaging service
@@ -22,7 +20,7 @@ import java.time.OffsetDateTime
 class MessagingController: WithCoroutineScope() {
 
     @Inject
-    lateinit var timeEntryController: TimeEntryController
+    lateinit var workEventController: WorkEventController
 
     @Inject
     lateinit var userController: UserController
@@ -40,30 +38,19 @@ class MessagingController: WithCoroutineScope() {
      */
     @ConsumeEvent("DRIVER_WORKING_STATE_CHANGE")
     @WithTransaction
-    fun processWorkingStateChangeEvent(event: GlobalEvent): Uni<Void> = withCoroutineScope {
+    fun processWorkingStateChangeEvent(event: DriverWorkEventGlobalEvent): Uni<Void> = withCoroutineScope {
             logger.info("Processing event ${event.type}")
-            val parsed = event as DriverWorkEventGlobalEvent
-            val foundDriver = userController.find(parsed.driverId)
+            val foundDriver = userController.find(event.driverId)
+
             if (foundDriver == null) {
-                logger.error("Driver with id ${parsed.driverId} not found")
+                logger.error("Driver with id ${event.driverId} not found")
                 return@withCoroutineScope
             }
-            val latestTimeEntry = timeEntryController.findIncompleteEntries(employee = foundDriver)
-            if (latestTimeEntry != null && latestTimeEntry.startTime < parsed.time) {
-                logger.debug("Found incomplete time entry for driver ${foundDriver.id} with id ${latestTimeEntry.id}")
-                latestTimeEntry.endTime = OffsetDateTime.now()
-                timeEntryController.updateEndTime(
-                    timeEntry = latestTimeEntry,
-                    newEndTime = parsed.time
-                )
-            } else {
-                logger.debug("No incomplete valid time entries found for driver ${foundDriver.id}")
-            }
 
-            timeEntryController.create(
+            workEventController.create(
                 employee = foundDriver,
-                startTime = parsed.time,
-                workEventType = parsed.workEventType
+                time = event.time,
+                workEventType = event.workEventType
             )
             logger.debug("Event ${event.type} processed. Created new time entry (${event.workEventType}) for driver ${foundDriver.id}")
 

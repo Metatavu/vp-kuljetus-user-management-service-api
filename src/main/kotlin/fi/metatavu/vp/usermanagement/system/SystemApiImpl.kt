@@ -1,6 +1,6 @@
 package fi.metatavu.vp.usermanagement.system
 
-import fi.metatavu.vp.api.spec.SystemApi
+import fi.metatavu.vp.usermanagement.spec.SystemApi
 import io.smallrye.mutiny.Uni
 import jakarta.enterprise.context.RequestScoped
 import jakarta.ws.rs.core.Response

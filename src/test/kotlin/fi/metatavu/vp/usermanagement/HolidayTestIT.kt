@@ -21,7 +21,7 @@ class HolidayTestIT: AbstractFunctionalTest() {
                 if (i == 0) now.plusYears(1)
                 else now.plusDays(i.toLong())
             }
-            println("DATE: $date")
+
             it.manager.holidays.create(
                 holiday = Holiday(
                     name = "Holiday $i",

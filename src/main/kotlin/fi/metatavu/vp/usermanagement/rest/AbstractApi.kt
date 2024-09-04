@@ -180,6 +180,17 @@ abstract class AbstractApi: WithCoroutineScope() {
     }
 
     /**
+     * Constructs not found response with message e.g. "Entity with id not found"
+     *
+     * @param entity entity
+     * @param id id
+     * @return response
+     */
+    protected fun createNotFoundWithMessage(entity: String, id: UUID): Response {
+        return createNotFound(createNotFoundMessage(entity, id))
+    }
+
+    /**
      * Constructs not found response
      *
      * @return response
@@ -248,7 +259,7 @@ abstract class AbstractApi: WithCoroutineScope() {
      * @return error response
      */
     private fun createError(status: Response.Status, message: String): Response {
-        val entity = fi.metatavu.vp.api.model.Error(
+        val entity = fi.metatavu.vp.usermanagement.model.Error(
             message = message,
             status = status.statusCode
         )

@@ -1,7 +1,7 @@
 package fi.metatavu.vp.usermanagement.holidays
 
-import fi.metatavu.vp.api.model.Holiday
-import fi.metatavu.vp.api.spec.HolidaysApi
+import fi.metatavu.vp.usermanagement.model.Holiday
+import fi.metatavu.vp.usermanagement.spec.HolidaysApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction

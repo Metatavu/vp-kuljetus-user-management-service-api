@@ -1,6 +1,6 @@
 package fi.metatavu.vp.usermanagement.holidays
 
-import fi.metatavu.vp.api.model.Holiday
+import fi.metatavu.vp.usermanagement.model.Holiday
 import fi.metatavu.vp.usermanagement.rest.AbstractTranslator
 import jakarta.enterprise.context.ApplicationScoped
 

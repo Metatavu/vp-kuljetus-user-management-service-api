@@ -9,4 +9,4 @@ import io.quarkus.test.junit.TestProfile
  */
 @QuarkusIntegrationTest
 @TestProfile(DefaultTestProfile::class)
-class NativeTimeEntryTestIT : TimeEntryTestIT()
+class NativeWorkEventTestIT : WorkEventTestIT()
