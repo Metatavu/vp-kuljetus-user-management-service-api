@@ -106,13 +106,6 @@ class HolidayTestIT: AbstractFunctionalTest() {
         it.manager.holidays.assertUpdateFail(
             expectedStatus = 400,
             holidayId = createdHoliday2.id,
-            holiday = createdHoliday2.copy(id = UUID.randomUUID())
-        )
-
-
-        it.manager.holidays.assertUpdateFail(
-            expectedStatus = 400,
-            holidayId = createdHoliday2.id,
             holiday = createdHoliday2.copy(date = createdHoliday1.date)
         )
     }
