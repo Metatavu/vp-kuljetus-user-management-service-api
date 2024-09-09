@@ -81,10 +81,6 @@ class HolidayApiImpl: HolidaysApi, AbstractApi() {
         val foundHoliday = holidayController.find(holidayId)
             ?: return@withCoroutineScope createNotFound(NOT_FOUND_MESSAGE)
 
-        if (holidayId != holiday.id) {
-            return@withCoroutineScope createBadRequest("Holiday id in path and body do not match")
-        }
-
         holidayController.findByDate(holiday.date)?.let {
             if (it.id != holidayId) {
                 return@withCoroutineScope createBadRequest("Holiday with date ${holiday.date} already exists")
