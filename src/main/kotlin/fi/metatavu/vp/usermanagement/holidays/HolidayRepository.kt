@@ -2,6 +2,7 @@ package fi.metatavu.vp.usermanagement.holidays
 
 import fi.metatavu.vp.usermanagement.model.CompensationType
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
+import io.quarkus.panache.common.Sort
 import io.smallrye.mutiny.coroutines.awaitSuspending
 import jakarta.enterprise.context.ApplicationScoped
 import java.time.LocalDate
@@ -21,12 +22,12 @@ class HolidayRepository: AbstractRepository<HolidayEntity, UUID>() {
     suspend fun list(year: Int? = null, first: Int? = null, max: Int? = null): Pair<List<HolidayEntity>, Long> {
         return if (year != null) {
             queryWithCount(
-                find("year(date) = ?1", year),
+                find("year(date) = ?1", Sort.by("date", Sort.Direction.Descending), year),
                 first,
                 max
             )
         } else {
-            listAllSuspending(first, max, null)
+            listAllSuspending(first, max, Sort.by("date", Sort.Direction.Descending))
         }
     }
 
