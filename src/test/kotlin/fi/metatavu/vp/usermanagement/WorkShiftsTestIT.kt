@@ -65,7 +65,6 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
             employeeId = employee1.id,
         )
         assertEquals(1, workShifthoursOneShift.size)
-        //todo more filters
     }
 
     /**
