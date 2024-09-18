@@ -77,23 +77,23 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         val now = OffsetDateTime.now()
 
         // first even created a shif
-        createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now)                    // 1 hr
+        val shift1Id =
+            createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now).employeeWorkShiftId  // 1 hr
         createWorkEvent(it, employee1.id, WorkEventType.BREWERY, now.plusHours(1))      // 1 hr
         createWorkEvent(it, employee1.id, WorkEventType.BREAK, now.plusHours(2))        // Last event in the shift -> no time calculated
 
         //Long break triggers new shift
-        createWorkEvent(it, employee1.id, WorkEventType.SHIFT_END, now.plusHours(6))    // One event -> no time calculated
+        val shift2Id = createWorkEvent(it, employee1.id, WorkEventType.SHIFT_END, now.plusHours(6)).employeeWorkShiftId    // One event -> no time calculated
 
         // ended shift triggers new shift
-        createWorkEvent(it, employee1.id, WorkEventType.OTHER_WORK, now.plusHours(7))   // One event -> no time calculated
-
+        val shift3Id = createWorkEvent(it, employee1.id, WorkEventType.OTHER_WORK, now.plusHours(7)).employeeWorkShiftId   // One event -> no time calculated
 
         val workShifts = it.manager.workShifts.listEmployeeWorkShifts(
             employeeId = employee1.id
         )
-        assertEquals(3, workShifts.size)
+        assertEquals(3, workShifts.size)    // all 3 shifts belong to the same day -> no sorting
 
-        val shift0 = workShifts[0]      // First shift -> last one in time
+        val shift0 = workShifts.find { s -> s.id == shift3Id }!!
         val workShift3HoursOther = it.manager.workShiftHours.listWorkShiftHours(
             employeeId = employee1.id,
             employeeWorkShiftId = shift0.id,
@@ -102,8 +102,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         assertEquals(1, workShift3HoursOther.size)
         assertEquals(0f, workShift3HoursOther[0].calculatedHours)
 
-
-        val workShift2 = workShifts[1]
+        val workShift2 = workShifts.find { s -> s.id == shift2Id }!!
         val workShift2HoursEND = it.manager.workShiftHours.listWorkShiftHours(
             employeeId = employee1.id,
             employeeWorkShiftId = workShift2.id,
@@ -112,7 +111,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         assertEquals(1, workShift2HoursEND.size)
         assertEquals(0f, workShift2HoursEND[0].calculatedHours)
 
-        val shift3 = workShifts[2]
+        val shift3 = workShifts.find { s -> s.id == shift1Id }!!
         val workShift1HoursBreak = it.manager.workShiftHours.listWorkShiftHours(
             employeeId = employee1.id,
             employeeWorkShiftId = shift3.id,
@@ -127,6 +126,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         )
         assertEquals(1, workShift1HoursBrew.size)
         assertEquals(1f, workShift1HoursBrew[0].calculatedHours)
+
         val listWorkShiftHoursMeat = it.manager.workShiftHours.listWorkShiftHours(
             employeeId = employee1.id,
             employeeWorkShiftId = shift3.id,

@@ -45,7 +45,7 @@ class WorkShiftHoursTranslator: AbstractTranslator<WorkShiftHoursEntity, WorkShi
         }
         var hours = 0f
         workEvents.reversed().forEachIndexed { index, workEvent ->
-            if (workEvent.workEventType.value == type.value && index != workEvents.size-1) {
+            if (workEvent.workEventType == type && index != workEvents.size-1) {
                 val nextRecord = workEvents[index+1]
                 val time = Duration.between(workEvent.time, nextRecord.time).abs()
                 hours += time.toHours().toFloat()

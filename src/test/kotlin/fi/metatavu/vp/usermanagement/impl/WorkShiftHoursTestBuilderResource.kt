@@ -25,7 +25,11 @@ class WorkShiftHoursTestBuilderResource(
 ) : ApiTestBuilderResource<WorkShiftHours, ApiClient>(testBuilder, apiClient) {
 
     override fun clean(t: WorkShiftHours) {
-        api.deleteWorkShiftHours(t.id!!)
+        try {
+            deleteWorkShiftHours(t.id!!)
+        } catch (_: ClientException) {
+
+        }
     }
 
     override fun getApi(): WorkShiftHoursApi {
@@ -56,13 +60,17 @@ class WorkShiftHoursTestBuilderResource(
         employeeWorkShiftStartedAfter: String? = null,
         employeeWorkShiftStartedBefore: String? = null
     ): Array<WorkShiftHours> {
-        return api.listWorkShiftHours(
+        val all = api.listWorkShiftHours(
             employeeId = employeeId,
             employeeWorkShiftId = employeeWorkShiftId,
             workType = workType,
             employeeWorkShiftStartedBefore = employeeWorkShiftStartedBefore,
             employeeWorkShiftStartedAfter = employeeWorkShiftStartedAfter
         )
+        all.forEach {
+            addClosable(it)
+        }
+        return all
     }
 
     /**
@@ -81,6 +89,15 @@ class WorkShiftHoursTestBuilderResource(
      */
     fun updateWorkShiftHours(id: UUID, workEvent: WorkShiftHours): WorkShiftHours {
         return api.updateWorkShiftHours(id, workEvent)
+    }
+
+    /**
+     * Deletes work shift hours
+     *
+     * @param id work shift hours id
+     */
+    fun deleteWorkShiftHours(id: UUID) {
+        api.deleteWorkShiftHours(id)
     }
 
     /**

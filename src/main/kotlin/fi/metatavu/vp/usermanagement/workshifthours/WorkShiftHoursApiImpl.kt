@@ -78,7 +78,7 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
 
         if (duplicates.isNotEmpty()) {
             val updated = workShiftHoursController.updateWorkShiftHours(duplicates.first(), workShiftHours)
-            createOk(workShiftHoursTranslator.translate(updated))
+            return@withCoroutineScope createOk(workShiftHoursTranslator.translate(updated))
         }
 
         val created = workShiftHoursController.createWorkShiftHours(
