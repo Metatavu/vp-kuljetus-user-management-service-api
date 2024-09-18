@@ -2,8 +2,10 @@ package fi.metatavu.vp.usermanagement.workevents
 
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
+import fi.metatavu.vp.usermanagement.workshifts.EmployeeWorkShiftEntity
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
+import io.smallrye.mutiny.coroutines.awaitSuspending
 import jakarta.enterprise.context.ApplicationScoped
 import java.time.OffsetDateTime
 import java.util.*
@@ -18,20 +20,22 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
      * @param employeeId employee id
      * @param time time
      * @param workEventType work event type
+     * @param workShiftEntity work shift entity
      * @return created work event
      */
     suspend fun create(
         id: UUID,
         employeeId: UUID,
         time: OffsetDateTime,
-        workEventType: WorkEventType
+        workEventType: WorkEventType,
+        workShiftEntity: EmployeeWorkShiftEntity
     ): WorkEventEntity {
         val workEventEntity = WorkEventEntity()
         workEventEntity.id = id
         workEventEntity.employeeId = employeeId
         workEventEntity.time = time
         workEventEntity.workEventType = workEventType
-
+        workEventEntity.workShift = workShiftEntity
         return persistSuspending(workEventEntity)
     }
 
@@ -39,6 +43,7 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
      * Lists work events
      *
      * @param employeeId employee id
+     * @param employeeWorkShift employee work shift
      * @param after after this time
      * @param before before this time
      * @param first first
@@ -46,17 +51,20 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
      * @return pair of list of work events and count
      */
     suspend fun list(
-        employeeId: UUID,
-        after: OffsetDateTime?,
-        before: OffsetDateTime?,
+        employeeId: UUID? = null,
+        employeeWorkShift: EmployeeWorkShiftEntity? = null,
+        after: OffsetDateTime? = null,
+        before: OffsetDateTime? = null,
         first: Int? = null,
         max: Int? = null
     ): Pair<List<WorkEventEntity>, Long> {
         val sb = StringBuilder()
         val parameters = Parameters()
 
-        sb.append("employeeId = :employeeId")
-        parameters.and("employeeId", employeeId)
+        if (employeeId != null) {
+            sb.append("employeeId = :employeeId")
+            parameters.and("employeeId", employeeId)
+        }
 
         if (after != null) {
             addCondition(sb, "time >= :after")
@@ -68,11 +76,42 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
             parameters.and("before", before)
         }
 
+        if (employeeWorkShift != null) {
+            addCondition(sb, "workShift = :workShift")
+            parameters.and("workShift", employeeWorkShift)
+        }
+
         return queryWithCount(
             find(sb.toString(), Sort.descending("time"), parameters),
             first,
             max
         )
+    }
+
+    /**
+     * Finds latest work event for the user
+     *
+     * @param employeeId employee id
+     * @return latest work event
+     */
+    suspend fun findLatestWorkEvent(employeeId: UUID?): WorkEventEntity? {
+        return find(
+            "employeeId = :employeeId order by time desc limit 1",
+            Parameters.with("employeeId", employeeId)
+        ).firstResult<WorkEventEntity>().awaitSuspending()
+    }
+
+    /**
+     * Finds earliest work event in the shift
+     *
+     * @param workShift work shift
+     * @return earliest work event
+     */
+    suspend fun findEarliestWorkEvent(workShift: EmployeeWorkShiftEntity): WorkEventEntity? {
+        return find(
+            "workShift = :workShift order by time asc limit 1",
+            Parameters.with("workShift", workShift)
+        ).firstResult<WorkEventEntity>().awaitSuspending()
     }
 
 }

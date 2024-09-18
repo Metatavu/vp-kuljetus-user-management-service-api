@@ -4,6 +4,7 @@ import fi.metatavu.vp.usermanagement.model.WorkEvent
 import fi.metatavu.vp.usermanagement.spec.WorkEventsApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.users.UserController
+import fi.metatavu.vp.usermanagement.workshifts.EmployeeWorkShiftController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -31,6 +32,8 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
     @Inject
     lateinit var workEventTranslator: WorkEventTranslator
 
+    @Inject
+    lateinit var empoyeeWorkShiftController: EmployeeWorkShiftController
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     @WithTransaction
@@ -94,12 +97,27 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
         }
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
-    override fun listEmployeeWorkEvents(employeeId: UUID, after: OffsetDateTime?, before: OffsetDateTime?, first: Int, max: Int): Uni<Response> = withCoroutineScope {
+    override fun listEmployeeWorkEvents(
+        employeeId: UUID,
+        employeeWorkShiftId: UUID?,
+        after: OffsetDateTime?,
+        before: OffsetDateTime?,
+        first: Int,
+        max: Int
+    ): Uni<Response> = withCoroutineScope{
         if (!isManager() && loggedUserId != employeeId) {
             return@withCoroutineScope createForbidden(FORBIDDEN)
         }
 
+        val workShiftFilter = employeeWorkShiftId?.let {
+            empoyeeWorkShiftController.findEmployeeWorkShift(employeeId, it)
+                ?: return@withCoroutineScope createNotFoundWithMessage(
+                    entity = WORK_SHIFT,
+                    id = employeeWorkShiftId
+                )
+        }
         val (timeEntries, count) = workEventController.list(
+            employeeWorkShift = workShiftFilter,
             employeeId = employeeId,
             after = after,
             before = before,
