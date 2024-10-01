@@ -5,10 +5,7 @@ import fi.metatavu.jaxrs.test.functional.builder.auth.AccessTokenTestBuilderAuth
 import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import fi.metatavu.vp.test.client.infrastructure.ApiClient
 import fi.metatavu.vp.usermanagement.TestBuilder
-import fi.metatavu.vp.usermanagement.impl.DriverTestBuilderResource
-import fi.metatavu.vp.usermanagement.impl.EmployeeTestBuilderResource
-import fi.metatavu.vp.usermanagement.impl.HolidayTestBuilderResource
-import fi.metatavu.vp.usermanagement.impl.WorkEventTestBuilderResource
+import fi.metatavu.vp.usermanagement.impl.*
 
 /**
  * Test builder authentication
@@ -30,6 +27,7 @@ class TestBuilderAuthentication(
     val employees = EmployeeTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
     val workEvents = WorkEventTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
     val holidays = HolidayTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
+    val clientApps = ClientAppTestBuilderResource(testBuilder, accessTokenProvider, this.apiKey, createClient(accessTokenProvider))
 
     override fun createClient(authProvider: AccessTokenProvider): ApiClient {
         val result = ApiClient(ApiTestSettings.apiBasePath)
