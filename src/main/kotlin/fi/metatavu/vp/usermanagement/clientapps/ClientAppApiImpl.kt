@@ -95,6 +95,8 @@ class ClientAppApiImpl: ClientAppsApi, AbstractApi() {
         if (requestApiKey != null && requestApiKey != apiKey) return@withCoroutineScope createForbidden(INVALID_API_KEY)
         if (loggedUserId != null && !hasRealmRole(MANAGER_ROLE)) return@withCoroutineScope createForbidden(FORBIDDEN)
 
+        if (clientAppId != clientApp.id) return@withCoroutineScope createBadRequest("Client App ID in path and body don't match")
+
         val foundClientApp = clientAppController.find(clientAppId) ?: return@withCoroutineScope createNotFound(createNotFoundMessage(CLIENT_APP, clientAppId))
 
         val updatedClientApp = clientAppController.update(

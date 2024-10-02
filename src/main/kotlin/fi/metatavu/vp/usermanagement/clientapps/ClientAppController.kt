@@ -47,7 +47,7 @@ class ClientAppController {
     }
 
     suspend fun delete(clientApp: ClientAppEntity) {
-        clientAppRepository.delete(clientApp)
+        clientAppRepository.deleteSuspending(clientApp)
     }
 
     suspend fun update(
