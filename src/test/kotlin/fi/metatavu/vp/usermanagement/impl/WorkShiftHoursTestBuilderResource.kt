@@ -4,8 +4,8 @@ import fi.metatavu.jaxrs.test.functional.builder.auth.AccessTokenProvider
 import fi.metatavu.vp.test.client.apis.WorkShiftHoursApi
 import fi.metatavu.vp.test.client.infrastructure.ApiClient
 import fi.metatavu.vp.test.client.infrastructure.ClientException
-import fi.metatavu.vp.test.client.models.WorkEventType
 import fi.metatavu.vp.test.client.models.WorkShiftHours
+import fi.metatavu.vp.test.client.models.WorkType
 import fi.metatavu.vp.usermanagement.TestBuilder
 import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import org.junit.Assert
@@ -37,12 +37,6 @@ class WorkShiftHoursTestBuilderResource(
         return WorkShiftHoursApi(ApiTestSettings.apiBasePath)
     }
 
-    fun create(
-        hours: WorkShiftHours
-    ): WorkShiftHours {
-        return addClosable(api.createWorkShiftHours(hours))
-    }
-
     /**
      * Lists work shift hours
      *
@@ -56,7 +50,7 @@ class WorkShiftHoursTestBuilderResource(
     fun listWorkShiftHours(
         employeeId: UUID? = null,
         employeeWorkShiftId: UUID? = null,
-        workType: WorkEventType? = null,
+        workType: WorkType? = null,
         employeeWorkShiftStartedAfter: String? = null,
         employeeWorkShiftStartedBefore: String? = null
     ): Array<WorkShiftHours> {
@@ -87,8 +81,8 @@ class WorkShiftHoursTestBuilderResource(
      * @param workEvent work event
      * @return updated work shift hours
      */
-    fun updateWorkShiftHours(id: UUID, workEvent: WorkShiftHours): WorkShiftHours {
-        return api.updateWorkShiftHours(id, workEvent)
+    fun updateWorkShiftHours(id: UUID, workShiftHours: WorkShiftHours): WorkShiftHours {
+        return api.updateWorkShiftHours(id, workShiftHours)
     }
 
     /**

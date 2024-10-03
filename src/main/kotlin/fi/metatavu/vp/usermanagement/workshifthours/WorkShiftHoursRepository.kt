@@ -1,8 +1,8 @@
 package fi.metatavu.vp.usermanagement.workshifthours
 
-import fi.metatavu.vp.usermanagement.model.WorkEventType
+import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
-import fi.metatavu.vp.usermanagement.workshifts.EmployeeWorkShiftEntity
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import jakarta.enterprise.context.ApplicationScoped
@@ -16,25 +16,23 @@ import java.util.*
 class WorkShiftHoursRepository: AbstractRepository<WorkShiftHoursEntity, UUID>() {
 
     /**
-     * Creates a new work shift hours
+     * Creates a new work shift hours with empty calculated hours value
      *
      * @param id id
      * @param workShiftEntity work shift entity
-     * @param workEventType work event type
+     * @param workType work type
      * @param actualHours actual hours
      * @return created work shift hours
      */
     suspend fun create(
         id: UUID,
-        workShiftEntity: EmployeeWorkShiftEntity,
-        workEventType: WorkEventType,
-        actualHours: Float?
+        workShiftEntity: WorkShiftEntity,
+        workType: WorkType,
     ): WorkShiftHoursEntity {
         val workShiftHours = WorkShiftHoursEntity()
         workShiftHours.id = id
         workShiftHours.workShift = workShiftEntity
-        workShiftHours.workEventType = workEventType
-        workShiftHours.actualHours = actualHours
+        workShiftHours.workType = workType
         return persistSuspending(workShiftHours)
     }
 
@@ -50,8 +48,8 @@ class WorkShiftHoursRepository: AbstractRepository<WorkShiftHoursEntity, UUID>()
      */
     suspend fun listWorkShiftHours(
         employeeId: UUID? = null,
-        workShift: EmployeeWorkShiftEntity? = null,
-        workType: WorkEventType? = null,
+        workShift: WorkShiftEntity? = null,
+        workType: WorkType? = null,
         employeeWorkShiftStartedAfter: OffsetDateTime? = null,
         employeeWorkShiftStartedBefore: OffsetDateTime? = null
     ): Pair<List<WorkShiftHoursEntity>, Long> {
@@ -69,18 +67,18 @@ class WorkShiftHoursRepository: AbstractRepository<WorkShiftHoursEntity, UUID>()
         }
 
         if (workType != null) {
-            addCondition(queryBuilder, "workEventType = :workEventType")
-            parameters.and("workEventType", workType)
+            addCondition(queryBuilder, "workType = :workType")
+            parameters.and("workType", workType)
         }
 
         if (employeeWorkShiftStartedAfter != null) {
-            addCondition(queryBuilder, "employeeWorkShiftStartedAfter >= :employeeWorkShiftStartedAfter")
-            parameters.and("employeeWorkShiftStartedAfter", employeeWorkShiftStartedAfter)
+            addCondition(queryBuilder, "workShift.date >= :employeeWorkShiftStartedAfter")
+            parameters.and("employeeWorkShiftStartedAfter", employeeWorkShiftStartedAfter.toLocalDate())
         }
 
         if (employeeWorkShiftStartedBefore != null) {
-            addCondition(queryBuilder, "employeeWorkShiftStartedBefore <= :employeeWorkShiftStartedBefore")
-            parameters.and("employeeWorkShiftStartedBefore", employeeWorkShiftStartedBefore)
+            addCondition(queryBuilder, "workShift.date <= :employeeWorkShiftStartedBefore")
+            parameters.and("employeeWorkShiftStartedBefore", employeeWorkShiftStartedBefore.toLocalDate())
         }
 
         return queryWithCount(

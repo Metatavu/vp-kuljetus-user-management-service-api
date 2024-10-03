@@ -1,5 +1,7 @@
 package fi.metatavu.vp.usermanagement.workshifts
 
+import fi.metatavu.vp.usermanagement.model.AbsenceType
+import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
@@ -12,7 +14,7 @@ import java.util.*
  * Repository for employee work shifts
  */
 @ApplicationScoped
-class EmployeeWorkShiftRepository: AbstractRepository<EmployeeWorkShiftEntity, UUID>() {
+class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
 
     /**
      * Creates a new employee work shift
@@ -27,13 +29,17 @@ class EmployeeWorkShiftRepository: AbstractRepository<EmployeeWorkShiftEntity, U
         id: UUID,
         employeeId: UUID,
         date: LocalDate,
-        approved: Boolean
-    ): EmployeeWorkShiftEntity {
-        val employeeWorkShift = EmployeeWorkShiftEntity()
+        approved: Boolean = false,
+        absence: AbsenceType?,
+        perDiemAllowance: PerDiemAllowanceType?
+    ): WorkShiftEntity {
+        val employeeWorkShift = WorkShiftEntity()
         employeeWorkShift.id = id
         employeeWorkShift.employeeId = employeeId
         employeeWorkShift.date = date
         employeeWorkShift.approved = approved
+        employeeWorkShift.absence = absence
+        employeeWorkShift.perDiemAllowance = perDiemAllowance
         return persistSuspending(employeeWorkShift)
     }
 
@@ -53,7 +59,7 @@ class EmployeeWorkShiftRepository: AbstractRepository<EmployeeWorkShiftEntity, U
         startedBefore: OffsetDateTime?,
         first: Int,
         max: Int
-    ): Pair<List<EmployeeWorkShiftEntity>, Long> {
+    ): Pair<List<WorkShiftEntity>, Long> {
         val queryBuilder = StringBuilder()
         val parameters = Parameters()
 
@@ -62,12 +68,12 @@ class EmployeeWorkShiftRepository: AbstractRepository<EmployeeWorkShiftEntity, U
 
         if (startedAfter != null) {
             queryBuilder.append(" AND date >= :startedAfter")
-            parameters.and("startedAfter", startedAfter)
+            parameters.and("startedAfter", startedAfter.toLocalDate())
         }
 
         if (startedBefore != null) {
             queryBuilder.append(" AND date <= :startedBefore")
-            parameters.and("startedBefore", startedBefore)
+            parameters.and("startedBefore", startedBefore.toLocalDate())
         }
 
         return queryWithCount(

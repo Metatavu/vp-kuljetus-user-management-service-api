@@ -1,10 +1,10 @@
 package fi.metatavu.vp.usermanagement.workshifthours
 
-import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.model.WorkShiftHours
+import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.WorkShiftHoursApi
-import fi.metatavu.vp.usermanagement.workshifts.EmployeeWorkShiftController
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -29,7 +29,7 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
     lateinit var workShiftHoursController: WorkShiftHoursController
 
     @Inject
-    lateinit var workShiftController: EmployeeWorkShiftController
+    lateinit var workShiftController: WorkShiftController
 
     @Inject
     lateinit var workShiftHoursTranslator: WorkShiftHoursTranslator
@@ -42,7 +42,7 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
     override fun listWorkShiftHours(
         employeeId: UUID?,
         employeeWorkShiftId: UUID?,
-        workType: WorkEventType?,
+        workType: WorkType?,
         employeeWorkShiftStartedAfter: OffsetDateTime?,
         employeeWorkShiftStartedBefore: OffsetDateTime?
     ): Uni<Response> = withCoroutineScope {
@@ -58,36 +58,6 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
         val (workShiftHours, count) = workShiftHoursController.listWorkShiftHours(employeeId, workShiftFilter, workType, employeeWorkShiftStartedAfter, employeeWorkShiftStartedBefore)
 
         createOk(workShiftHoursTranslator.translate(workShiftHours), count)
-    }
-
-    @RolesAllowed(MANAGER_ROLE)
-    @WithTransaction
-    override fun createWorkShiftHours(workShiftHours: WorkShiftHours): Uni<Response> = withCoroutineScope {
-        if (workShiftHours.actualHours == null) {
-            return@withCoroutineScope createBadRequest("calculatedHours is required")
-        }
-
-        val workShift = workShiftController.findEmployeeWorkShift(shiftId = workShiftHours.employeeWorkShiftId) ?: return@withCoroutineScope createNotFoundWithMessage(
-            WORK_SHIFT, workShiftHours.employeeWorkShiftId
-        )
-
-        val (duplicates, _) = workShiftHoursController.listWorkShiftHours(
-            workShiftFilter = workShift,
-            workType = workShiftHours.workEventType,
-        )
-
-        if (duplicates.isNotEmpty()) {
-            val updated = workShiftHoursController.updateWorkShiftHours(duplicates.first(), workShiftHours)
-            return@withCoroutineScope createOk(workShiftHoursTranslator.translate(updated))
-        }
-
-        val created = workShiftHoursController.createWorkShiftHours(
-            workShiftEntity = workShift,
-            workEventType = workShiftHours.workEventType,
-            actualHours = workShiftHours.actualHours
-        )
-
-        createOk(workShiftHoursTranslator.translate(created))
     }
 
     @RolesAllowed(MANAGER_ROLE)
@@ -115,8 +85,10 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
         val existingWorkShiftHours = workShiftHoursController.findWorkShiftHours(workShiftHoursId) ?: return@withCoroutineScope createNotFoundWithMessage(
             WORK_SHIFT_HOURS, workShiftHoursId)
 
-        if (workShiftHours.employeeWorkShiftId != existingWorkShiftHours.workShift.id ||
-            workShiftHours.workEventType != existingWorkShiftHours.workEventType) {
+        if (workShiftHours.employeeWorkShiftId != existingWorkShiftHours.workShift.id
+            || workShiftHours.workType != existingWorkShiftHours.workType
+            || workShiftHours.employeeId != existingWorkShiftHours.workShift.employeeId
+        ) {
             return@withCoroutineScope createBadRequest("employeeId, employeeWorkShiftId, and workType cannot be updated")
         }
 
@@ -124,7 +96,7 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
             return@withCoroutineScope createBadRequest("Work shift hours cannot be updated if the related work shift is approved")
         }
 
-        val updatedWorkShiftHours = workShiftHoursController.updateWorkShiftHours(existingWorkShiftHours, workShiftHours)
+        val updatedWorkShiftHours = workShiftHoursController.updateWorkShiftHours(existingWorkShiftHours, workShiftHours.actualHours)
         createOk(workShiftHoursTranslator.translate(updatedWorkShiftHours))
     }
 }

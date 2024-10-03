@@ -15,6 +15,7 @@ class WorkEventTranslator : AbstractTranslator<WorkEventEntity, WorkEvent>() {
             employeeId = entity.employeeId,
             time = entity.time,
             workEventType = entity.workEventType,
-            employeeWorkShiftId = entity.workShift.id
+            employeeWorkShiftId = entity.workShift.id,
+            truckId = entity.truckId
         )
 }

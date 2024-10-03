@@ -1,35 +1,85 @@
 package fi.metatavu.vp.usermanagement
 
+import fi.metatavu.vp.test.client.models.EmployeeWorkShift
 import fi.metatavu.vp.test.client.models.WorkEvent
 import fi.metatavu.vp.test.client.models.WorkEventType
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import java.time.OffsetDateTime
 import java.util.*
 
 /**
- * Tests for WorkShifts and WorkShiftHours
+ * Tests for WorkShifts
  */
 @QuarkusTest
 @TestProfile(DefaultTestProfile::class)
 class WorkShiftsTestIT : AbstractFunctionalTest() {
 
+    val now: OffsetDateTime = OffsetDateTime.now()
+
     /**
      * Tests:
-     * - WorkShift creation as the result of WorkEvents: (SHIFT_END, long BREAK or null) +
-     * - Work shift listing and filtering, sorting +
-     * - Work shift hours listing and filtering, sorting+
+     * - Work shift listing and filtering, sorting
      */
     @Test
     fun testWorkShiftListing() = createTestBuilder().use {
+        val employee1 = it.manager.employees.createEmployee("1").id!!
+        val employee2 = it.manager.employees.createEmployee("2").id!!
+
+        it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee1,
+            workShift = EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                employeeId = employee1,
+                approved = false
+            )
+        )
+        it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee2,
+            workShift = EmployeeWorkShift(
+                date = now.plusDays(2).toLocalDate().toString(),
+                employeeId = employee2,
+                approved = false
+            )
+        )
+        it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee2,
+            workShift = EmployeeWorkShift(
+                date = now.plusDays(3).toLocalDate().toString(),
+                employeeId = employee2,
+                approved = false
+            )
+        )
+
+        val employee1Shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1)
+        assertEquals(1, employee1Shifts.size)
+
+        val employee2Shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2)
+        assertEquals(2, employee2Shifts.size)
+
+        val allShifts3 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2, startedAfter = now.plusDays(3).toString())
+        assertEquals(1, allShifts3.size)
+
+        val allShifts4 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2, startedBefore = now.plusDays(2).toString())
+        assertEquals(1, allShifts4.size)
+    }
+
+
+    /**
+     * tests:
+     *  - work shift creation from the endpoint
+     *  - work shift creation based on work events
+     */
+    @Test
+    fun testWorkShiftCreate() = createTestBuilder().use {
         val employee1 = it.manager.employees.createEmployee("1")
         val employee2 = it.manager.employees.createEmployee("2")
 
         // employee 1 events
-        val now = OffsetDateTime.now()
         createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now) // first event triggers new shift
         createWorkEvent(it, employee1.id, WorkEventType.BREAK, now.plusHours(1))    //Long break triggers new shift
         createWorkEvent(it, employee1.id, WorkEventType.BREWERY, now.plusHours(5))
@@ -40,155 +90,94 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         createWorkEvent(it, employee2.id!!, WorkEventType.MEAT_CELLAR, now)
         createWorkEvent(it, employee2.id, WorkEventType.BREAK, now.plusHours(1))
         createWorkEvent(it, employee2.id, WorkEventType.BREWERY, now.plusHours(5))
+        createWorkEvent(it, employee2.id, WorkEventType.UNKNOWN, now.plusHours(6))
+        createWorkEvent(it, employee2.id, WorkEventType.OTHER_WORK, now.plusHours(9))   // long unknown triggers new shift
+
+        it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee1.id,
+            workShift = EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                employeeId = employee1.id,
+                approved = false
+            )
+        )
 
         val employee1AllWorkShifts = it.manager.workShifts.listEmployeeWorkShifts(
             employeeId = employee1.id
         )
-        assertEquals(3, employee1AllWorkShifts.size)
-        assertEquals(now.plusHours(25).toLocalDate().toString(), employee1AllWorkShifts[0].date)
-        assertEquals(now.plusHours(5).toLocalDate().toString(), employee1AllWorkShifts[1].date)
-        assertEquals(now.toLocalDate().toString(), employee1AllWorkShifts[2].date)
+        assertEquals(4, employee1AllWorkShifts.size)
 
-        val workShiftHours = it.manager.workShiftHours.listWorkShiftHours(
+        val employee2AllWorkShifts = it.manager.workShifts.listEmployeeWorkShifts(
+            employeeId = employee2.id
+        )
+        assertEquals(2, employee2AllWorkShifts.size)
+
+        val workevents = it.manager.workEvents.listWorkEvents(
             employeeId = employee1.id
         )
-        assertEquals(0, workShiftHours.size)    // No work shift hours created because there is not enough parameters
+        workevents.forEach { event ->
+            assertNotNull(event.employeeWorkShiftId)
+        }
 
-        val workShiftHoursParams = it.manager.workShiftHours.listWorkShiftHours(
-            employeeId = employee1.id,
-            employeeWorkShiftId = employee1AllWorkShifts[0].id,
-            workType = WorkEventType.OTHER_WORK
-        )
-        assertEquals(1, workShiftHoursParams.size)
-
-        val workShifthoursOneShift = it.manager.workShiftHours.listWorkShiftHours(
-            employeeId = employee1.id,
-        )
-        assertEquals(1, workShifthoursOneShift.size)
+        it.manager.workShifts.assertCreateFail(UUID.randomUUID(), EmployeeWorkShift(date = now.toLocalDate().toString(), employeeId = UUID.randomUUID(), approved = false), 400)
     }
 
     /**
      * Tests:
-     * - how dynamically work shift hours are calculated
+     *  - work shift time assignment based on work event time
+     *  - work shift time assignment based on new work event addition to the shift
+     *  - work shift time assignment based on work event time update
+     *  - work shift time assignment based on work event deletion
+     *  - work shift deletion based on all work events deletion
      */
     @Test
-    fun testWorkShiftHoursCalculation() = createTestBuilder().use {
+    fun testWorkShiftTimeAssignment() = createTestBuilder().use {
         val employee1 = it.manager.employees.createEmployee("1")
-        val now = OffsetDateTime.now()
 
-        // first even created a shif
-        val shift1Id =
-            createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now).employeeWorkShiftId  // 1 hr
-        createWorkEvent(it, employee1.id, WorkEventType.BREWERY, now.plusHours(1))      // 1 hr
-        createWorkEvent(it, employee1.id, WorkEventType.BREAK, now.plusHours(2))        // Last event in the shift -> no time calculated
+        val event1 = createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now)
+        var workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
+        assertEquals(getWorkEventDate(event1.time), workShifts[0].date)
 
-        //Long break triggers new shift
-        val shift2Id = createWorkEvent(it, employee1.id, WorkEventType.SHIFT_END, now.plusHours(6)).employeeWorkShiftId    // One event -> no time calculated
+        val earlierEvent2 = createWorkEvent(it, employee1.id, WorkEventType.BREWERY, now.minusDays(1))
+        workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
+        assertEquals(getWorkEventDate(earlierEvent2.time), workShifts[0].date)
 
-        // ended shift triggers new shift
-        val shift3Id = createWorkEvent(it, employee1.id, WorkEventType.OTHER_WORK, now.plusHours(7)).employeeWorkShiftId   // One event -> no time calculated
-
-        val workShifts = it.manager.workShifts.listEmployeeWorkShifts(
-            employeeId = employee1.id
-        )
-        assertEquals(3, workShifts.size)    // all 3 shifts belong to the same day -> no sorting
-
-        val shift0 = workShifts.find { s -> s.id == shift3Id }!!
-        val workShift3HoursOther = it.manager.workShiftHours.listWorkShiftHours(
+        val movedEvent2Earlier = it.manager.workEvents.updateWorkEvent(
             employeeId = employee1.id,
-            employeeWorkShiftId = shift0.id,
-            workType = WorkEventType.OTHER_WORK
+            id = earlierEvent2.id!!,
+            workEvent = event1.copy(time = now.minusDays(2).toString())
         )
-        assertEquals(1, workShift3HoursOther.size)
-        assertEquals(0f, workShift3HoursOther[0].calculatedHours)
+        workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
+        assertEquals(getWorkEventDate(movedEvent2Earlier.time), workShifts[0].date)
 
-        val workShift2 = workShifts.find { s -> s.id == shift2Id }!!
-        val workShift2HoursEND = it.manager.workShiftHours.listWorkShiftHours(
+        val movedEvent2Later = it.manager.workEvents.updateWorkEvent(
             employeeId = employee1.id,
-            employeeWorkShiftId = workShift2.id,
-            workType = WorkEventType.SHIFT_END
+            id = earlierEvent2.id!!,
+            workEvent = event1.copy(time = now.plusDays(3).toString())
         )
-        assertEquals(1, workShift2HoursEND.size)
-        assertEquals(0f, workShift2HoursEND[0].calculatedHours)
+        workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
+        assertEquals(getWorkEventDate(event1.time), workShifts[0].date)
 
-        val shift3 = workShifts.find { s -> s.id == shift1Id }!!
-        val workShift1HoursBreak = it.manager.workShiftHours.listWorkShiftHours(
+        it.manager.workEvents.deleteWorkEvent(
             employeeId = employee1.id,
-            employeeWorkShiftId = shift3.id,
-            workType = WorkEventType.BREAK
+            id = event1.id!!
         )
-        assertEquals(1, workShift1HoursBreak.size)
-        assertEquals(0f, workShift1HoursBreak[0].calculatedHours)
-        val workShift1HoursBrew = it.manager.workShiftHours.listWorkShiftHours(
-            employeeId = employee1.id,
-            employeeWorkShiftId = shift3.id,
-            workType = WorkEventType.BREWERY
-        )
-        assertEquals(1, workShift1HoursBrew.size)
-        assertEquals(1f, workShift1HoursBrew[0].calculatedHours)
+        workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
+        assertEquals(getWorkEventDate(movedEvent2Later.time), workShifts[0].date)
 
-        val listWorkShiftHoursMeat = it.manager.workShiftHours.listWorkShiftHours(
+        it.manager.workEvents.deleteWorkEvent(
             employeeId = employee1.id,
-            employeeWorkShiftId = shift3.id,
-            workType = WorkEventType.MEAT_CELLAR
+            id = earlierEvent2.id!!
         )
-        assertEquals(1, listWorkShiftHoursMeat.size)
-        assertEquals(1f, listWorkShiftHoursMeat[0].calculatedHours)
-
-        // List all total work shift hours
-        val alLTotalHours = it.manager.workShiftHours.listWorkShiftHours(
-            employeeId = employee1.id
-        )
-        assertEquals(5, alLTotalHours.size)
+        workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
+        assertEquals(0, workShifts.size)
     }
+
 
     /**
      * Tests:
-     * - WorkShift time updates as the result of WorkEvents creation
-     * - Work shift hours creation fails (and intead existing one is updated ) if houes exist for the same work shift and work type exists
-     */
-    @Test
-    fun testWorkShiftCreate() = createTestBuilder().use {
-        val employee1 = it.manager.employees.createEmployee("1")
-        val now = OffsetDateTime.now()
-
-        createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now)
-        val workShift = it.manager.workShifts.listEmployeeWorkShifts(
-            employeeId = employee1.id
-        )[0]
-        assertEquals(now.toLocalDate().toString(), workShift.date)
-
-        // Work Shift time updates as the result of WorkEvents creation
-        createWorkEvent(it, employee1.id, WorkEventType.BREWERY, now.minusDays(1))
-        val updatedShift = it.manager.workShifts.findEmployeeWorkShift(employee1.id, workShift.id!!)
-        assertEquals(now.minusDays(1).toLocalDate().toString(), updatedShift.date)
-
-        // Work shift hours creation fails (and instead existing one is updated ) if same work shift and work type exists
-        val workShiftHours = it.manager.workShiftHours.listWorkShiftHours(
-            employeeId = employee1.id,
-            employeeWorkShiftId = workShift.id,
-            workType = WorkEventType.MEAT_CELLAR
-        )
-        assertEquals(1, workShiftHours.size)
-        it.manager.workShiftHours.create(
-            hours = workShiftHours[0].copy(actualHours = 3f)
-        )
-        val allHours = it.manager.workShiftHours.listWorkShiftHours(
-            employeeId = employee1.id,
-            employeeWorkShiftId = workShift.id,
-            workType = WorkEventType.MEAT_CELLAR
-        )
-        assertEquals(1, allHours.size)
-        assertEquals(3f, allHours[0].actualHours)
-
-    }
-
-    /**
-     * Tests:
-     *  - finding work shift by id                  +
-     *  - finding work shift hours by id            +
-     *  - work events get assigned to work shifts   +
-     *  - work shift initially is not approved      +
+     *  - finding work shift by id
+     *  - work shift initially is not approved
      */
     @Test
     fun testWorkShiftFind() = createTestBuilder().use {
@@ -206,133 +195,82 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         assertEquals(workShifts[0].employeeId, foundWorkShift.employeeId)
         assertEquals(false, foundWorkShift.approved)
 
-        val workevents = it.manager.workEvents.listWorkEvents(
-            employeeId = employee1.id
-        )
-        workevents.forEach { event ->
-            assertEquals(foundWorkShift.id, event.employeeWorkShiftId)
-        }
-
-        val hours = it.manager.workShiftHours.listWorkShiftHours(
-            employeeId = employee1.id,
-            employeeWorkShiftId = workShifts[0].id,
-            workType = WorkEventType.MEAT_CELLAR
-        )
-
-        val foundWorkShiftHours = it.manager.workShiftHours.findWorkShiftHours(hours[0].id!!)
-        assertEquals(hours[0].id, foundWorkShiftHours.id)
-        assertEquals(hours[0].workEventType, foundWorkShiftHours.workEventType)
-        assertEquals(hours[0].actualHours, foundWorkShiftHours.actualHours)
-
     }
 
     /**
      * Tests:
-     * Work shifts:
      *  - approving work shift                                      +
-     *  - work shift time is moved if work first event is updated   +
-     * Work shift hours:
-     *  - updating is impossible if work shift is apporved          +
-     *  - employeeId, work ShiftId, work type cannot be updated     +
-     *  - test that actual hours are updated by the supervisor      +
      */
     @Test
     fun testWorkShiftUpdate() = createTestBuilder().use {
-        val employee1 = it.manager.employees.createEmployee("1")
-        val now = OffsetDateTime.now()
-        val workEvent = createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now)
+        val employee1 = it.manager.employees.createEmployee("1").id!!
+        val employee2 = it.manager.employees.createEmployee("2").id!!
 
-        val workShift = it.manager.workShifts.listEmployeeWorkShifts(
-            employeeId = employee1.id
-        )[0]
+        val workShift = it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee1,
+            workShift = EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                employeeId = employee1,
+                approved = false
+            )
+        )
 
-        // Approving work shift
         val approved = it.manager.workShifts.updateEmployeeWorkShift(
-            employeeId = employee1.id,
+            employeeId = employee1,
             id = workShift.id!!,
             workShift = workShift.copy(approved = true)
         )
         assertEquals(true, approved.approved)
 
-        // work shift time is moved if work first event is updated
-        it.manager.workEvents.updateWorkEvent(
-            employeeId = employee1.id,
-            id = workEvent.id!!,
-            workEvent = workEvent.copy(time = now.plusDays(1).toString())
-        )
-        val updatedShift = it.manager.workShifts.findEmployeeWorkShift(employee1.id, workShift.id!!)
-        assertEquals(now.plusDays(1).toLocalDate().toString(), updatedShift.date)
-
-        it.manager.workEvents.updateWorkEvent(
-            employeeId = employee1.id,
-             id = workEvent.id,
-            workEvent = workEvent.copy(time = now.minusDays(1).toString())
-        )
-        val updatedShift2 = it.manager.workShifts.findEmployeeWorkShift(employee1.id, workShift.id!!)
-        assertEquals(now.minusDays(1).toLocalDate().toString(), updatedShift2.date)
-
-        val workShiftHours = it.manager.workShiftHours.listWorkShiftHours(
-            employeeId = employee1.id,
-            employeeWorkShiftId = workShift.id,
-            workType = WorkEventType.MEAT_CELLAR
-        )
-
-        // updating is impossible if work shift is apporved
-        it.manager.workShiftHours.assertUpdateFail(
-            expectedStatus = 400,
-            id = workShiftHours[0].id!!,
-            workEvent = workShiftHours[0].copy(actualHours = 5f)
-        )
-
-        // employeeId, work ShiftId, work type cannot be updated
-        it.manager.workShifts.updateEmployeeWorkShift(
-            employeeId = employee1.id,
-            id = workShift.id,
-            workShift = workShift.copy(approved = false)
-        )
-        it.manager.workShiftHours.assertUpdateFail(
-            expectedStatus = 400,
-            id = workShiftHours[0].id!!,
-            workEvent = workShiftHours[0].copy(employeeWorkShiftId = UUID.randomUUID())
-        )
-
-        // test that actual hours are updated by the supervisor
-        val updatedHours = it.manager.workShiftHours.updateWorkShiftHours(
-            id = workShiftHours[0].id!!,
-            workEvent = workShiftHours[0].copy(actualHours = 5f)
-        )
-        assertEquals(5f, updatedHours.actualHours)
+        // Employee ID not found
+        it.manager.workShifts.assertUpdateFail(employeeId = UUID.randomUUID(), id = workShift.id, workShift = workShift, expectedStatus = 404)
+        // Employee IDs don't fit
+        it.manager.workShifts.assertUpdateFail(employeeId = employee2, id = workShift.id, workShift = workShift, expectedStatus = 404)
+        // Cannot update other fields
+        it.manager.workShifts.assertUpdateFail(employeeId = employee1, id = workShift.id, workShift = workShift.copy(date = "12-02-2010", approved = false), expectedStatus = 400)
     }
 
     /**
      * Tests:
-     *  - deleting work shift as the result of last work event removal  +
-     *  - work shift time is moved if work first event is removed       +
+     * - work shift deletion
      */
     @Test
     fun testWorkShiftDelete() = createTestBuilder().use {
-        val employee1 = it.manager.employees.createEmployee("1")
-        val now = OffsetDateTime.now()
-        val workEvent1 = createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now)
-        val workEvent2 = createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now.plusDays(1))
-
-        val workShift = it.manager.workShifts.listEmployeeWorkShifts(
-            employeeId = employee1.id
-        )[0]
-
-        // work shift time is moved if work first event is removed
-        it.manager.workEvents.deleteWorkEvent(employee1.id, workEvent1.id!!)
-        val updatedShift = it.manager.workShifts.findEmployeeWorkShift(employee1.id, workShift.id!!)
-        assertEquals(now.plusDays(1).toLocalDate().toString(), updatedShift.date)
-
-        // deleting work shift as the result of last work event removal
-        it.manager.workEvents.deleteWorkEvent(employee1.id, workEvent2.id!!)
-        val workShifts = it.manager.workShifts.listEmployeeWorkShifts(
-            employeeId = employee1.id
+        val employee1 = it.manager.employees.createEmployee("1").id!!
+        val workShift = it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee1,
+            workShift = EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                employeeId = employee1,
+                approved = false
+            )
         )
+
+        it.manager.workShifts.deleteEmployeeWorkShift(employee1, workShift.id!!)
+
+        val workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1)
         assertEquals(0, workShifts.size)
     }
 
+    /**
+     * Translates offset date time string of work event to string of local date
+     *
+     * @param time offset date time string
+     * @return string of local date
+     */
+    private fun getWorkEventDate(time: String): String {
+        return OffsetDateTime.parse(time).toLocalDate().toString()
+    }
+
+    /**
+     * Creates work event
+     *
+     * @param testBuilder test builder
+     * @param employeeId employee id
+     * @param workEventType work event type
+     * @param time time
+     * @return created work event
+     */
     private fun createWorkEvent(
         testBuilder: TestBuilder,
         employeeId: UUID,

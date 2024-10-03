@@ -1,7 +1,9 @@
 package fi.metatavu.vp.usermanagement.workshifts
 
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
+import fi.metatavu.vp.usermanagement.model.AbsenceType
 import fi.metatavu.vp.usermanagement.model.EmployeeWorkShift
+import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import jakarta.enterprise.context.ApplicationScoped
@@ -10,11 +12,14 @@ import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.*
 
+/**
+ * Controller for employee work shifts
+ */
 @ApplicationScoped
-class EmployeeWorkShiftController {
+class WorkShiftController {
 
     @Inject
-    lateinit var employeeWorkShiftRepository: EmployeeWorkShiftRepository
+    lateinit var workShiftRepository: WorkShiftRepository
 
     @Inject
     lateinit var workShiftHoursController: WorkShiftHoursController
@@ -24,6 +29,7 @@ class EmployeeWorkShiftController {
 
     /**
      * Creates a new employee work shift (unapproved)
+     * and creates work shift hours for it
      *
      * @param employeeId employee id
      * @param date date
@@ -31,26 +37,36 @@ class EmployeeWorkShiftController {
      */
     suspend fun create(
         employeeId: UUID,
-        date: LocalDate
-    ): EmployeeWorkShiftEntity {
-        return employeeWorkShiftRepository.create(UUID.randomUUID(), employeeId, date, approved = false)
+        date: LocalDate,
+        absenceType: AbsenceType? = null,
+        perDiemAllowanceType: PerDiemAllowanceType? = null
+    ): WorkShiftEntity {
+        val shift = workShiftRepository.create(
+            id = UUID.randomUUID(),
+            employeeId = employeeId,
+            date = date,
+            approved = false,
+            absence = absenceType,
+            perDiemAllowance = perDiemAllowanceType
+        )
+        workShiftHoursController.createWorkShiftHours(
+            workShiftEntity = shift
+        )
+        return shift
     }
 
     /**
-     * Finds employee work shift by id
+     * Finds employee work shift by id and optionally by employee id
      *
      * @param shiftId employee work shift id
      * @return employee work shift or null if not found
      */
     suspend fun findEmployeeWorkShift(
-        enployeeID: UUID? = null,
+        employeeId: UUID? = null,
         shiftId: UUID
-    ): EmployeeWorkShiftEntity? {
-        val found = employeeWorkShiftRepository.findByIdSuspending(shiftId)
-        if (enployeeID != null && found != null && found.employeeId != enployeeID) {
-            return null
-        }
-        return found
+    ): WorkShiftEntity? {
+        val found = workShiftRepository.findByIdSuspending(shiftId)
+        return found?.takeIf { employeeId == null || it.employeeId == employeeId }
     }
 
     /**
@@ -69,23 +85,29 @@ class EmployeeWorkShiftController {
         startedBefore: OffsetDateTime?,
         first: Int,
         max: Int
-    ): Pair<List<EmployeeWorkShiftEntity>, Long> {
-        return employeeWorkShiftRepository.listEmployeeWorkShifts(UUID.fromString(employee.id), startedAfter, startedBefore, first, max)
+    ): Pair<List<WorkShiftEntity>, Long> {
+        return workShiftRepository.listEmployeeWorkShifts(
+            UUID.fromString(employee.id),
+            startedAfter,
+            startedBefore,
+            first,
+            max
+        )
     }
 
     /**
-     * Updates employee work shift
+     * Updates employee work shift status
      *
      * @param foundShift found shift
-     * @param employeeWorkShift employee work shift
+     * @param approved status
      * @return updated employee work shift
      */
     suspend fun updateEmployeeWorkShift(
-        foundShift: EmployeeWorkShiftEntity,
-        employeeWorkShift: EmployeeWorkShift
-    ): EmployeeWorkShiftEntity {
-        foundShift.approved = employeeWorkShift.approved
-        return employeeWorkShiftRepository.persistSuspending(foundShift)
+        foundShift: WorkShiftEntity,
+        approved: Boolean
+    ): WorkShiftEntity {
+        foundShift.approved = approved
+        return workShiftRepository.persistSuspending(foundShift)
     }
 
     /**
@@ -96,11 +118,11 @@ class EmployeeWorkShiftController {
      * @return updated employee work shift
      */
     suspend fun updateEmployeeWorkShift(
-        foundShift: EmployeeWorkShiftEntity,
+        foundShift: WorkShiftEntity,
         newTime: LocalDate
-    ): EmployeeWorkShiftEntity {
+    ): WorkShiftEntity {
         foundShift.date = newTime
-        return employeeWorkShiftRepository.persistSuspending(foundShift)
+        return workShiftRepository.persistSuspending(foundShift)
     }
 
     /**
@@ -108,7 +130,7 @@ class EmployeeWorkShiftController {
      *
      * @param employeeWorkShift employee work shift
      */
-    suspend fun deleteEmployeeWorkShift(employeeWorkShift: EmployeeWorkShiftEntity) {
+    suspend fun deleteEmployeeWorkShift(employeeWorkShift: WorkShiftEntity) {
         workShiftHoursController.listWorkShiftHours(workShiftFilter = employeeWorkShift).first.forEach {
             workShiftHoursController.deleteWorkShiftHours(it)
         }
@@ -117,6 +139,6 @@ class EmployeeWorkShiftController {
             workEventController.delete(it)
         }
 
-        employeeWorkShiftRepository.deleteSuspending(employeeWorkShift)
+        workShiftRepository.deleteSuspending(employeeWorkShift)
     }
 }

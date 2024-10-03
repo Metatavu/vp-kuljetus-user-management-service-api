@@ -2,7 +2,7 @@ package fi.metatavu.vp.usermanagement.workevents
 
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
-import fi.metatavu.vp.usermanagement.workshifts.EmployeeWorkShiftEntity
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.smallrye.mutiny.coroutines.awaitSuspending
@@ -10,6 +10,9 @@ import jakarta.enterprise.context.ApplicationScoped
 import java.time.OffsetDateTime
 import java.util.*
 
+/**
+ * Repository for work events
+ */
 @ApplicationScoped
 class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
 
@@ -28,7 +31,8 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
         employeeId: UUID,
         time: OffsetDateTime,
         workEventType: WorkEventType,
-        workShiftEntity: EmployeeWorkShiftEntity
+        workShiftEntity: WorkShiftEntity,
+        truckId: UUID? = null
     ): WorkEventEntity {
         val workEventEntity = WorkEventEntity()
         workEventEntity.id = id
@@ -36,6 +40,7 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
         workEventEntity.time = time
         workEventEntity.workEventType = workEventType
         workEventEntity.workShift = workShiftEntity
+        workEventEntity.truckId = truckId
         return persistSuspending(workEventEntity)
     }
 
@@ -52,7 +57,7 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
      */
     suspend fun list(
         employeeId: UUID? = null,
-        employeeWorkShift: EmployeeWorkShiftEntity? = null,
+        employeeWorkShift: WorkShiftEntity? = null,
         after: OffsetDateTime? = null,
         before: OffsetDateTime? = null,
         first: Int? = null,
@@ -107,7 +112,7 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
      * @param workShift work shift
      * @return earliest work event
      */
-    suspend fun findEarliestWorkEvent(workShift: EmployeeWorkShiftEntity): WorkEventEntity? {
+    suspend fun findEarliestWorkEvent(workShift: WorkShiftEntity): WorkEventEntity? {
         return find(
             "workShift = :workShift order by time asc limit 1",
             Parameters.with("workShift", workShift)

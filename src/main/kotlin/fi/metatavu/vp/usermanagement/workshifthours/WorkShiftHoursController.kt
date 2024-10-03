@@ -1,10 +1,18 @@
 package fi.metatavu.vp.usermanagement.workshifthours
 
-import fi.metatavu.vp.usermanagement.model.WorkEventType
-import fi.metatavu.vp.usermanagement.model.WorkShiftHours
-import fi.metatavu.vp.usermanagement.workshifts.EmployeeWorkShiftEntity
+import fi.metatavu.vp.usermanagement.model.WorkType
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
+import io.quarkus.scheduler.Scheduled
+import io.smallrye.mutiny.Uni
+import io.smallrye.mutiny.coroutines.asUni
+import io.vertx.core.Vertx
+import io.vertx.kotlin.coroutines.dispatcher
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import org.jboss.logging.Logger
 import java.time.OffsetDateTime
 import java.util.*
 
@@ -17,60 +25,64 @@ class WorkShiftHoursController {
     @Inject
     lateinit var workShiftHoursRepository: WorkShiftHoursRepository
 
+    @Inject
+    lateinit var vertx: Vertx
+
     /**
-     * Lists work shift hours, creates a new one if none found
+     * Lists work shift hours
      *
      * @param employeeId employee id
      * @param workShiftFilter work shift filter
      * @param workType work type
      * @param employeeWorkShiftStartedAfter employee work shift started after
      * @param employeeWorkShiftStartedBefore employee work shift started before
-     * @return pair of work shift hours and count
+     * @return pair of list of work shift hours and count
      */
     suspend fun listWorkShiftHours(
         employeeId: UUID? = null,
-        workShiftFilter: EmployeeWorkShiftEntity? = null,
-        workType: WorkEventType? = null,
+        workShiftFilter: WorkShiftEntity? = null,
+        workType: WorkType? = null,
         employeeWorkShiftStartedAfter: OffsetDateTime? = null,
         employeeWorkShiftStartedBefore: OffsetDateTime? = null
     ): Pair<List<WorkShiftHoursEntity>, Long> {
-
-        val workShiftHours = workShiftHoursRepository.listWorkShiftHours(
+        val allFoundHours = workShiftHoursRepository.listWorkShiftHours(
             employeeId = employeeId,
             workShift = workShiftFilter,
             workType = workType,
             employeeWorkShiftStartedAfter = employeeWorkShiftStartedAfter,
             employeeWorkShiftStartedBefore = employeeWorkShiftStartedBefore
         )
-        if (workShiftHours.first.isEmpty() && employeeId != null && workShiftFilter != null && workType != null) {
-            val new = createWorkShiftHours(
-                workShiftEntity = workShiftFilter,
-                workEventType = workType
-            )
-            return listOf(new) to 1
+
+        // Calculate the missing records
+        val finalHours = allFoundHours.first.map {
+            if (it.calculatedHours == null) {
+                it.calculatedHours = calculateHours(it)
+                workShiftHoursRepository.persistSuspending(it)
+            } else {
+                it
+            }
         }
-        return workShiftHours
+        return Pair(finalHours, allFoundHours.second)
     }
 
     /**
-     * Creates a new work shift hours
+     * Creates a new work shift hours record for each work type
      *
      * @param workShiftEntity work shift entity
-     * @param workEventType work event type
      * @param actualHours actual hours
      * @return created work shift hours
      */
     suspend fun createWorkShiftHours(
-        workShiftEntity: EmployeeWorkShiftEntity,
-        workEventType: WorkEventType,
+        workShiftEntity: WorkShiftEntity,
         actualHours: Float? = null
-    ): WorkShiftHoursEntity {
-        return workShiftHoursRepository.create(
-            id = UUID.randomUUID(),
-            workShiftEntity = workShiftEntity,
-            workEventType = workEventType,
-            actualHours = actualHours
-        )
+    ): List<WorkShiftHoursEntity> {
+        return WorkType.entries.map {
+            workShiftHoursRepository.create(
+                id = UUID.randomUUID(),
+                workShiftEntity = workShiftEntity,
+                workType = it
+            )
+        }
     }
 
     /**
@@ -87,14 +99,14 @@ class WorkShiftHoursController {
      * Updates work shift hours (only actual hours)
      *
      * @param existingWorkShiftHours existing work shift hours
-     * @param workShiftHours work shift hours
+     * @param actualHours actualHours
      * @return updated work shift hours
      */
     suspend fun updateWorkShiftHours(
         existingWorkShiftHours: WorkShiftHoursEntity,
-        workShiftHours: WorkShiftHours
+        actualHours: Float?
     ): WorkShiftHoursEntity {
-        existingWorkShiftHours.actualHours = workShiftHours.actualHours
+        existingWorkShiftHours.actualHours = actualHours
         return workShiftHoursRepository.persistSuspending(existingWorkShiftHours)
     }
 
@@ -107,5 +119,39 @@ class WorkShiftHoursController {
         workShiftHoursRepository.deleteSuspending(workShiftHours)
     }
 
+    /**
+     * Recalculates work shift hours for a work shift
+     *
+     * @param workShift work shift
+     */
+    suspend fun recalculateWorkShiftHours(workShift: WorkShiftEntity) {
+        workShiftHoursRepository.listWorkShiftHours(workShift = workShift).first.forEach {
+            it.calculatedHours = calculateHours(it)
+            workShiftHoursRepository.persistSuspending(it)
+        }
+    }
 
+    /**
+     * TODO: calculates work shift hours
+     *
+     * @param it work shift hours entity
+     * @return calculated hours
+     */
+    private fun calculateHours(it: WorkShiftHoursEntity): Float? {
+        return null
+    }
+
+    /**
+     * TODO: calculates null work shift hours
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Scheduled(
+        every = "\${fillWorkShiftHours.every.expr}",
+        delayed = "\${fillWorkShiftHours.delay.expr}",
+        concurrentExecution = Scheduled.ConcurrentExecution.SKIP
+    )
+    fun calculateWorkShiftHours(): Uni<Void> {
+        return CoroutineScope(vertx.dispatcher()).async {
+        }.asUni().replaceWithVoid()
+    }
 }

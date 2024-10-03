@@ -3,8 +3,9 @@ package fi.metatavu.vp.usermanagement.workevents
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
 import fi.metatavu.vp.usermanagement.model.WorkEvent
 import fi.metatavu.vp.usermanagement.model.WorkEventType
-import fi.metatavu.vp.usermanagement.workshifts.EmployeeWorkShiftController
-import fi.metatavu.vp.usermanagement.workshifts.EmployeeWorkShiftEntity
+import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import java.time.Duration
@@ -22,7 +23,10 @@ class WorkEventController {
     lateinit var workEventRepository: WorkEventRepository
 
     @Inject
-    lateinit var workShiftController: EmployeeWorkShiftController
+    lateinit var workShiftController: WorkShiftController
+
+    @Inject
+    lateinit var workShiftHoursController: WorkShiftHoursController
 
     /**
      * Lists work events and sorts them by time from new to old
@@ -37,7 +41,7 @@ class WorkEventController {
      */
     suspend fun list(
         employeeId: UUID? = null,
-        employeeWorkShift: EmployeeWorkShiftEntity? = null,
+        employeeWorkShift: WorkShiftEntity? = null,
         after: OffsetDateTime? = null,
         before: OffsetDateTime? = null,
         first: Int? = null,
@@ -55,7 +59,8 @@ class WorkEventController {
 
     /**
      * Creates a new work event and possibly creates a new shift for it,
-     * and recalculates the work shift date if an existing one is used
+     * recalculates the work shift date if needed,
+     * recalculates the work shift hours
      *
      * @param employee employee
      * @param time time
@@ -65,7 +70,8 @@ class WorkEventController {
     suspend fun create(
         employee: UserRepresentation,
         time: OffsetDateTime,
-        workEventType: WorkEventType
+        workEventType: WorkEventType,
+        truckId: UUID? = null
     ): WorkEventEntity {
         val latestWorkEvent = workEventRepository.findLatestWorkEvent(employeeId = UUID.fromString(employee.id))
 
@@ -90,13 +96,13 @@ class WorkEventController {
         )
 
         recalculateWorkShiftDate(workShift = workShift)
-
+        workShiftHoursController.recalculateWorkShiftHours(workShift = workShift)
         return created
     }
 
 
     /**
-     * Finds work event
+     * Finds work event for employee
      *
      * @param workEventId work event id
      * @param employeeId employee id
@@ -111,7 +117,9 @@ class WorkEventController {
     }
 
     /**
-     * Updates work event, recalculates work shift date if needed
+     * Updates work event,
+     * recalculates work shift date if needed,
+     * recalculates work shift hours
      *
      * @param foundWorkEvent found work event
      * @param workEvent work event
@@ -122,6 +130,7 @@ class WorkEventController {
         foundWorkEvent.workEventType = workEvent.workEventType
         val updated = workEventRepository.persistSuspending(foundWorkEvent)
         recalculateWorkShiftDate(workShift = foundWorkEvent.workShift)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = foundWorkEvent.workShift)
         return updated
     }
 
@@ -137,12 +146,14 @@ class WorkEventController {
 
         val updated = workEventRepository.persistSuspending(foundWorkEvent)
         recalculateWorkShiftDate(workShift = foundWorkEvent.workShift)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = foundWorkEvent.workShift)
         return updated
     }
 
     /**
      * Deletes work event, removes the work shift if it was the last event for it,
-     * and recalculates the work shift date if needed
+     * recalculates the work shift date if needed,
+     * recalculates the work shift hours
      *
      * @param foundWorkEvent found work event
      */
@@ -154,7 +165,8 @@ class WorkEventController {
             return
         }
 
-        recalculateWorkShiftDate(workShift = foundWorkEvent.workShift,)
+        recalculateWorkShiftDate(workShift = foundWorkEvent.workShift)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = foundWorkEvent.workShift)
     }
 
     /**
@@ -164,7 +176,7 @@ class WorkEventController {
      * @param workShift work shift
      */
     private suspend fun recalculateWorkShiftDate(
-        workShift: EmployeeWorkShiftEntity,
+        workShift: WorkShiftEntity,
     ) {
         workEventRepository.findEarliestWorkEvent(workShift)?.let {
             if (workShift.date != it.time.toLocalDate()) {
@@ -184,13 +196,19 @@ class WorkEventController {
         latestWorkEvent: WorkEventEntity?,
         currentWorkEventTime: OffsetDateTime
     ): Boolean {
-        return latestWorkEvent == null ||
-            latestWorkEvent.workEventType == WorkEventType.SHIFT_END ||
-            (latestWorkEvent.workEventType == WorkEventType.BREAK &&
-                Duration.between(latestWorkEvent.time, currentWorkEventTime).toHours().absoluteValue > 3)
+        if (latestWorkEvent == null ||
+            latestWorkEvent.workEventType == WorkEventType.SHIFT_END
+        ) return true
+
+        if (latestWorkEvent.workEventType == WorkEventType.BREAK ||
+            latestWorkEvent.workEventType == WorkEventType.UNKNOWN
+        ) {
+            if (Duration.between(latestWorkEvent.time, currentWorkEventTime).toHours().absoluteValue > 3) {
+                return true
+            }
+        }
+
+        return false
     }
-
-
-
 
 }

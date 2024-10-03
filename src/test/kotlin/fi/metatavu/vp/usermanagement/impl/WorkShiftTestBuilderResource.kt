@@ -24,7 +24,7 @@ class WorkShiftTestBuilderResource(
 ) : ApiTestBuilderResource<EmployeeWorkShift, ApiClient>(testBuilder, apiClient) {
 
     override fun clean(t: EmployeeWorkShift) {
-        api.deleteWorkShift(t.employeeId, t.id!!)
+        api.deleteEmployeeWorkShift(t.employeeId, t.id!!)
     }
 
     override fun getApi(): EmployeeWorkShiftsApi {
@@ -59,6 +59,33 @@ class WorkShiftTestBuilderResource(
     }
 
     /**
+     * Creates work shift
+     *
+     * @param employeeId employee id
+     * @param workShift work shift
+     * @return created work shift
+     */
+    fun createEmployeeWorkShift(employeeId: UUID, workShift: EmployeeWorkShift): EmployeeWorkShift {
+        return addClosable(api.createEmployeeWorkShift(employeeId, workShift))
+    }
+
+    /**
+     * Asserts work shift creation fails
+     *
+     * @param employeeId employee id
+     * @param workShift work shift
+     * @param expectedStatus expected status
+     */
+    fun assertCreateFail(employeeId: UUID, workShift: EmployeeWorkShift, expectedStatus: Int) {
+        try {
+            api.createEmployeeWorkShift(employeeId, workShift)
+            Assert.fail(String.format("Expected create to fail with status %d", expectedStatus))
+        } catch (ex: ClientException) {
+            assertClientExceptionStatus(expectedStatus, ex)
+        }
+    }
+
+    /**
      * Finds work shift
      *
      * @param employeeId employee id
@@ -78,6 +105,19 @@ class WorkShiftTestBuilderResource(
      */
     fun updateEmployeeWorkShift(employeeId: UUID, id: UUID, workShift: EmployeeWorkShift): EmployeeWorkShift {
         return api.updateEmployeeWorkShift(employeeId, id, workShift)
+    }
+
+    /**
+     * Deletes work shift
+     *
+     * @param employeeId employee id
+     * @param id work shift id
+     */
+    fun deleteEmployeeWorkShift(employeeId: UUID, id: UUID) {
+        api.deleteEmployeeWorkShift(employeeId, id)
+        removeCloseable {
+             it is EmployeeWorkShift && it.id == id
+        }
     }
 
     /**

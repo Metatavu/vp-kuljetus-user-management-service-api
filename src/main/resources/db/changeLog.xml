@@ -96,7 +96,7 @@
         </createTable>
     </changeSet>
     
-    <changeSet id="work_shifts" author="katja danilova">
+    <changeSet id="work_shifts_and_hours" author="katja danilova">
         <createTable tableName="workshift">
             <column name="id" type="binary(16)">
                 <constraints nullable="false" primaryKey="true"/>
@@ -110,7 +110,10 @@
             <column name="approved" type="boolean">
                 <constraints nullable="false"/>
             </column>
+            <column name="absence" type="varchar(191)"/>
+            <column name="perdiemallowance" type="varchar(191)"/>
         </createTable>
+
         <createIndex tableName="workshift" indexName="idx_workshift_employeeId_date">
             <column name="employeeId"/>
             <column name="date"/>
@@ -124,22 +127,23 @@
                 <constraints nullable="false" foreignKeyName="FK_WORKSHIFTHOURS_WORKSHIFT_ID" referencedColumnNames="id"
                              referencedTableName="workshift"/>
             </column>
-            <column name="workeventtype" type="varchar(191)">
+            <column name="worktype" type="varchar(191)">
                 <constraints nullable="false"/>
             </column>
             <column name="actualhours" type="float"/>
+            <column name="calculatedhours" type="float"/>
         </createTable>
-        <addUniqueConstraint tableName="workshifthours" columnNames="workshift_id, workeventtype"/>
+        <addUniqueConstraint tableName="workshifthours" columnNames="workshift_id, worktype"/>
 
         <delete tableName="workevent"/>
-
         <addColumn tableName="workevent">
             <column name="workshift_id" type="binary(16)">
                 <constraints nullable="false" foreignKeyName="FK_WORKEVENT_EMPLOYEEWORKSHIFT" referencedColumnNames="id"
                              referencedTableName="workshift"/>
             </column>
+            <column name="truckId" type="binary(16)"/>
         </addColumn>
-        <createIndex tableName="workevent" indexName="idx_workevent_worksift_time">
+        <createIndex tableName="workevent" indexName="idx_workevent_workshift_id_date">
             <column name="workshift_id"/>
             <column name="time"/>
         </createIndex>

@@ -1,7 +1,7 @@
 package fi.metatavu.vp.usermanagement.workshifthours
 
-import fi.metatavu.vp.usermanagement.model.WorkEventType
-import fi.metatavu.vp.usermanagement.workshifts.EmployeeWorkShiftEntity
+import fi.metatavu.vp.usermanagement.model.WorkType
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
 import jakarta.persistence.*
 import java.util.*
 
@@ -15,14 +15,16 @@ class WorkShiftHoursEntity {
     @Id
     lateinit var id: UUID
 
-    @ManyToOne(optional = false)
-    lateinit var workShift: EmployeeWorkShiftEntity
+    @ManyToOne
+    lateinit var workShift: WorkShiftEntity
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    lateinit var workEventType: WorkEventType
+    lateinit var workType: WorkType
 
     @Column
     var actualHours: Float? = null
+
+    @Column
+    var calculatedHours: Float? = null
 
 }
