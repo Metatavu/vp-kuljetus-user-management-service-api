@@ -51,8 +51,8 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
         }
 
         val workShiftFilter = if (employeeWorkShiftId != null) {
-            workShiftController.findEmployeeWorkShift(employeeId, employeeWorkShiftId) ?: return@withCoroutineScope createNotFoundWithMessage(
-                WORK_SHIFT, employeeWorkShiftId)
+            workShiftController.findEmployeeWorkShift(employeeId, employeeWorkShiftId)
+              ?: return@withCoroutineScope createNotFoundWithMessage(WORK_SHIFT, employeeWorkShiftId)
         } else null
 
         val (workShiftHours, count) = workShiftHoursController.listWorkShiftHours(employeeId, workShiftFilter, workType, employeeWorkShiftStartedAfter, employeeWorkShiftStartedBefore)
@@ -66,8 +66,8 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
         if (env.isEmpty || env.getOrNull() != "TEST") {
             return@withCoroutineScope createForbidden("Deleting work shift hours is disabled")
         }
-        val workShiftHours = workShiftHoursController.findWorkShiftHours(workShiftHoursId) ?: return@withCoroutineScope createNotFoundWithMessage(
-            WORK_SHIFT_HOURS, workShiftHoursId)
+        val workShiftHours = workShiftHoursController.findWorkShiftHours(workShiftHoursId)
+          ?: return@withCoroutineScope createNotFoundWithMessage(WORK_SHIFT_HOURS, workShiftHoursId)
         workShiftHoursController.deleteWorkShiftHours(workShiftHours)
         createNoContent()
     }
@@ -82,8 +82,8 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
     override fun updateWorkShiftHours(workShiftHoursId: UUID, workShiftHours: WorkShiftHours): Uni<Response> = withCoroutineScope {
-        val existingWorkShiftHours = workShiftHoursController.findWorkShiftHours(workShiftHoursId) ?: return@withCoroutineScope createNotFoundWithMessage(
-            WORK_SHIFT_HOURS, workShiftHoursId)
+        val existingWorkShiftHours = workShiftHoursController.findWorkShiftHours(workShiftHoursId)
+          ?: return@withCoroutineScope createNotFoundWithMessage(WORK_SHIFT_HOURS, workShiftHoursId)
 
         if (workShiftHours.employeeWorkShiftId != existingWorkShiftHours.workShift.id
             || workShiftHours.workType != existingWorkShiftHours.workType

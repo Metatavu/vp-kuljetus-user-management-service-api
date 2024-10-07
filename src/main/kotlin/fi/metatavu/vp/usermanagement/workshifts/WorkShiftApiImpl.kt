@@ -44,8 +44,8 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
         first: Int,
         max: Int
     ): Uni<Response> = withCoroutineScope {
-        val employee = employeeController.find(employeeId) ?: return@withCoroutineScope createNotFoundWithMessage(
-            EMPLOYEE_ENTITY, employeeId)
+        val employee = employeeController.find(employeeId)
+          ?: return@withCoroutineScope createNotFoundWithMessage(EMPLOYEE_ENTITY, employeeId)
         val (employeeWorkShifts, count) = workShiftController.listEmployeeWorkShifts(employee, startedAfter, startedBefore, first, max)
         createOk(workShiftTranslator.translate(employeeWorkShifts), count)
     }
@@ -58,8 +58,8 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
                 return@withCoroutineScope createBadRequest("employeeId in path and body do not match")
             }
 
-            val employee = employeeController.find(employeeId) ?: return@withCoroutineScope createNotFoundWithMessage(
-                EMPLOYEE_ENTITY, employeeId)
+            val employee = employeeController.find(employeeId)
+              ?: return@withCoroutineScope createNotFoundWithMessage(EMPLOYEE_ENTITY, employeeId)
 
             val created = workShiftController.create(
                 employeeId = UUID.fromString(employee.id),
@@ -77,16 +77,16 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
         if (env.isEmpty || env.getOrNull() != "TEST") {
             return@withCoroutineScope createForbidden("Deleting work shift hours is disabled")
         }
-        val employeeWorkShift = workShiftController.findEmployeeWorkShift(employeeId, workShiftId) ?: return@withCoroutineScope createNotFoundWithMessage(
-            WORK_SHIFT, workShiftId)
+        val employeeWorkShift = workShiftController.findEmployeeWorkShift(employeeId, workShiftId)
+          ?: return@withCoroutineScope createNotFoundWithMessage(WORK_SHIFT, workShiftId)
         workShiftController.deleteEmployeeWorkShift(employeeWorkShift)
         createNoContent()
     }
 
     @RolesAllowed(MANAGER_ROLE)
     override fun findEmployeeWorkShift(employeeId: UUID, workShiftId: UUID): Uni<Response> = withCoroutineScope{
-        val employeeWorkShift = workShiftController.findEmployeeWorkShift(employeeId, workShiftId) ?: return@withCoroutineScope createNotFoundWithMessage(
-            WORK_SHIFT, workShiftId)
+        val employeeWorkShift = workShiftController.findEmployeeWorkShift(employeeId, workShiftId)
+          ?: return@withCoroutineScope createNotFoundWithMessage(WORK_SHIFT, workShiftId)
         createOk(workShiftTranslator.translate(employeeWorkShift))
     }
 
@@ -98,8 +98,8 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
         workShiftId: UUID,
         employeeWorkShift: EmployeeWorkShift
     ): Uni<Response> = withCoroutineScope{
-        val foundShift = workShiftController.findEmployeeWorkShift(employeeId, workShiftId) ?: return@withCoroutineScope createNotFoundWithMessage(
-            WORK_SHIFT, workShiftId)
+        val foundShift = workShiftController.findEmployeeWorkShift(employeeId, workShiftId)
+          ?: return@withCoroutineScope createNotFoundWithMessage(WORK_SHIFT, workShiftId)
 
         if (employeeId != foundShift.employeeId) {
             return@withCoroutineScope createBadRequest("employeeId in path and body do not match")
