@@ -1,6 +1,7 @@
 package fi.metatavu.vp.usermanagement
 
 import fi.metatavu.vp.test.client.models.EmployeeWorkShift
+import fi.metatavu.vp.test.client.models.WorkType
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
@@ -35,7 +36,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
         )
 
         val workShiftHours = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee1)
-        assertEquals(7, workShiftHours.size)
+        assertEquals(WorkType.entries.size, workShiftHours.size)
 
         workShiftHours.forEach {
             assertEquals(workShift.id, it.employeeWorkShiftId)
@@ -79,12 +80,12 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
         )
 
         val workShiftHours = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee1)
-        assertEquals(14, workShiftHours.size)
-        assertEquals(7, workShiftHours.filter { it.employeeWorkShiftId == workShift1.id }.size)
-        assertEquals(7, workShiftHours.filter { it.employeeWorkShiftId == workShift2.id }.size)
+        assertEquals(WorkType.entries.size*2, workShiftHours.size)
+        assertEquals(WorkType.entries.size, workShiftHours.filter { it.employeeWorkShiftId == workShift1.id }.size)
+        assertEquals(WorkType.entries.size, workShiftHours.filter { it.employeeWorkShiftId == workShift2.id }.size)
 
         val workShiftHours2 = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee2)
-        assertEquals(7, workShiftHours2.size)
+        assertEquals(WorkType.entries.size, workShiftHours2.size)
 
         val workShiftHours3 = tb.manager.workShiftHours.listWorkShiftHours(
             employeeId = employee2,
@@ -100,7 +101,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             employeeWorkShiftStartedAfter = OffsetDateTime.now().plusDays(2).toString(),
             employeeWorkShiftStartedBefore = OffsetDateTime.now().plusDays(3).toString()
         )
-        assertEquals(14, byDate.size)
+        assertEquals(WorkType.entries.size*2, byDate.size)
     }
 
     /**

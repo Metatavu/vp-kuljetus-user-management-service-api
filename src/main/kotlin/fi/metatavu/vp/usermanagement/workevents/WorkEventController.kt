@@ -79,6 +79,10 @@ class WorkEventController {
             latestWorkEvent = latestWorkEvent,
             currentWorkEventTime = time
         )) {
+            if (latestWorkEvent != null) {
+                latestWorkEvent.workEventType = WorkEventType.SHIFT_END
+                workEventRepository.persistSuspending(latestWorkEvent)
+            }
             workShiftController.create(
                 employeeId = UUID.fromString(employee.id),
                 date = time.toLocalDate()
