@@ -79,7 +79,7 @@ class WorkEventController {
             latestWorkEvent = latestWorkEvent,
             currentWorkEventTime = time
         )) {
-            if (latestWorkEvent != null) {
+            if (latestWorkEvent?.workEventType == WorkEventType.UNKNOWN || latestWorkEvent?.workEventType == WorkEventType.BREAK) {
                 latestWorkEvent.workEventType = WorkEventType.SHIFT_END
                 workEventRepository.persistSuspending(latestWorkEvent)
             }
