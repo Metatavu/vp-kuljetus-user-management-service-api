@@ -33,7 +33,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
     lateinit var workEventTranslator: WorkEventTranslator
 
     @Inject
-    lateinit var empoyeeWorkShiftController: WorkShiftController
+    lateinit var employeeWorkShiftController: WorkShiftController
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     @WithTransaction
@@ -93,7 +93,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
         }
 
         val workShiftFilter = employeeWorkShiftId?.let {
-            empoyeeWorkShiftController.findEmployeeWorkShift(employeeId, it)
+            employeeWorkShiftController.findEmployeeWorkShift(employeeId, it)
                 ?: return@withCoroutineScope createNotFoundWithMessage(
                     entity = WORK_SHIFT,
                     id = employeeWorkShiftId
