@@ -88,7 +88,8 @@ class WorkEventController {
             employeeId = UUID.fromString(employee.id),
             time = time,
             workEventType = workEventType,
-            workShiftEntity = workShift
+            workShiftEntity = workShift,
+            truckId = truckId
         )
 
         val updatedShift = recalculateWorkShiftTimes(workShift = workShift)
