@@ -30,4 +30,10 @@ class WorkShiftEntity {
 
     @Enumerated(EnumType.STRING)
     var perDiemAllowance: PerDiemAllowanceType? = null
+
+    @Column
+    var startedAt: LocalDate? = null
+
+    @Column
+    var endedAt: LocalDate? = null
 }

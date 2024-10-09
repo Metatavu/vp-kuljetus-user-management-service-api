@@ -23,15 +23,21 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
      * @param employeeId employee id
      * @param date date
      * @param approved approved
+     * @param absence absence
+     * @param perDiemAllowance per diem allowance
+     * @param startedAt started at
+     * @param endedAt ended at
      * @return created employee work shift
      */
     suspend fun create(
         id: UUID,
         employeeId: UUID,
         date: LocalDate,
-        approved: Boolean = false,
+        approved: Boolean,
         absence: AbsenceType?,
-        perDiemAllowance: PerDiemAllowanceType?
+        perDiemAllowance: PerDiemAllowanceType?,
+        startedAt: LocalDate?,
+        endedAt: LocalDate?
     ): WorkShiftEntity {
         val employeeWorkShift = WorkShiftEntity()
         employeeWorkShift.id = id
@@ -40,6 +46,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         employeeWorkShift.approved = approved
         employeeWorkShift.absence = absence
         employeeWorkShift.perDiemAllowance = perDiemAllowance
+        employeeWorkShift.startedAt = startedAt
+        employeeWorkShift.endedAt = endedAt
         return persistSuspending(employeeWorkShift)
     }
 
@@ -67,12 +75,12 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         parameters.and("employeeId", employeeId)
 
         if (startedAfter != null) {
-            queryBuilder.append(" AND date >= :startedAfter")
+            queryBuilder.append(" AND startedAt >= :startedAfter")
             parameters.and("startedAfter", startedAfter.toLocalDate())
         }
 
         if (startedBefore != null) {
-            queryBuilder.append(" AND date <= :startedBefore")
+            queryBuilder.append(" AND startedAt <= :startedBefore")
             parameters.and("startedBefore", startedBefore.toLocalDate())
         }
 

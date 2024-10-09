@@ -112,6 +112,8 @@
             </column>
             <column name="absence" type="varchar(191)"/>
             <column name="perdiemallowance" type="varchar(191)"/>
+            <column name="startedat" type="date"/>
+            <column name="endedat" type="date"/>
         </createTable>
 
         <createIndex tableName="workshift" indexName="idx_workshift_employeeId_date">

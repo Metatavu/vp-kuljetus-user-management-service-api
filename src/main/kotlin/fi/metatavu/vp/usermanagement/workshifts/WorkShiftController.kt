@@ -2,7 +2,6 @@ package fi.metatavu.vp.usermanagement.workshifts
 
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
 import fi.metatavu.vp.usermanagement.model.AbsenceType
-import fi.metatavu.vp.usermanagement.model.EmployeeWorkShift
 import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
@@ -33,13 +32,19 @@ class WorkShiftController {
      *
      * @param employeeId employee id
      * @param date date
+     * @param absenceType absence type
+     * @param perDiemAllowanceType per diem allowance type
+     * @param startedAt started at
+     * @param endedAt ended at
      * @return created employee work shift
      */
     suspend fun create(
         employeeId: UUID,
         date: LocalDate,
         absenceType: AbsenceType? = null,
-        perDiemAllowanceType: PerDiemAllowanceType? = null
+        perDiemAllowanceType: PerDiemAllowanceType? = null,
+        startedAt: LocalDate? = null,
+        endedAt: LocalDate? = null
     ): WorkShiftEntity {
         val shift = workShiftRepository.create(
             id = UUID.randomUUID(),
@@ -47,7 +52,9 @@ class WorkShiftController {
             date = date,
             approved = false,
             absence = absenceType,
-            perDiemAllowance = perDiemAllowanceType
+            perDiemAllowance = perDiemAllowanceType,
+            startedAt = startedAt,
+            endedAt = endedAt
         )
         workShiftHoursController.createWorkShiftHours(
             workShiftEntity = shift
@@ -111,21 +118,6 @@ class WorkShiftController {
     }
 
     /**
-     * Updates employee work shift date
-     *
-     * @param foundShift found shift
-     * @param newTime new time
-     * @return updated employee work shift
-     */
-    suspend fun updateEmployeeWorkShift(
-        foundShift: WorkShiftEntity,
-        newTime: LocalDate
-    ): WorkShiftEntity {
-        foundShift.date = newTime
-        return workShiftRepository.persistSuspending(foundShift)
-    }
-
-    /**
      * Deletes employee work shift and all related work shift hours and work events
      *
      * @param employeeWorkShift employee work shift
@@ -141,4 +133,5 @@ class WorkShiftController {
 
         workShiftRepository.deleteSuspending(employeeWorkShift)
     }
+
 }

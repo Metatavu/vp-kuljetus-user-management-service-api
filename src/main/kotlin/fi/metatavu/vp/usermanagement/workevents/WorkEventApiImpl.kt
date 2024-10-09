@@ -133,7 +133,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
                     id = workEventId
                 )
 
-            val updatedWorkEvent = workEventController.update(foundWorkEvent, workEvent)
+            val updatedWorkEvent = workEventController.updateFromRest(foundWorkEvent, workEvent)
             createOk(workEventTranslator.translate(updatedWorkEvent))
         }
 

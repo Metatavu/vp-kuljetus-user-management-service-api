@@ -6,6 +6,7 @@ import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import java.time.Duration
@@ -27,6 +28,9 @@ class WorkEventController {
 
     @Inject
     lateinit var workShiftHoursController: WorkShiftHoursController
+
+    @Inject
+    lateinit var workShiftRepository: WorkShiftRepository
 
     /**
      * Lists work events and sorts them by time from new to old
@@ -60,7 +64,8 @@ class WorkEventController {
     /**
      * Creates a new work event and possibly creates a new shift for it,
      * recalculates the work shift date if needed,
-     * recalculates the work shift hours
+     * recalculates the work shift hours,
+     * sets the work shift startedAt or endedAt if needed
      *
      * @param employee employee
      * @param time time
@@ -73,25 +78,12 @@ class WorkEventController {
         workEventType: WorkEventType,
         truckId: UUID? = null
     ): WorkEventEntity {
-        val latestWorkEvent = workEventRepository.findLatestWorkEvent(employeeId = UUID.fromString(employee.id))
+        val employeeId = UUID.fromString(employee.id)
+        val latestWorkEvent = workEventRepository.findLatestWorkEvent(employeeId = employeeId)
 
-        val workShift = if (requiresNewShift(
-            latestWorkEvent = latestWorkEvent,
-            currentWorkEventTime = time
-        )) {
-            if (latestWorkEvent?.workEventType == WorkEventType.UNKNOWN || latestWorkEvent?.workEventType == WorkEventType.BREAK) {
-                latestWorkEvent.workEventType = WorkEventType.SHIFT_END
-                workEventRepository.persistSuspending(latestWorkEvent)
-            }
-            workShiftController.create(
-                employeeId = UUID.fromString(employee.id),
-                date = time.toLocalDate()
-            )
-        } else {
-            latestWorkEvent!!.workShift     // latestWorkEvent is not null because of check in requiresNewShift
-        }
+        val workShift = getWorkEventShift(latestWorkEvent, time, employeeId)
 
-        val created = workEventRepository.create(
+        val createdWorkEvent = workEventRepository.create(
             id = UUID.randomUUID(),
             employeeId = UUID.fromString(employee.id),
             time = time,
@@ -99,11 +91,10 @@ class WorkEventController {
             workShiftEntity = workShift
         )
 
-        recalculateWorkShiftDate(workShift = workShift)
-        workShiftHoursController.recalculateWorkShiftHours(workShift = workShift)
-        return created
+        val updatedShift = recalculateWorkShiftTimes(workShift = workShift)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedShift)
+        return createdWorkEvent
     }
-
 
     /**
      * Finds work event for employee
@@ -129,28 +120,13 @@ class WorkEventController {
      * @param workEvent work event
      * @return updated work event
      */
-    suspend fun update(foundWorkEvent: WorkEventEntity, workEvent: WorkEvent): WorkEventEntity {
+    suspend fun updateFromRest(foundWorkEvent: WorkEventEntity, workEvent: WorkEvent): WorkEventEntity {
         foundWorkEvent.time = workEvent.time
         foundWorkEvent.workEventType = workEvent.workEventType
         val updated = workEventRepository.persistSuspending(foundWorkEvent)
-        recalculateWorkShiftDate(workShift = foundWorkEvent.workShift)
-        workShiftHoursController.recalculateWorkShiftHours(workShift = foundWorkEvent.workShift)
-        return updated
-    }
 
-    /**
-     * Updates work event, recalculates work shift date if needed
-     *
-     * @param foundWorkEvent found work event
-     * @param newTime new time
-     * @return updated time entry
-     */
-    suspend fun update(foundWorkEvent: WorkEventEntity, newTime: OffsetDateTime): WorkEventEntity {
-        foundWorkEvent.time = newTime
-
-        val updated = workEventRepository.persistSuspending(foundWorkEvent)
-        recalculateWorkShiftDate(workShift = foundWorkEvent.workShift)
-        workShiftHoursController.recalculateWorkShiftHours(workShift = foundWorkEvent.workShift)
+        val updatedShift = recalculateWorkShiftTimes(workShift = foundWorkEvent.workShift)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedShift)
         return updated
     }
 
@@ -169,24 +145,70 @@ class WorkEventController {
             return
         }
 
-        recalculateWorkShiftDate(workShift = foundWorkEvent.workShift)
-        workShiftHoursController.recalculateWorkShiftHours(workShift = foundWorkEvent.workShift)
+        val updatedWorkShift = recalculateWorkShiftTimes(workShift = foundWorkEvent.workShift)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedWorkShift)
     }
 
     /**
-     * Recalculates the work shift date based on the earliest work event.
+     * Recalculates the work shift date/start/end times based on its work events.
      * Finds the first work event in the shift and updates the shift date if needed
      *
      * @param workShift work shift
      */
-    private suspend fun recalculateWorkShiftDate(
+    private suspend fun recalculateWorkShiftTimes(
         workShift: WorkShiftEntity,
-    ) {
-        workEventRepository.findEarliestWorkEvent(workShift)?.let {
-            if (workShift.date != it.time.toLocalDate()) {
-                workShiftController.updateEmployeeWorkShift(workShift, it.time.toLocalDate())
+    ): WorkShiftEntity {
+        val workEventsForShift = workEventRepository.list(employeeWorkShift = workShift).first
+
+        val first = workEventsForShift.minByOrNull { it.time }
+        if (first != null && workShift.date != first.time.toLocalDate()) {
+            workShift.date = first.time.toLocalDate()
+        }
+
+        workShift.startedAt = null
+        workShift.endedAt = null
+        workEventsForShift.forEach { workEvent ->
+            if (workEvent.workEventType == WorkEventType.SHIFT_START) {
+                workShift.startedAt = workEvent.time.toLocalDate()
+            } else if (workEvent.workEventType == WorkEventType.SHIFT_END) {
+                workShift.endedAt = workEvent.time.toLocalDate()
             }
         }
+
+        return workShiftRepository.persistSuspending(workShift)
+    }
+
+    /**
+     * Returns the work shift for the work event, creates a new shift if needed
+     *
+     * @param latestWorkEvent latest work event
+     * @param workEventTime work event time
+     * @param employeeId employee id
+     * @return work shift
+     */
+    private suspend fun getWorkEventShift(
+        latestWorkEvent: WorkEventEntity?,
+        workEventTime: OffsetDateTime,
+        employeeId: UUID
+    ): WorkShiftEntity {
+        return if (requiresNewShift(
+                latestWorkEvent = latestWorkEvent,
+                currentWorkEventTime = workEventTime
+            )
+        ) {
+            if (latestWorkEvent?.workEventType == WorkEventType.UNKNOWN || latestWorkEvent?.workEventType == WorkEventType.BREAK) {
+                latestWorkEvent.workEventType = WorkEventType.SHIFT_END
+                workEventRepository.persistSuspending(latestWorkEvent)
+            }
+
+            workShiftController.create(
+                employeeId = employeeId,
+                date = workEventTime.toLocalDate()
+            )
+        } else {
+            latestWorkEvent!!.workShift
+        }
+
     }
 
     /**
@@ -202,7 +224,9 @@ class WorkEventController {
     ): Boolean {
         if (latestWorkEvent == null ||
             latestWorkEvent.workEventType == WorkEventType.SHIFT_END
-        ) return true
+        ) {
+            return true
+        }
 
         if (latestWorkEvent.workEventType == WorkEventType.BREAK ||
             latestWorkEvent.workEventType == WorkEventType.UNKNOWN

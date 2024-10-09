@@ -23,7 +23,9 @@ class WorkShiftTranslator: AbstractTranslator<WorkShiftEntity, EmployeeWorkShift
             approved = entity.approved,
             absence = entity.absence,
             perDiemAllowance = entity.perDiemAllowance,
-            truckIds = workEventController.list(employeeWorkShift = entity).first.mapNotNull { it.truckId }.distinct()
+            truckIds = workEventController.list(employeeWorkShift = entity).first.mapNotNull { it.truckId }.distinct(),
+            startedAt = entity.startedAt,
+            endedAt = entity.endedAt
         )
     }
 
