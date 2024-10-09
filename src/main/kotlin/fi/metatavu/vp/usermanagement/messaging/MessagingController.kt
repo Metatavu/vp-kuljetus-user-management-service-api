@@ -50,7 +50,8 @@ class MessagingController: WithCoroutineScope() {
             workEventController.create(
                 employee = foundDriver,
                 time = event.time,
-                workEventType = event.workEventType
+                workEventType = event.workEventType,
+                truckId = event.truckId
             )
             logger.debug("Event ${event.type} processed. Created new time entry (${event.workEventType}) for driver ${foundDriver.id}")
 
