@@ -35,6 +35,7 @@ dependencies {
     implementation("io.quarkus:quarkus-reactive-mysql-client")
     implementation("io.quarkus:quarkus-messaging-rabbitmq")
     implementation("io.quarkus:quarkus-arc")
+    implementation("io.quarkus:quarkus-scheduler")
 
     implementation("io.vertx:vertx-core")
     implementation("io.vertx:vertx-lang-kotlin")

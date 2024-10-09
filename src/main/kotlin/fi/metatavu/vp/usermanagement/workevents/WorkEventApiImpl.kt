@@ -1,9 +1,10 @@
 package fi.metatavu.vp.usermanagement.workevents
 
 import fi.metatavu.vp.usermanagement.model.WorkEvent
-import fi.metatavu.vp.usermanagement.spec.WorkEventsApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
+import fi.metatavu.vp.usermanagement.spec.WorkEventsApi
 import fi.metatavu.vp.usermanagement.users.UserController
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -31,6 +32,8 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
     @Inject
     lateinit var workEventTranslator: WorkEventTranslator
 
+    @Inject
+    lateinit var employeeWorkShiftController: WorkShiftController
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     @WithTransaction
@@ -53,28 +56,11 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
             val created = workEventController.create(
                 employee = employee,
                 time = workEvent.time,
-                workEventType = workEvent.workEventType
+                workEventType = workEvent.workEventType,
+                truckId = workEvent.truckId
             )
 
             createCreated(workEventTranslator.translate(created))
-        }
-
-    @RolesAllowed(MANAGER_ROLE)
-    @WithTransaction
-    override fun deleteEmployeeWorkEvent(employeeId: UUID, workEventId: UUID): Uni<Response> =
-        withCoroutineScope {
-            if (!isManager() && loggedUserId != employeeId) {
-                return@withCoroutineScope createForbidden(FORBIDDEN)
-            }
-
-            val foundTimeEntry =
-                workEventController.find(workEventId, employeeId)
-                    ?: return@withCoroutineScope createNotFoundWithMessage(
-                        entity = TIME_ENTRY,
-                        id = workEventId
-                    )
-            workEventController.delete(foundTimeEntry)
-            createNoContent()
         }
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
@@ -94,12 +80,27 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
         }
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
-    override fun listEmployeeWorkEvents(employeeId: UUID, after: OffsetDateTime?, before: OffsetDateTime?, first: Int, max: Int): Uni<Response> = withCoroutineScope {
+    override fun listEmployeeWorkEvents(
+        employeeId: UUID,
+        employeeWorkShiftId: UUID?,
+        after: OffsetDateTime?,
+        before: OffsetDateTime?,
+        first: Int,
+        max: Int
+    ): Uni<Response> = withCoroutineScope{
         if (!isManager() && loggedUserId != employeeId) {
             return@withCoroutineScope createForbidden(FORBIDDEN)
         }
 
+        val workShiftFilter = employeeWorkShiftId?.let {
+            employeeWorkShiftController.findEmployeeWorkShift(employeeId, it)
+                ?: return@withCoroutineScope createNotFoundWithMessage(
+                    entity = WORK_SHIFT,
+                    id = employeeWorkShiftId
+                )
+        }
         val (timeEntries, count) = workEventController.list(
+            employeeWorkShift = workShiftFilter,
             employeeId = employeeId,
             after = after,
             before = before,
@@ -132,7 +133,25 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
                     id = workEventId
                 )
 
-            val updatedWorkEvent = workEventController.update(foundWorkEvent, workEvent)
+            val updatedWorkEvent = workEventController.updateFromRest(foundWorkEvent, workEvent)
             createOk(workEventTranslator.translate(updatedWorkEvent))
+        }
+
+    @RolesAllowed(MANAGER_ROLE)
+    @WithTransaction
+    override fun deleteEmployeeWorkEvent(employeeId: UUID, workEventId: UUID): Uni<Response> =
+        withCoroutineScope {
+            if (!isManager() && loggedUserId != employeeId) {
+                return@withCoroutineScope createForbidden(FORBIDDEN)
+            }
+
+            val foundTimeEntry =
+                workEventController.find(workEventId, employeeId)
+                    ?: return@withCoroutineScope createNotFoundWithMessage(
+                        entity = TIME_ENTRY,
+                        id = workEventId
+                    )
+            workEventController.delete(foundTimeEntry)
+            createNoContent()
         }
 }
