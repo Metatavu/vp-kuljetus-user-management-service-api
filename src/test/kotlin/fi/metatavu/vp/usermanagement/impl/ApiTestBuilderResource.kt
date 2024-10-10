@@ -15,7 +15,6 @@ abstract class ApiTestBuilderResource<T, A>(
     testBuilder: TestBuilder,
     private val apiClient: ApiClient
 ):fi.metatavu.jaxrs.test.functional.builder.AbstractAccessTokenApiTestBuilderResource<T, A, ApiClient>(testBuilder) {
-
     /**
      * Returns API client
      *

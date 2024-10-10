@@ -1,6 +1,7 @@
 package fi.metatavu.vp.usermanagement.workevents
 
 import fi.metatavu.vp.usermanagement.model.WorkEventType
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
 import jakarta.persistence.*
 import java.time.OffsetDateTime
 import java.util.*
@@ -15,14 +16,19 @@ class WorkEventEntity {
     @Id
     lateinit var id: UUID
 
-    @Column(nullable = false)
+    @Column
     lateinit var employeeId: UUID
 
-    @Column(nullable = false)
+    @Column
     lateinit var time: OffsetDateTime
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     lateinit var workEventType: WorkEventType
+
+    @ManyToOne
+    lateinit var workShift: WorkShiftEntity
+
+    @Column
+    var truckId: UUID? = null
 
 }
