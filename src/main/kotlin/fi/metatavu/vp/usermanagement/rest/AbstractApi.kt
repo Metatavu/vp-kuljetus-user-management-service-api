@@ -287,6 +287,7 @@ abstract class AbstractApi: WithCoroutineScope() {
         const val TIME_ENTRY = "Time entry"
         const val WORK_SHIFT = "Work shift"
         const val WORK_SHIFT_HOURS = "Work shift hours"
+        const val CLIENT_APP = "Client app"
 
         const val DRIVER_ROLE = "driver"
         const val EMPLOYEE_ROLE = "employee"
