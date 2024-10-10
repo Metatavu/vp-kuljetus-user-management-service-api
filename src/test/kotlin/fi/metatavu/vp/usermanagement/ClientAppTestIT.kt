@@ -52,7 +52,8 @@ class ClientAppTestIT: AbstractFunctionalTest() {
         assertFalse(foundClientAppWithMetadata.metadata?.containsKey("unknown-key") ?: true)
 
         it.setApiKey("invalid-api-key").clientApps.assertCreateFail(createdClientAppWithMetadata, 403)
-        it.setApiKey("test-api-key")
+
+        // Assert that one cannot create a client app with the same device id if the status is not WAITING_FOR_APPROVAL
         it.manager.clientApps.update(createdClientAppWithMetadata.id, createdClientAppWithMetadata.copy(status = ClientAppStatus.APPROVED))
         it.setApiKey().clientApps.assertCreateFail(createdClientAppWithMetadata, 409)
     }

@@ -89,11 +89,10 @@ class ClientAppApiImpl: ClientAppsApi, AbstractApi() {
         createOk(clientAppTranslator.translate(clientApps), count)
     }
 
+    @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
     override fun updateClientApp(clientAppId: UUID, clientApp: ClientApp): Uni<Response> = withCoroutineScope {
-        if (loggedUserId == null && requestApiKey == null) return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
-        if (requestApiKey != null && requestApiKey != apiKey) return@withCoroutineScope createForbidden(INVALID_API_KEY)
-        if (loggedUserId != null && !hasRealmRole(MANAGER_ROLE)) return@withCoroutineScope createForbidden(FORBIDDEN)
+        val userId = loggedUserId ?: return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
 
         if (clientAppId != clientApp.id) return@withCoroutineScope createBadRequest("Client App ID in path and body don't match")
 
@@ -105,7 +104,7 @@ class ClientAppApiImpl: ClientAppsApi, AbstractApi() {
             metadata = clientApp.metadata,
             status = clientApp.status,
             lastLoginAt = clientApp.lastLoginAt,
-            userId = loggedUserId
+            userId = userId
         )
 
         createOk(clientAppTranslator.translate(updatedClientApp))
