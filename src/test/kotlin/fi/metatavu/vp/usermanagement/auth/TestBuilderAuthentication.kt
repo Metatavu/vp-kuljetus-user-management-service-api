@@ -29,6 +29,7 @@ class TestBuilderAuthentication(
     val holidays = HolidayTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
     val workShifts = WorkShiftTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
     val workShiftHours = WorkShiftHoursTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
+    val clientApps = ClientAppTestBuilderResource(testBuilder, accessTokenProvider, this.apiKey, createClient(accessTokenProvider))
 
     override fun createClient(authProvider: AccessTokenProvider): ApiClient {
         val result = ApiClient(ApiTestSettings.apiBasePath)
