@@ -1,6 +1,7 @@
 package fi.metatavu.vp.usermanagement.workevents
 
 import fi.metatavu.vp.usermanagement.model.WorkEvent
+import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.WorkEventsApi
 import fi.metatavu.vp.usermanagement.users.UserController
@@ -52,6 +53,10 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
                     entity = EMPLOYEE_ENTITY,
                     id = employeeId
                 )
+
+            isWorkEventCreatable(workEvent)?.let {
+                return@withCoroutineScope createBadRequest(it)
+            }
 
             val created = workEventController.create(
                 employee = employee,
@@ -133,6 +138,10 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
                     id = workEventId
                 )
 
+            isWorkEventEditable(foundWorkEvent, workEvent)?.let {
+                return@withCoroutineScope createBadRequest(it)
+            }
+
             val updatedWorkEvent = workEventController.updateFromRest(foundWorkEvent, workEvent)
             createOk(workEventTranslator.translate(updatedWorkEvent))
         }
@@ -151,7 +160,131 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
                         entity = TIME_ENTRY,
                         id = workEventId
                     )
+            isWorkEventRemovable(foundTimeEntry)?.let {
+                return@withCoroutineScope createBadRequest(it)
+            }
+
             workEventController.delete(foundTimeEntry)
             createNoContent()
         }
+
+
+    /**
+     * Checks if work event is editable. Checks the condtions:
+     * - Type of shift start/end cannot be changed
+     * - Cannot have two start or end events in the same shift
+     * - Not start or end events cannot be moved outside the shift
+     * - Shift start event must be before shift end event
+     *
+     * @param workEvent work event
+     * @param newWorkEventData new work event data
+     * @return null if work event is editable, error message otherwise
+     */
+    private suspend fun isWorkEventEditable(workEvent: WorkEventEntity, newWorkEventData: WorkEvent): String? {
+        if (isStartOrEndEvent(workEvent.workEventType) && workEvent.workEventType != newWorkEventData.workEventType) {
+            return "Type of shift start/end cannot be changed"
+        }
+
+        val (shiftStart, shiftEnd) = workEventController.getShiftStartEnd(workEvent)
+
+        if (workEventController.isDuplicateStartOrEndEvent(shiftStart, shiftEnd, newWorkEventData.workEventType)) {
+            return "Cannot have two start or end events in the same shift"
+        }
+
+        if (!isStartOrEndEvent(workEvent.workEventType)
+            && !workEventController.isWithinShiftBounds(shiftStart, shiftEnd, newWorkEventData.time)
+        ) {
+            return "Event cannot be moved outside the shift"
+        }
+
+        if (shiftEnd != null && newWorkEventData.workEventType == WorkEventType.SHIFT_START
+            && newWorkEventData.time.isAfter(shiftEnd.time)
+        ) {
+            return "Shift start event must be before shift end event"
+        }
+        if (shiftStart != null && newWorkEventData.workEventType == WorkEventType.SHIFT_END
+            && newWorkEventData.time.isBefore(shiftStart.time)
+        ) {
+            return "Shift start event must be before shift end event"
+        }
+
+        return null
+    }
+
+    /**
+     * Checks if work event is removable. Checks the conditions:
+     * - Shift start or end events cannot be removed if there are other events in the same shift
+     *
+     * @param workEvent work event
+     * @return null if work event is removable, error message otherwise
+     */
+    private suspend fun isWorkEventRemovable(workEvent: WorkEventEntity): String? {
+        val otherEventsOfWorkShift = workEventController.list(employeeWorkShift = workEvent.workShift).first.filter {
+            it.workEventType != WorkEventType.SHIFT_START && it.workEventType != WorkEventType.SHIFT_END
+        }
+
+        val isShiftStartOrEnd = isStartOrEndEvent(workEvent.workEventType)
+        val hasOtherEvents = otherEventsOfWorkShift.isNotEmpty()
+
+        if (isShiftStartOrEnd && hasOtherEvents) {
+            return "Shift start or end events cannot be removed if there are other events in the same shift"
+        }
+
+        return null
+    }
+
+    /**
+     * Checks if work event is creatable. Checks the conditions:
+     * - Cannot have two start or end events in the same shift
+     * - Not start or end events cannot be created outside the shift
+     * - Shift start event must be before shift end event
+     *
+     * @param workEventData work event data
+     * @return null if work event is creatable, error message otherwise
+     */
+    private suspend fun isWorkEventCreatable(workEventData: WorkEvent): String? {
+        val latestWorkEvent =
+            workEventController.list(employeeId = workEventData.employeeId, first = 0, max = 1).first.firstOrNull()
+        val newShiftNeeded = workEventController.requiresNewShift(latestWorkEvent, workEventData.time)
+        if (newShiftNeeded) {
+            return null
+        }
+
+        val workShiftEvents = workEventController.list(employeeWorkShift = latestWorkEvent?.workShift).first
+        val shiftStart = workShiftEvents.find { it.workEventType == WorkEventType.SHIFT_START }
+        val shiftEnd = workShiftEvents.find { it.workEventType == WorkEventType.SHIFT_END }
+
+        if (workEventController.isDuplicateStartOrEndEvent(shiftStart, shiftEnd, workEventData.workEventType)) {
+            return "Cannot have two start or end events in the same shift"
+        }
+
+        if (!isStartOrEndEvent(workEventData.workEventType)
+            && !workEventController.isWithinShiftBounds(shiftStart, shiftEnd, workEventData.time)
+        ) {
+            return "Event cannot be created outside the shift"
+        }
+
+        if (shiftEnd != null && workEventData.workEventType == WorkEventType.SHIFT_START
+            && workEventData.time.isAfter(shiftEnd.time)
+        ) {
+            return "Shift start event must be before shift end event"
+        }
+        if (shiftStart != null && workEventData.workEventType == WorkEventType.SHIFT_END
+            && workEventData.time.isBefore(shiftStart.time)
+        ) {
+            return "Shift start event must be before shift end event"
+        }
+
+        return null
+    }
+
+    /**
+     * Checks if work event is start or end event
+     *
+     * @param workEventType work event type
+     * @return true if work event is start or end event
+     */
+    private fun isStartOrEndEvent(workEventType: WorkEventType): Boolean {
+        return workEventType == WorkEventType.SHIFT_START || workEventType == WorkEventType.SHIFT_END
+    }
 }
