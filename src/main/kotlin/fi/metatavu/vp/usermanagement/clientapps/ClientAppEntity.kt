@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.clientapps
 
+import fi.metatavu.vp.usermanagement.model.ClientAppMetadata
 import fi.metatavu.vp.usermanagement.model.ClientAppStatus
 import jakarta.persistence.*
 import jakarta.validation.constraints.NotEmpty
@@ -28,7 +29,8 @@ class ClientAppEntity {
     lateinit var status: ClientAppStatus
 
     @Column
-    var deviceOs: String? = null
+    @Enumerated(EnumType.STRING)
+    var deviceOs: ClientAppMetadata.DeviceOS? = null
 
     @Column
     var deviceOsVersion: String? = null

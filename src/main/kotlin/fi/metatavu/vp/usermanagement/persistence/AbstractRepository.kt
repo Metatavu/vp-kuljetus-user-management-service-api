@@ -109,15 +109,4 @@ abstract class AbstractRepository<Entity, Id> : PanacheRepositoryBase<Entity, Id
     open suspend fun findByIdSuspending(id: Id): Entity? {
         return findById(id).awaitSuspending()
     }
-
-    /**
-     * Performs find query and await the result
-     *
-     * @param query find query
-     * @param params query parameters
-     * @return entity if found
-     */
-    open suspend fun findSuspending(query: String, vararg params: Any): Entity? {
-        return find(query, params).firstResult<Entity>().awaitSuspending()
-    }
 }

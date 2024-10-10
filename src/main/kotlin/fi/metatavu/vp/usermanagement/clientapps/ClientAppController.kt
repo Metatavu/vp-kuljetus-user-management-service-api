@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.clientapps
 
+import fi.metatavu.vp.usermanagement.model.ClientAppMetadata
 import fi.metatavu.vp.usermanagement.model.ClientAppStatus
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -27,33 +28,69 @@ class ClientAppController {
         return clientAppRepository.list(status = status, first = first, max = max)
     }
 
-    suspend fun create(deviceId: String, name: String?, metadata: Map<String, String>?): ClientAppEntity {
+    /**
+     * Creates a new client app
+     *
+     * @param deviceId device id
+     * @param name name
+     * @param metadata metadata
+     * @return created client app
+     */
+    suspend fun create(deviceId: String, name: String?, metadata: ClientAppMetadata): ClientAppEntity {
         return clientAppRepository.create(
             id = UUID.randomUUID(),
             deviceId = deviceId,
             name = name,
-            deviceOs = metadata?.get(DEVICE_OS_FIELD),
-            deviceOsVersion = metadata?.get(DEVICE_OS_VERSION_FIELD),
-            appVersion = metadata?.get(APP_VERSION_FIELD)
+            deviceOs = metadata.deviceOS,
+            deviceOsVersion = metadata.deviceOSVersion,
+            appVersion = metadata.appVersion
         )
     }
 
+    /**
+     * Finds a client app by id
+     *
+     * @param id id
+     * @return found client app or null if not found
+     */
     suspend fun find(id: UUID): ClientAppEntity? {
         return clientAppRepository.findByIdSuspending(id)
     }
 
+    /**
+     * Finds a client app by device id
+     *
+     * @param deviceId device id
+     * @return found client app or null if not found
+     */
     suspend fun find(deviceId: String): ClientAppEntity? {
         return clientAppRepository.findByDeviceId(deviceId)
     }
 
+    /**
+     * Deletes a client app
+     *
+     * @param clientApp client app
+     */
     suspend fun delete(clientApp: ClientAppEntity) {
         clientAppRepository.deleteSuspending(clientApp)
     }
 
+    /**
+     * Updates a client app
+     *
+     * @param clientApp client app
+     * @param name name
+     * @param metadata metadata
+     * @param status status
+     * @param lastLoginAt last login at
+     * @param userId user id
+     * @return updated client app
+     */
     suspend fun update(
         clientApp: ClientAppEntity,
         name: String?,
-        metadata: Map<String, String>?,
+        metadata: ClientAppMetadata,
         status: ClientAppStatus,
         lastLoginAt: OffsetDateTime?,
         userId: UUID?
@@ -61,18 +98,12 @@ class ClientAppController {
         return clientAppRepository.update(
             clientApp = clientApp,
             name = name,
-            deviceOs = metadata?.get(DEVICE_OS_FIELD),
-            deviceOsVersion = metadata?.get(DEVICE_OS_VERSION_FIELD),
-            appVersion = metadata?.get(APP_VERSION_FIELD),
+            deviceOs = metadata.deviceOS,
+            deviceOsVersion = metadata.deviceOSVersion,
+            appVersion = metadata.appVersion,
             status = status,
             lastLoginAt = lastLoginAt,
             userId = userId
         )
-    }
-
-    companion object {
-        const val DEVICE_OS_FIELD = "deviceOs"
-        const val DEVICE_OS_VERSION_FIELD = "deviceOsVersion"
-        const val APP_VERSION_FIELD = "appVersion"
     }
 }

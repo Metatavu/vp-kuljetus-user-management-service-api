@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.clientapps
 
+import fi.metatavu.vp.usermanagement.model.ClientAppMetadata
 import fi.metatavu.vp.usermanagement.model.ClientAppStatus
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
 import io.quarkus.panache.common.Parameters
@@ -44,7 +45,7 @@ class ClientAppRepository: AbstractRepository<ClientAppEntity, UUID>() {
         id: UUID,
         deviceId: String,
         name: String?,
-        deviceOs: String?,
+        deviceOs: ClientAppMetadata.DeviceOS?,
         deviceOsVersion: String?,
         appVersion: String?
     ): ClientAppEntity {
@@ -67,9 +68,7 @@ class ClientAppRepository: AbstractRepository<ClientAppEntity, UUID>() {
      * @return found client app or null if not found
      */
     suspend fun findByDeviceId(deviceId: String): ClientAppEntity? {
-        println("DEVICE ID IS: $deviceId")
         return find("deviceId = ?1", deviceId).firstResult<ClientAppEntity>().awaitSuspending()
-//        return findSuspending("deviceId = ?1", deviceId)
     }
 
     /**
@@ -88,7 +87,7 @@ class ClientAppRepository: AbstractRepository<ClientAppEntity, UUID>() {
     suspend fun update(
         clientApp: ClientAppEntity,
         name: String?,
-        deviceOs: String?,
+        deviceOs: ClientAppMetadata.DeviceOS?,
         deviceOsVersion: String?,
         appVersion: String?,
         status: ClientAppStatus,

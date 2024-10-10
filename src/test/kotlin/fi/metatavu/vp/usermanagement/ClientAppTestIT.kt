@@ -1,8 +1,8 @@
 package fi.metatavu.vp.usermanagement
 
 import fi.metatavu.vp.test.client.models.ClientApp
+import fi.metatavu.vp.test.client.models.ClientAppMetadata
 import fi.metatavu.vp.test.client.models.ClientAppStatus
-import fi.metatavu.vp.usermanagement.clientapps.ClientAppController
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
@@ -19,43 +19,30 @@ class ClientAppTestIT: AbstractFunctionalTest() {
 
     @Test
     fun testCreate() = createTestBuilder().use {
-        val createdClientAppWithoutMetadata = it.setApiKey().clientApps.create(
-            ClientApp(
-                deviceId = "123ABC",
-                status = ClientAppStatus.WAITING_FOR_APPROVAL
-            )
-        )
-        val foundClientAppWithoutMetadata = it.manager.clientApps.find(createdClientAppWithoutMetadata.id!!)
-
-        assertEquals(createdClientAppWithoutMetadata.deviceId, foundClientAppWithoutMetadata.deviceId)
-        assertEquals(ClientAppStatus.WAITING_FOR_APPROVAL, foundClientAppWithoutMetadata.status)
-
-        val createdClientAppWithMetadata = it.setApiKey().clientApps.create(
+        val createdClientApp = it.setApiKey().clientApps.create(
             ClientApp(
                 deviceId = "456DEF",
                 status = ClientAppStatus.WAITING_FOR_APPROVAL,
-                metadata = mapOf(
-                    ClientAppController.DEVICE_OS_VERSION_FIELD to "0.1",
-                    ClientAppController.APP_VERSION_FIELD to "0.2",
-                    ClientAppController.DEVICE_OS_FIELD to "iOS",
-                    "unknown-key" to "unknown-value"
+                metadata = ClientAppMetadata(
+                    deviceOS = ClientAppMetadata.DeviceOS.ANDROID,
+                    deviceOSVersion = "0.1",
+                    appVersion = "0.2"
                 )
             )
         )
-        val foundClientAppWithMetadata = it.manager.clientApps.find(createdClientAppWithMetadata.id!!)
+        val foundClientAppWithMetadata = it.manager.clientApps.find(createdClientApp.id!!)
 
-        assertEquals(createdClientAppWithMetadata.deviceId, foundClientAppWithMetadata.deviceId)
+        assertEquals(createdClientApp.deviceId, foundClientAppWithMetadata.deviceId)
         assertEquals(ClientAppStatus.WAITING_FOR_APPROVAL, foundClientAppWithMetadata.status)
-        assertEquals(foundClientAppWithMetadata.metadata?.get(ClientAppController.DEVICE_OS_VERSION_FIELD), "0.1")
-        assertEquals(foundClientAppWithMetadata.metadata?.get(ClientAppController.APP_VERSION_FIELD), "0.2")
-        assertEquals(foundClientAppWithMetadata.metadata?.get(ClientAppController.DEVICE_OS_FIELD), "iOS")
-        assertFalse(foundClientAppWithMetadata.metadata?.containsKey("unknown-key") ?: true)
+        assertEquals(foundClientAppWithMetadata.metadata.deviceOSVersion, "0.1")
+        assertEquals(foundClientAppWithMetadata.metadata.appVersion, "0.2")
+        assertEquals(foundClientAppWithMetadata.metadata.deviceOS, ClientAppMetadata.DeviceOS.ANDROID)
 
-        it.setApiKey("invalid-api-key").clientApps.assertCreateFail(createdClientAppWithMetadata, 403)
+        it.setApiKey("invalid-api-key").clientApps.assertCreateFail(createdClientApp, 403)
 
         // Assert that one cannot create a client app with the same device id if the status is not WAITING_FOR_APPROVAL
-        it.manager.clientApps.update(createdClientAppWithMetadata.id, createdClientAppWithMetadata.copy(status = ClientAppStatus.APPROVED))
-        it.setApiKey().clientApps.assertCreateFail(createdClientAppWithMetadata, 409)
+        it.manager.clientApps.update(createdClientApp.id, createdClientApp.copy(status = ClientAppStatus.APPROVED))
+        it.setApiKey().clientApps.assertCreateFail(createdClientApp, 409)
     }
 
     @Test
@@ -64,7 +51,12 @@ class ClientAppTestIT: AbstractFunctionalTest() {
             it.setApiKey().clientApps.create(
                 ClientApp(
                     deviceId = "123ABC-$i",
-                    status = ClientAppStatus.WAITING_FOR_APPROVAL
+                    status = ClientAppStatus.WAITING_FOR_APPROVAL,
+                    metadata = ClientAppMetadata(
+                        deviceOS = ClientAppMetadata.DeviceOS.ANDROID,
+                        deviceOSVersion = "0.1",
+                        appVersion = "0.2"
+                    )
                 )
             )
         }
@@ -92,19 +84,18 @@ class ClientAppTestIT: AbstractFunctionalTest() {
         val createdClientApp = it.setApiKey().clientApps.create(
             ClientApp(
                 deviceId = "123ABC",
-                status = ClientAppStatus.WAITING_FOR_APPROVAL
+                status = ClientAppStatus.WAITING_FOR_APPROVAL,
+                metadata = ClientAppMetadata(
+                    deviceOS = ClientAppMetadata.DeviceOS.ANDROID,
+                    deviceOSVersion = "0.1",
+                    appVersion = "0.2"
+                )
             )
         )
 
         val updatedClientApp = createdClientApp.copy(
             deviceId = "456DEF",
-            status = ClientAppStatus.APPROVED,
-            metadata = mapOf(
-                ClientAppController.DEVICE_OS_VERSION_FIELD to "0.1",
-                ClientAppController.APP_VERSION_FIELD to "0.2",
-                ClientAppController.DEVICE_OS_FIELD to "iOS",
-                "unknown-key" to "unknown-value"
-            )
+            status = ClientAppStatus.APPROVED
         )
         it.manager.clientApps.update(updatedClientApp.id!!, updatedClientApp)
 
@@ -112,10 +103,9 @@ class ClientAppTestIT: AbstractFunctionalTest() {
         // Assert that one cannot update the deviceId of the client app
         assertEquals(createdClientApp.deviceId, foundClientApp.deviceId)
         assertEquals(ClientAppStatus.APPROVED, foundClientApp.status)
-        assertEquals(foundClientApp.metadata?.get(ClientAppController.DEVICE_OS_VERSION_FIELD), "0.1")
-        assertEquals(foundClientApp.metadata?.get(ClientAppController.APP_VERSION_FIELD), "0.2")
-        assertEquals(foundClientApp.metadata?.get(ClientAppController.DEVICE_OS_FIELD), "iOS")
-        assertFalse(foundClientApp.metadata?.containsKey("unknown-key") ?: true)
+        assertEquals(foundClientApp.metadata.deviceOSVersion, "0.1")
+        assertEquals(foundClientApp.metadata.appVersion, "0.2")
+        assertEquals(foundClientApp.metadata.deviceOS, ClientAppMetadata.DeviceOS.ANDROID)
 
         it.manager.clientApps.assertUpdateFail(UUID.randomUUID(),updatedClientApp, 400)
     }
@@ -125,7 +115,12 @@ class ClientAppTestIT: AbstractFunctionalTest() {
         val createdClientApp = it.setApiKey().clientApps.create(
             ClientApp(
                 deviceId = "123ABC",
-                status = ClientAppStatus.WAITING_FOR_APPROVAL
+                status = ClientAppStatus.WAITING_FOR_APPROVAL,
+                metadata = ClientAppMetadata(
+                    deviceOS = ClientAppMetadata.DeviceOS.ANDROID,
+                    deviceOSVersion = "0.1",
+                    appVersion = "0.2"
+                )
             )
         )
 
