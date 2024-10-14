@@ -177,20 +177,21 @@ class WorkEventTestIT : AbstractFunctionalTest() {
             )
         )
         val updateData = created.copy(
-            workEventType = WorkEventType.SHIFT_END,
+            workEventType = WorkEventType.BREWERY,
             time = OffsetDateTime.now().toString()
         )
-        val updatedEndEvent = it.manager.workEvents.updateWorkEvent(employee1.id, created.id!!, updateData)
+        val shiftStartEvent = it.manager.workEvents.listWorkEvents(employee1.id).find { e -> e.workEventType == WorkEventType.SHIFT_START }!!
+        val updatedEvent = it.manager.workEvents.updateWorkEvent(employee1.id, created.id!!, updateData)
 
         it.manager.workEvents.addEmployeeShiftStartToCloseables(employeeId = employee1.id)
 
-        assertEquals(updateData.id, updatedEndEvent.id)
-        assertEquals(updateData.workEventType, updatedEndEvent.workEventType)
+        assertEquals(updateData.id, updatedEvent.id)
+        assertEquals(updateData.workEventType, updatedEvent.workEventType)
         assertEquals(
             OffsetDateTime.parse(updateData.time).toEpochSecond(),
-            OffsetDateTime.parse(updatedEndEvent.time).toEpochSecond()
+            OffsetDateTime.parse(updatedEvent.time).toEpochSecond()
         )
-        assertEquals(updateData.employeeId, updatedEndEvent.employeeId)
+        assertEquals(updateData.employeeId, updatedEvent.employeeId)
 
         it.manager.workEvents.assertUpdateFail(
             employeeId = employee1.id,
@@ -211,7 +212,7 @@ class WorkEventTestIT : AbstractFunctionalTest() {
         it.manager.workEvents.assertUpdateFail(
             employeeId = employee1.id,
             id = created.id,
-            workEvent = created.copy(time = OffsetDateTime.now().plusDays(10).toString()),
+            workEvent = created.copy(time = OffsetDateTime.now().minusDays(10).toString()),
             expectedStatus = 400
         )
 
@@ -226,8 +227,16 @@ class WorkEventTestIT : AbstractFunctionalTest() {
         // cannot update shift end event to be before shift start
         it.manager.workEvents.assertUpdateFail(
             employeeId = employee1.id,
-            id = updatedEndEvent.id!!,
-            workEvent = updatedEndEvent.copy(time = OffsetDateTime.now().minusDays(10).toString()),
+            id = updatedEvent.id!!,
+            workEvent = updatedEvent.copy(time = OffsetDateTime.now().minusDays(10).toString()),
+            expectedStatus = 400
+        )
+
+        // Cannot move shift start event to not be the first/last event in the list
+        it.manager.workEvents.assertUpdateFail(
+            employeeId = employee1.id,
+            id = shiftStartEvent.id!!,
+            workEvent = shiftStartEvent.copy(time = OffsetDateTime.now().toString()),
             expectedStatus = 400
         )
 

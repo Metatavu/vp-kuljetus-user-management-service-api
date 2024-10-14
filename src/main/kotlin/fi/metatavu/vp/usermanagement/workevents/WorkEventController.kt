@@ -153,14 +153,12 @@ class WorkEventController {
     /**
      * Returns the shift start and end events for the work event's work shift (excluding the work event itself)
      *
-     * @param workEvent work event
+     * @param shiftEvents work events
      * @return pair of shift start and end events
      */
-    suspend fun getShiftStartEnd(workEvent: WorkEventEntity): Pair<WorkEventEntity?, WorkEventEntity?> {
-        val otherShiftEvents = list(employeeWorkShift = workEvent.workShift).first
-            .filter { it.id != workEvent.id }
-        val shiftStart = otherShiftEvents.find { it.workEventType == WorkEventType.SHIFT_START }
-        val shiftEnd = otherShiftEvents.find { it.workEventType == WorkEventType.SHIFT_END }
+    suspend fun getShiftStartEnd(shiftEvents: List<WorkEventEntity>): Pair<WorkEventEntity?, WorkEventEntity?> {
+        val shiftStart = shiftEvents.find { it.workEventType == WorkEventType.SHIFT_START }
+        val shiftEnd = shiftEvents.find { it.workEventType == WorkEventType.SHIFT_END }
         return Pair(shiftStart, shiftEnd)
     }
 

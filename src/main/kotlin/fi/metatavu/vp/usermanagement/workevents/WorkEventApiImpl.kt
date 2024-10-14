@@ -185,7 +185,9 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
             return "Type of shift start/end cannot be changed"
         }
 
-        val (shiftStart, shiftEnd) = workEventController.getShiftStartEnd(workEvent)
+        val otherShiftEvents = workEventController.list(employeeWorkShift = workEvent.workShift).first
+            .filter { it.id != workEvent.id }
+        val (shiftStart, shiftEnd) = workEventController.getShiftStartEnd(otherShiftEvents)
 
         if (workEventController.isDuplicateStartOrEndEvent(shiftStart, shiftEnd, newWorkEventData.workEventType)) {
             return "Cannot have two start or end events in the same shift"
@@ -195,6 +197,16 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
             && !workEventController.isWithinShiftBounds(shiftStart, shiftEnd, newWorkEventData.time)
         ) {
             return "Event cannot be moved outside the shift"
+        }
+
+        if (isStartOrEndEvent(newWorkEventData.workEventType)) {
+            otherShiftEvents.forEach { otherEvent ->
+                if (newWorkEventData.workEventType == WorkEventType.SHIFT_START && otherEvent.time < newWorkEventData.time) {
+                    return "Shift start cannot be moved earlier than other events"
+                } else if (newWorkEventData.workEventType == WorkEventType.SHIFT_END && otherEvent.time > newWorkEventData.time) {
+                    return "Shift end cannot be moved later than other events"
+                }
+            }
         }
 
         if (shiftEnd != null && newWorkEventData.workEventType == WorkEventType.SHIFT_START
