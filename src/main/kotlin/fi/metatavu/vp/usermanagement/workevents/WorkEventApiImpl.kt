@@ -174,7 +174,8 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
      * - Type of shift start/end cannot be changed
      * - Cannot have two start or end events in the same shift
      * - Events apart from shift start or end cannot be moved outside the shift
-     * - Shift start event must be before shift end event
+     * - Shift start cannot be later than the next event
+     * - Shift end cannot be earlier than the previous event
      *
      * @param workEvent work event
      * @param newWorkEventData new work event data
