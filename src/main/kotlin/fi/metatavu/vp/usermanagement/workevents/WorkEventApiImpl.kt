@@ -173,8 +173,9 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
      * Checks if work event is editable. Checks the condtions:
      * - Type of shift start/end cannot be changed
      * - Cannot have two start or end events in the same shift
-     * - Not start or end events cannot be moved outside the shift
-     * - Shift start event must be before shift end event
+     * - Events apart from shift start or end cannot be moved outside the shift
+     * - Shift start cannot be later than the next event
+     * - Shift end cannot be earlier than the previous event
      *
      * @param workEvent work event
      * @param newWorkEventData new work event data
