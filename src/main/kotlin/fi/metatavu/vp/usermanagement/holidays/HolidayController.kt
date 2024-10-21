@@ -40,7 +40,7 @@ class HolidayController {
      * @param max max results
      * @return pair of holidays and count
      */
-    suspend fun list(year: Int?, first: Int? = null, max: Int? = null): Pair<List<HolidayEntity>, Long> {
+    suspend fun list(year: Int? = null, first: Int? = null, max: Int? = null): Pair<List<HolidayEntity>, Long> {
         return holidayRepository.list(
             year = year,
             first = first,

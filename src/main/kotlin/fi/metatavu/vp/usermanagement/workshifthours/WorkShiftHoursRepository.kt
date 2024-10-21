@@ -86,5 +86,4 @@ class WorkShiftHoursRepository: AbstractRepository<WorkShiftHoursEntity, UUID>()
         )
 
     }
-
 }

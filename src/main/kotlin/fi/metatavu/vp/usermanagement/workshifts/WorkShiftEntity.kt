@@ -36,4 +36,7 @@ class WorkShiftEntity {
 
     @Column
     var endedAt: LocalDate? = null
+
+    @Column
+    var dayOffWorkAllowance: Boolean? = null
 }

@@ -65,7 +65,8 @@ class WorkEventController {
      * Creates a new work event and possibly creates a new shift for it,
      * recalculates the work shift date if needed,
      * recalculates the work shift hours,
-     * sets the work shift startedAt or endedAt if needed
+     * sets the work shift startedAt or endedAt,
+     * creates new required work events (start and end)
      *
      * @param employee employee
      * @param time time
@@ -79,10 +80,13 @@ class WorkEventController {
         truckId: UUID? = null
     ): WorkEventEntity {
         val employeeId = UUID.fromString(employee.id)
-        val latestWorkEvent = workEventRepository.findLatestWorkEvent(employeeId = employeeId)
+        val latestWorkEvent = workEventRepository.findLatestWorkEvent(employeeId = employeeId, time = time)
+        val latestWorkShift = workShiftRepository.findLatestEmployeeWorkShift(
+            employeeId = employeeId,
+            beforeWorkEventTime = time
+        )
 
-        val workShift = getWorkEventShift(latestWorkEvent, workEventType, time, employeeId)
-
+        val workShift = getWorkEventShift(latestWorkShift, latestWorkEvent, workEventType, time, employeeId)
         val createdWorkEvent = workEventRepository.create(
             id = UUID.randomUUID(),
             employeeId = UUID.fromString(employee.id),
@@ -93,7 +97,11 @@ class WorkEventController {
         )
 
         val updatedShift = recalculateWorkShiftTimes(workShift = workShift)
-        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedShift)
+        workShiftHoursController.recalculateWorkShiftHours(
+            workShift = updatedShift,
+            workShiftHours =  workShiftHoursController.listWorkShiftHours(workShiftFilter = workShift).first,
+            force = true
+        )
         return createdWorkEvent
     }
 
@@ -127,7 +135,9 @@ class WorkEventController {
         val updated = workEventRepository.persistSuspending(foundWorkEvent)
 
         val updatedShift = recalculateWorkShiftTimes(workShift = foundWorkEvent.workShift)
-        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedShift)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedShift,
+            workShiftHours =  workShiftHoursController.listWorkShiftHours(workShiftFilter = foundWorkEvent.workShift).first ,
+            force = true)
         return updated
     }
 
@@ -142,12 +152,24 @@ class WorkEventController {
         workEventRepository.deleteSuspending(foundWorkEvent)
 
         if (workEventRepository.list(employeeWorkShift = foundWorkEvent.workShift).first.isEmpty()) {
-            workShiftController.deleteEmployeeWorkShift(foundWorkEvent.workShift)
+            val foundShift = workShiftRepository.findByIdSuspending(foundWorkEvent.workShift.id) ?: return
+            workShiftController.deleteEmployeeWorkShift(foundShift)
             return
         }
 
         val updatedWorkShift = recalculateWorkShiftTimes(workShift = foundWorkEvent.workShift)
-        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedWorkShift)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedWorkShift,
+            workShiftHours =  workShiftHoursController.listWorkShiftHours(workShiftFilter = foundWorkEvent.workShift).first, force = true)
+    }
+
+    /**
+     * Deletes work event without any side effects
+     *
+     * @param foundWorkEvent found work event
+     */
+    suspend fun deleteWithNoSideEffects(foundWorkEvent: WorkEventEntity) {
+        workEventRepository.deleteSuspending(foundWorkEvent)
+
     }
 
     /**
@@ -156,9 +178,9 @@ class WorkEventController {
      * @param shiftEvents work events
      * @return pair of shift start and end events
      */
-    suspend fun getShiftStartEnd(shiftEvents: List<WorkEventEntity>): Pair<WorkEventEntity?, WorkEventEntity?> {
-        val shiftStart = shiftEvents.find { it.workEventType == WorkEventType.SHIFT_START }
-        val shiftEnd = shiftEvents.find { it.workEventType == WorkEventType.SHIFT_END }
+    suspend fun getShiftStartEnd(shiftEvents: List<WorkEventEntity>): Pair<OffsetDateTime?, OffsetDateTime?> {
+        val shiftStart = shiftEvents.find { it.workEventType == WorkEventType.SHIFT_START }?.time
+        val shiftEnd = shiftEvents.find { it.workEventType == WorkEventType.SHIFT_END }?.time
         return Pair(shiftStart, shiftEnd)
     }
 
@@ -170,9 +192,9 @@ class WorkEventController {
      * @param time time to be checked
      * @return true if the time is within the shift bounds, false otherwise
      */
-    fun isWithinShiftBounds(shiftStart: WorkEventEntity?, shiftEnd: WorkEventEntity?, time: OffsetDateTime): Boolean {
-        val isAfterShiftStart = shiftStart == null || time.isAfter(shiftStart.time)
-        val isBeforeShiftEnd = shiftEnd == null || time.isBefore(shiftEnd.time)
+    fun isWithinShiftBounds(shiftStart: OffsetDateTime?, shiftEnd: OffsetDateTime?, time: OffsetDateTime): Boolean {
+        val isAfterShiftStart = shiftStart == null || time.isAfter(shiftStart)
+        val isBeforeShiftEnd = shiftEnd == null || time.isBefore(shiftEnd)
         return isAfterShiftStart && isBeforeShiftEnd
     }
 
@@ -185,12 +207,37 @@ class WorkEventController {
      * @return true if the work event is a duplicate start or end event, false otherwise
      */
     fun isDuplicateStartOrEndEvent(
-        shiftStart: WorkEventEntity?,
-        shiftEnd: WorkEventEntity?,
+        shiftStart: OffsetDateTime?,
+        shiftEnd: OffsetDateTime?,
         workEventType: WorkEventType
     ): Boolean {
         return (shiftStart != null && workEventType == WorkEventType.SHIFT_START) ||
             (shiftEnd != null && workEventType == WorkEventType.SHIFT_END)
+    }
+
+    /**
+     * Checks if a new shift is required based on the latest work event
+     *
+     * @param latestWorkEvent latest work event
+     * @param currentWorkEventTime current work event time
+     * @return true if a new shift is required, false otherwise
+     */
+    suspend fun oldShiftIsEnded(
+        latestWorkEvent: WorkEventEntity?,
+        currentWorkEventTime: OffsetDateTime,
+        latestWorkShiftEntity: WorkShiftEntity?
+    ): Boolean {
+        if (latestWorkEvent == null || latestWorkEvent.workEventType == WorkEventType.SHIFT_END) {
+            return true
+        }
+
+        if (latestWorkEvent.workEventType == WorkEventType.BREAK || latestWorkEvent.workEventType == WorkEventType.UNKNOWN) {
+            if (Duration.between(latestWorkEvent.time, currentWorkEventTime).toHours().absoluteValue > 3) {
+                return true
+            }
+        }
+
+        return false
     }
 
     /**
@@ -223,8 +270,8 @@ class WorkEventController {
     }
 
     /**
-     * Returns the work shift for the work event, creates a new shift if needed and updates/creates other work
-     * events related to shift starting and ending.
+     * Returns the work shift for the work event, creates a new shift if needed (or selectes and suitable running shift)
+     *  and updates/creates other work events related to shift starting and ending.
      *
      * @param latestWorkEvent latest work event
      * @param workEventType work event type
@@ -233,70 +280,47 @@ class WorkEventController {
      * @return work shift
      */
     private suspend fun getWorkEventShift(
+        latestWorkShiftEntity: WorkShiftEntity?,
         latestWorkEvent: WorkEventEntity?,
         workEventType: WorkEventType,
         workEventTime: OffsetDateTime,
         employeeId: UUID
     ): WorkShiftEntity {
-        return if (requiresNewShift(
-                latestWorkEvent = latestWorkEvent,
-                currentWorkEventTime = workEventTime
-            )
-        ) {
-            if (latestWorkEvent?.workEventType == WorkEventType.UNKNOWN || latestWorkEvent?.workEventType == WorkEventType.BREAK) {
-                latestWorkEvent.workEventType = WorkEventType.SHIFT_END
-                workEventRepository.persistSuspending(latestWorkEvent)
+        val oldShiftIsEnded = oldShiftIsEnded(
+            latestWorkEvent = latestWorkEvent,
+            currentWorkEventTime = workEventTime,
+            latestWorkShiftEntity = latestWorkShiftEntity
+        )
+
+        return if (oldShiftIsEnded) {
+            if (latestWorkEvent != null && latestWorkEvent.workEventType != WorkEventType.SHIFT_END) {
+                //if not ended with end event then do it properly
+                workEventRepository.updateEventType(latestWorkEvent, WorkEventType.SHIFT_END)
             }
 
-            val newWorkShift = workShiftController.create(
-                employeeId = employeeId,
-                date = workEventTime.toLocalDate()
-            )
+            val existingEmptyShift = workShiftRepository.findSameDayWorkShift(employeeId, workEventTime)
+            val newShift: WorkShiftEntity =
+                if (existingEmptyShift != null && workEventRepository.list(employeeWorkShift = existingEmptyShift).first.isEmpty()) {
+                    existingEmptyShift
+                } else {
+                    workShiftController.create(
+                        employeeId = employeeId,
+                        date = workEventTime.toLocalDate()
+                    )
+                }
 
-            // Create a new shift start event if the new event is not a shift start
             if (workEventType != WorkEventType.SHIFT_START) {
                 workEventRepository.create(
                     id = UUID.randomUUID(),
-                    workShiftEntity = newWorkShift,
+                    workShiftEntity = newShift,
                     employeeId = employeeId,
                     workEventType = WorkEventType.SHIFT_START,
                     time = workEventTime.minusSeconds(1)
                 )
             }
-
-            newWorkShift
+            newShift
         } else {
             latestWorkEvent!!.workShift
         }
-
     }
-
-    /**
-     * Checks if a new shift is required based on the latest work event
-     *
-     * @param latestWorkEvent latest work event
-     * @param currentWorkEventTime current work event time
-     * @return true if a new shift is required, false otherwise
-     */
-    fun requiresNewShift(
-        latestWorkEvent: WorkEventEntity?,
-        currentWorkEventTime: OffsetDateTime
-    ): Boolean {
-        if (latestWorkEvent == null ||
-            latestWorkEvent.workEventType == WorkEventType.SHIFT_END
-        ) {
-            return true
-        }
-
-        if (latestWorkEvent.workEventType == WorkEventType.BREAK ||
-            latestWorkEvent.workEventType == WorkEventType.UNKNOWN
-        ) {
-            if (Duration.between(latestWorkEvent.time, currentWorkEventTime).toHours().absoluteValue > 3) {
-                return true
-            }
-        }
-
-        return false
-    }
-
 }

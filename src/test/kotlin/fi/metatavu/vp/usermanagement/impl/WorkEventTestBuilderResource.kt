@@ -77,6 +77,10 @@ class WorkEventTestBuilderResource(
         return addClosable(api.createEmployeeWorkEvent(employeeId, workEvent))
     }
 
+    fun createWorkEvent(employeeId: UUID, time: String, type: WorkEventType): WorkEvent {
+        return createWorkEvent(employeeId, WorkEvent(employeeId = employeeId, time = time, workEventType = type))
+    }
+
     /**
      * Finds work event
      *

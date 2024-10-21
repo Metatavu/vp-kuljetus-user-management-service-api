@@ -94,20 +94,20 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         val employee2 = it.manager.employees.createEmployee("2")
 
         // employee 1 events
-        createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now) // first event triggers new shift
+        it.manager.workEvents.createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now) // first event triggers new shift
         val longBreakEvent = createWorkEvent(it, employee1.id, WorkEventType.BREAK, now.plusHours(1))    //Long break triggers new shift
-        createWorkEvent(it, employee1.id, WorkEventType.BREWERY, now.plusHours(5))
-        createWorkEvent(it, employee1.id, WorkEventType.SHIFT_END, now.plusHours(20))
-        createWorkEvent(it, employee1.id, WorkEventType.OTHER_WORK, now.plusHours(25)) // ended shift triggers new shift
+        it.manager.workEvents.createWorkEvent(it, employee1.id, WorkEventType.BREWERY, now.plusHours(5))
+        it.manager.workEvents.createWorkEvent(it, employee1.id, WorkEventType.SHIFT_END, now.plusHours(20))
+        it.manager.workEvents.createWorkEvent(it, employee1.id, WorkEventType.OTHER_WORK, now.plusHours(25)) // ended shift triggers new shift
         val allWorkEvens = it.manager.workEvents.listWorkEvents(employeeId = employee1.id)
         assertEquals(8, allWorkEvens.size)
 
         // employee 2 events
-        createWorkEvent(it, employee2.id!!, WorkEventType.MEAT_CELLAR, now)
-        createWorkEvent(it, employee2.id, WorkEventType.BREAK, now.plusHours(1))
-        createWorkEvent(it, employee2.id, WorkEventType.BREWERY, now.plusHours(3))
-        val longUnknownEvent = createWorkEvent(it, employee2.id, WorkEventType.UNKNOWN, now.plusHours(5))
-        createWorkEvent(it, employee2.id, WorkEventType.OTHER_WORK, now.plusHours(9))   // long unknown triggers new shift
+        it.manager.workEvents.createWorkEvent(it, employee2.id!!, WorkEventType.MEAT_CELLAR, now)
+        it.manager.workEvents.createWorkEvent(it, employee2.id, WorkEventType.BREAK, now.plusHours(1))
+        it.manager.workEvents.createWorkEvent(it, employee2.id, WorkEventType.BREWERY, now.plusHours(3))
+        val longUnknownEvent = it.manager.workEvents.createWorkEvent(it, employee2.id, WorkEventType.UNKNOWN, now.plusHours(5))
+        it.manager.workEvents.createWorkEvent(it, employee2.id, WorkEventType.OTHER_WORK, now.plusHours(9))   // long unknown triggers new shift
         val allWorkEvens2 = it.manager.workEvents.listWorkEvents(employeeId = employee2.id)
         assertEquals(7, allWorkEvens2.size)
 
@@ -150,6 +150,37 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
 
     /**
      * Tests:
+     * - work shift creation based on work events in the past
+     */
+    @Test
+    fun testCreateShiftsInPast() = createTestBuilder().use { tb ->
+        val employeeId = tb.manager.employees.createEmployee("1").id!!
+        val now = OffsetDateTime.now()
+
+        val workEvent1 = tb.manager.workEvents.createWorkEvent(employeeId, now.minusDays(10).toString(), WorkEventType.SHIFT_START)
+        val workEvent2 = tb.manager.workEvents.createWorkEvent(employeeId, now.minusDays(5).toString(), WorkEventType.SHIFT_END)
+
+        val workShifts = tb.manager.workShifts.listEmployeeWorkShifts(employeeId = employeeId)
+        assertEquals(1, workShifts.size)
+        assertEquals(now.minusDays(10).toLocalDate().toString(), workShifts[0].date)
+        assertEquals(getWorkEventDate(workEvent1.time), workShifts[0].startedAt)
+        assertEquals(getWorkEventDate(workEvent2.time), workShifts[0].endedAt)
+
+        val workEvent3 = tb.manager.workEvents.createWorkEvent(employeeId, now.minusDays(13).toString(), WorkEventType.SHIFT_START)
+        val workEvent4 = tb.manager.workEvents.createWorkEvent(employeeId, now.minusDays(11).toString(), WorkEventType.SHIFT_END)
+
+        val workShifts2 = tb.manager.workShifts.listEmployeeWorkShifts(employeeId = employeeId)
+        assertEquals(2, workShifts2.size)
+        val anotherShift = workShifts2.find { it.startedAt == getWorkEventDate(workEvent3.time) }!!
+        assertNotNull(anotherShift)
+        assertEquals(getWorkEventDate(workEvent3.time), anotherShift.startedAt)
+        assertEquals(getWorkEventDate(workEvent4.time), anotherShift.endedAt)
+        assertEquals(now.minusDays(13).toLocalDate().toString(), anotherShift.date)
+
+    }
+
+    /**
+     * Tests:
      *  - work shift time, started, ended assignment based on work event time
      *  - work shift time assignment based on work event time update
      *  - work shift deletion based on all work events deletion
@@ -158,9 +189,9 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
     fun testWorkShiftTimeAssignment() = createTestBuilder().use {
         val employee1 = it.manager.employees.createEmployee("1")
 
-        val shiftStart = createWorkEvent(it, employee1.id!!, WorkEventType.SHIFT_START, now)
-        val meatCellar = createWorkEvent(it, employee1.id, WorkEventType.MEAT_CELLAR, now.plusDays(2))
-        val shiftEnd = createWorkEvent(it, employee1.id, WorkEventType.SHIFT_END, now.plusDays(5))
+        val shiftStart = it.manager.workEvents.createWorkEvent(employee1.id!!, now.toString(), WorkEventType.SHIFT_START)
+        val meatCellar = it.manager.workEvents.createWorkEvent(it, employee1.id, WorkEventType.MEAT_CELLAR, now.plusDays(2))
+        val shiftEnd = it.manager.workEvents.createWorkEvent(it, employee1.id, WorkEventType.SHIFT_END, now.plusDays(5))
 
         var workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
         assertEquals(1, workShifts.size)
@@ -218,7 +249,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
     fun testWorkShiftFind() = createTestBuilder().use {
         val employee1 = it.manager.employees.createEmployee("1")
         val dayAgo = OffsetDateTime.now().minusDays(1)
-        createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, dayAgo)
+        it.manager.workEvents.createWorkEvent(employee1.id!!, dayAgo.toString(), WorkEventType.MEAT_CELLAR,)
 
         val workShifts = it.manager.workShifts.listEmployeeWorkShifts(
             employeeId = employee1.id
@@ -295,31 +326,5 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
      */
     private fun getWorkEventDate(time: String): String {
         return OffsetDateTime.parse(time).toLocalDate().toString()
-    }
-
-    /**
-     * Creates work event
-     *
-     * @param testBuilder test builder
-     * @param employeeId employee id
-     * @param workEventType work event type
-     * @param time time
-     * @return created work event
-     */
-    private fun createWorkEvent(
-        testBuilder: TestBuilder,
-        employeeId: UUID,
-        workEventType: WorkEventType,
-        time: OffsetDateTime
-    ): WorkEvent {
-        return testBuilder.manager.workEvents.createWorkEvent(
-            employeeId = employeeId,
-            workEvent = WorkEvent(
-                workEventType = workEventType,
-                time = time.toString(),
-                employeeId = employeeId,
-                id = UUID.randomUUID()
-            )
-        )
     }
 }

@@ -36,6 +36,7 @@ class WorkShiftController {
      * @param perDiemAllowanceType per diem allowance type
      * @param startedAt started at
      * @param endedAt ended at
+     * @param dayOffWorkAllowance day off work allowance
      * @return created employee work shift
      */
     suspend fun create(
@@ -44,7 +45,8 @@ class WorkShiftController {
         absenceType: AbsenceType? = null,
         perDiemAllowanceType: PerDiemAllowanceType? = null,
         startedAt: LocalDate? = null,
-        endedAt: LocalDate? = null
+        endedAt: LocalDate? = null,
+        dayOffWorkAllowance: Boolean? = null
     ): WorkShiftEntity {
         val shift = workShiftRepository.create(
             id = UUID.randomUUID(),
@@ -54,9 +56,11 @@ class WorkShiftController {
             absence = absenceType,
             perDiemAllowance = perDiemAllowanceType,
             startedAt = startedAt,
-            endedAt = endedAt
+            endedAt = endedAt,
+            dayOffWorkAllowance = dayOffWorkAllowance
         )
-        workShiftHoursController.createWorkShiftHours(
+
+        val hours = workShiftHoursController.createWorkShiftHours(
             workShiftEntity = shift
         )
         return shift
@@ -103,6 +107,32 @@ class WorkShiftController {
     }
 
     /**
+     * Lists employee work shifts
+     *
+     * @param employee employee
+     * @param startedAfter started after
+     * @param startedBefore started before
+     * @param first first
+     * @param max max
+     * @return pair of list of employee work shifts and count
+     */
+    suspend fun listEmployeeWorkShifts(
+        employeeId: UUID,
+        startedAfter: OffsetDateTime?,
+        startedBefore: OffsetDateTime?,
+        first: Int? = null,
+        max: Int? = null
+    ): Pair<List<WorkShiftEntity>, Long> {
+        return workShiftRepository.listEmployeeWorkShifts(
+            employeeId,
+            startedAfter,
+            startedBefore,
+            first,
+            max
+        )
+    }
+
+    /**
      * Updates employee work shift status
      *
      * @param foundShift found shift
@@ -128,7 +158,7 @@ class WorkShiftController {
         }
 
         workEventController.list(employeeWorkShift = employeeWorkShift).first.forEach {
-            workEventController.delete(it)
+            workEventController.deleteWithNoSideEffects(it)
         }
 
         workShiftRepository.deleteSuspending(employeeWorkShift)
