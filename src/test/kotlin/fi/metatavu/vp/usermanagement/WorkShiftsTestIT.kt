@@ -94,20 +94,20 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         val employee2 = it.manager.employees.createEmployee("2")
 
         // employee 1 events
-        it.manager.workEvents.createWorkEvent(it, employee1.id!!, WorkEventType.MEAT_CELLAR, now) // first event triggers new shift
-        val longBreakEvent = createWorkEvent(it, employee1.id, WorkEventType.BREAK, now.plusHours(1))    //Long break triggers new shift
-        it.manager.workEvents.createWorkEvent(it, employee1.id, WorkEventType.BREWERY, now.plusHours(5))
-        it.manager.workEvents.createWorkEvent(it, employee1.id, WorkEventType.SHIFT_END, now.plusHours(20))
-        it.manager.workEvents.createWorkEvent(it, employee1.id, WorkEventType.OTHER_WORK, now.plusHours(25)) // ended shift triggers new shift
+        it.manager.workEvents.createWorkEvent(employee1.id!!, now.toString(), WorkEventType.MEAT_CELLAR) // first event triggers new shift
+        val longBreakEvent = it.manager.workEvents.createWorkEvent(employee1.id, now.plusHours(1).toString(), WorkEventType.BREAK)    //Long break triggers new shift
+        it.manager.workEvents.createWorkEvent(employee1.id,  now.plusHours(5).toString(), WorkEventType.BREWERY)
+        it.manager.workEvents.createWorkEvent(employee1.id, now.plusHours(20).toString(), WorkEventType.SHIFT_END)
+        it.manager.workEvents.createWorkEvent(employee1.id, now.plusHours(25).toString(), WorkEventType.OTHER_WORK) // ended shift triggers new shift
         val allWorkEvens = it.manager.workEvents.listWorkEvents(employeeId = employee1.id)
         assertEquals(8, allWorkEvens.size)
 
         // employee 2 events
-        it.manager.workEvents.createWorkEvent(it, employee2.id!!, WorkEventType.MEAT_CELLAR, now)
-        it.manager.workEvents.createWorkEvent(it, employee2.id, WorkEventType.BREAK, now.plusHours(1))
-        it.manager.workEvents.createWorkEvent(it, employee2.id, WorkEventType.BREWERY, now.plusHours(3))
-        val longUnknownEvent = it.manager.workEvents.createWorkEvent(it, employee2.id, WorkEventType.UNKNOWN, now.plusHours(5))
-        it.manager.workEvents.createWorkEvent(it, employee2.id, WorkEventType.OTHER_WORK, now.plusHours(9))   // long unknown triggers new shift
+        it.manager.workEvents.createWorkEvent(employee2.id!!, now.toString(), WorkEventType.MEAT_CELLAR)
+        it.manager.workEvents.createWorkEvent(employee2.id, now.plusHours(1).toString(), WorkEventType.BREAK)
+        it.manager.workEvents.createWorkEvent(employee2.id, now.plusHours(3).toString(), WorkEventType.BREWERY)
+        val longUnknownEvent = it.manager.workEvents.createWorkEvent(employee2.id, now.plusHours(5).toString(), WorkEventType.UNKNOWN)
+        it.manager.workEvents.createWorkEvent(employee2.id, now.plusHours(9).toString(), WorkEventType.OTHER_WORK)   // long unknown triggers new shift
         val allWorkEvens2 = it.manager.workEvents.listWorkEvents(employeeId = employee2.id)
         assertEquals(7, allWorkEvens2.size)
 
@@ -190,8 +190,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         val employee1 = it.manager.employees.createEmployee("1")
 
         val shiftStart = it.manager.workEvents.createWorkEvent(employee1.id!!, now.toString(), WorkEventType.SHIFT_START)
-        val meatCellar = it.manager.workEvents.createWorkEvent(it, employee1.id, WorkEventType.MEAT_CELLAR, now.plusDays(2))
-        val shiftEnd = it.manager.workEvents.createWorkEvent(it, employee1.id, WorkEventType.SHIFT_END, now.plusDays(5))
+        val meatCellar = it.manager.workEvents.createWorkEvent(employee1.id, now.plusDays(2).toString(), WorkEventType.MEAT_CELLAR)
+        val shiftEnd = it.manager.workEvents.createWorkEvent(employee1.id,  now.plusDays(5).toString(), WorkEventType.SHIFT_END)
 
         var workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
         assertEquals(1, workShifts.size)
