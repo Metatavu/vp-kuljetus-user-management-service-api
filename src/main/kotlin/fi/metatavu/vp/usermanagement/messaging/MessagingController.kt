@@ -7,7 +7,6 @@ import fi.metatavu.vp.usermanagement.users.UserController
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.vertx.ConsumeEvent
 import io.smallrye.mutiny.Uni
-import io.vertx.core.Vertx
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
@@ -26,34 +25,32 @@ class MessagingController: WithCoroutineScope() {
     lateinit var userController: UserController
 
     @Inject
-    lateinit var vertx: Vertx
-
-    @Inject
     lateinit var logger: Logger
 
     /**
      * Processes the DRIVER_WORKING_STATE_CHANGE event
      *
      * @param event event to process
+     * @return A Uni that completes into true if event was processed successfully, false otherwise
      */
     @ConsumeEvent("DRIVER_WORKING_STATE_CHANGE")
     @WithTransaction
-    fun processWorkingStateChangeEvent(event: DriverWorkEventGlobalEvent): Uni<Void> = withCoroutineScope {
-            logger.info("Processing event ${event.type}")
-            val foundDriver = userController.find(event.driverId)
+    fun processWorkingStateChangeEvent(event: DriverWorkEventGlobalEvent): Uni<Boolean> = withCoroutineScope {
+        logger.info("Processing event ${event.type}")
+        val foundDriver = userController.find(event.driverId)
 
-            if (foundDriver == null) {
-                logger.error("Driver with id ${event.driverId} not found")
-                return@withCoroutineScope
-            }
+        if (foundDriver == null) {
+            logger.error("Driver with id ${event.driverId} not found")
+            return@withCoroutineScope false
+        }
 
-            workEventController.create(
-                employee = foundDriver,
-                time = event.time,
-                workEventType = event.workEventType,
-                truckId = event.truckId
-            )
-            logger.debug("Event ${event.type} processed. Created new time entry (${event.workEventType}) for driver ${foundDriver.id}")
-
-        }.replaceWithVoid()
+        workEventController.create(
+            employee = foundDriver,
+            time = event.time,
+            workEventType = event.workEventType,
+            truckId = event.truckId
+        )
+        logger.debug("Event ${event.type} processed. Created new time entry (${event.workEventType}) for driver ${foundDriver.id}")
+        return@withCoroutineScope true
+    }
 }
