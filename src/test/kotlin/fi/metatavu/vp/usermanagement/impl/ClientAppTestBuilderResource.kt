@@ -6,6 +6,7 @@ import fi.metatavu.vp.test.client.infrastructure.ApiClient
 import fi.metatavu.vp.test.client.infrastructure.ClientException
 import fi.metatavu.vp.test.client.models.ClientApp
 import fi.metatavu.vp.test.client.models.ClientAppStatus
+import fi.metatavu.vp.test.client.models.VerifyClientAppRequest
 import fi.metatavu.vp.usermanagement.TestBuilder
 import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import java.util.*
@@ -89,6 +90,31 @@ class ClientAppTestBuilderResource(
         api.deleteClientApp(clientAppId)
         removeCloseable {
             it is ClientApp && it.id == clientAppId
+        }
+    }
+
+    /**
+     * Verifies client app
+     *
+     * @param verifyClientAppRequest verify client app request
+     * @return true if client app is verified, false otherwise
+     */
+    fun verifyClientApp(verifyClientAppRequest: VerifyClientAppRequest): Boolean {
+        return api.verifyClientApp(verifyClientAppRequest)
+    }
+
+    /**
+     * Asserts that verifying a client app fails with expected status
+     *
+     * @param verifyClientAppRequest verify client app request
+     * @param expectedStatus expected status
+     */
+    fun assertVerifyClientAppFail(verifyClientAppRequest: VerifyClientAppRequest, expectedStatus: Int) {
+        try {
+            api.verifyClientApp(verifyClientAppRequest)
+            throw AssertionError("Expected verify to fail with status $expectedStatus")
+        } catch (ex: ClientException) {
+            assertClientExceptionStatus(expectedStatus, ex)
         }
     }
 

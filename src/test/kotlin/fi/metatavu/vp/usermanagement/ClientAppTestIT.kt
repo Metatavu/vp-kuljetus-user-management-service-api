@@ -3,6 +3,7 @@ package fi.metatavu.vp.usermanagement
 import fi.metatavu.vp.test.client.models.ClientApp
 import fi.metatavu.vp.test.client.models.ClientAppMetadata
 import fi.metatavu.vp.test.client.models.ClientAppStatus
+import fi.metatavu.vp.test.client.models.VerifyClientAppRequest
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
@@ -128,5 +129,30 @@ class ClientAppTestIT: AbstractFunctionalTest() {
 
         it.manager.clientApps.assertDeleteFail(UUID.randomUUID(), 404)
         it.manager.clientApps.assertDeleteFail(createdClientApp.id, 404)
+    }
+
+    @Test
+    fun testVerifyClientApp() = createTestBuilder().use {
+        val createdClientApp = it.setApiKey().clientApps.create(
+            ClientApp(
+                deviceId = "123ABC",
+                status = ClientAppStatus.WAITING_FOR_APPROVAL,
+                metadata = ClientAppMetadata(
+                    deviceOS = ClientAppMetadata.DeviceOS.ANDROID,
+                    deviceOSVersion = "0.1",
+                    appVersion = "0.2"
+                )
+            )
+        )
+
+        val verifiedResult = it.manager.clientApps.verifyClientApp(VerifyClientAppRequest(createdClientApp.deviceId))
+        assertFalse(verifiedResult)
+
+        it.manager.clientApps.update(createdClientApp.id!!, createdClientApp.copy(status = ClientAppStatus.APPROVED))
+        val verifiedResult2 = it.manager.clientApps.verifyClientApp(VerifyClientAppRequest(createdClientApp.deviceId))
+        assertTrue(verifiedResult2)
+
+        it.manager.clientApps.assertVerifyClientAppFail(VerifyClientAppRequest(UUID.randomUUID().toString()), 404)
+        it.setApiKey("invalid-api-key").clientApps.assertVerifyClientAppFail(VerifyClientAppRequest(createdClientApp.deviceId), 403)
     }
 }

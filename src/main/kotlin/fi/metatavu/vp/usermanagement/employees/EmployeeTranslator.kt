@@ -13,6 +13,7 @@ import fi.metatavu.vp.usermanagement.users.UserController.Companion.EMPLOYEE_TYP
 import fi.metatavu.vp.usermanagement.users.UserController.Companion.LAST_READ_OUT_ATTRIBUTE
 import fi.metatavu.vp.usermanagement.users.UserController.Companion.OFFICE_ATTRIBUTE
 import fi.metatavu.vp.usermanagement.users.UserController.Companion.PHONE_NUMBER_ATTRIBUTE
+import fi.metatavu.vp.usermanagement.users.UserController.Companion.PIN_CODE_ATTRIBUTE
 import fi.metatavu.vp.usermanagement.users.UserController.Companion.REGULAR_WORKING_HOURS_ATTRIBUTE
 import fi.metatavu.vp.usermanagement.users.UserController.Companion.SALARY_GROUP_ATTRIBUTE
 import jakarta.enterprise.context.ApplicationScoped
@@ -44,6 +45,7 @@ class EmployeeTranslator : AbstractTranslator<UserRepresentation, Employee>() {
             archivedAt = entity.attributes[ARCHIVED_AT_ATTRIBUTE]?.get(0)?.let { OffsetDateTime.parse(it) },
             email = entity.email,
             phoneNumber = entity.attributes[PHONE_NUMBER_ATTRIBUTE]?.firstOrNull(),
+            pinCode = entity.attributes[PIN_CODE_ATTRIBUTE]?.firstOrNull()
         )
     }
 
