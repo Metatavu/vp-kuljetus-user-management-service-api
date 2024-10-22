@@ -24,6 +24,15 @@ class WorkEventTestBuilderResource(
     apiClient: ApiClient
 ) : ApiTestBuilderResource<WorkEvent, ApiClient>(testBuilder, apiClient) {
 
+    /**
+     * Override for adding closable to remove existing closables with same type and same id
+     */
+    override fun addClosable(t: WorkEvent?): WorkEvent {
+        removeCloseable {
+            it is WorkEvent && it.id == t?.id
+        }
+        return super.addClosable(t)
+    }
 
     override fun clean(t: WorkEvent) {
         api.deleteEmployeeWorkEvent(

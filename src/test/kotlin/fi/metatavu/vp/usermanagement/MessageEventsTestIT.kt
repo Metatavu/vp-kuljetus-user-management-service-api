@@ -22,6 +22,27 @@ import java.util.*
 class MessageEventsTestIT: AbstractFunctionalTest() {
 
     /**
+     * Tests that we're capable of handling lots of incoming messages simultaneously
+     */
+    @Test
+    fun testSimultaneousMessages() = createTestBuilder().use { tb ->
+        val drivers = tb.manager.drivers.listDrivers()
+        val driverId = drivers[0].id!!
+        (0..999).forEach { _ ->
+            MessagingClient.publishMessage(createDriverWorkEvent(driverId, UUID.randomUUID(), WorkEventType.SHIFT_START))
+        }
+        Awaitility.await().atMost(Duration.ofMinutes(2)).until {
+            val workEvents = tb.manager.workEvents.listWorkEvents(employeeId = driverId, max = 1000)
+            workEvents.size == 1000
+        }
+
+        // Manually add it to closable since the work events were created off-screen
+        tb.manager.workEvents.listWorkEvents(employeeId = driverId, max = 1000).forEach {
+            tb.manager.workEvents.addClosable(it)
+        }
+    }
+
+    /**
      * Tests driver working state change global event
      */
     @Test
@@ -33,6 +54,7 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
         MessagingClient.publishMessage(startWorkEvent)
         Awaitility.await().atMost(Duration.ofMinutes(2)).until {
             val workEvents = tb.manager.workEvents.listWorkEvents(driverId)
+            println("work events size: ${workEvents.size}")
             workEvents.size == 1 && workEvents[0].truckId == startWorkEvent.truckId
         }
         // Check that truck id was added to work shift data
@@ -57,6 +79,12 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
             val workEvents = tb.manager.workEvents.listWorkEvents(driverId)
             workEvents.size == 2 && workEvents[0].truckId == endWorkDayEvent.truckId
         }
+
+        // Manually add it to closable since the work events were created off-screen
+        tb.manager.workEvents.listWorkEvents(driverId).forEach {
+            tb.manager.workEvents.addClosable(it)
+        }
+
         val driveWorkEvent = tb.manager.workEvents.listWorkEvents(driverId)[0]
         assertEquals(driverId, driveWorkEvent.employeeId)
         assertNotNull(driveWorkEvent.workEventType)
