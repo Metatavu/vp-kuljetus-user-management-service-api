@@ -5,6 +5,7 @@ import fi.metatavu.vp.test.client.apis.WorkEventsApi
 import fi.metatavu.vp.test.client.infrastructure.ApiClient
 import fi.metatavu.vp.test.client.infrastructure.ClientException
 import fi.metatavu.vp.test.client.models.WorkEvent
+import fi.metatavu.vp.test.client.models.WorkEventType
 import fi.metatavu.vp.usermanagement.TestBuilder
 import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import org.junit.Assert
@@ -35,10 +36,12 @@ class WorkEventTestBuilderResource(
     }
 
     override fun clean(t: WorkEvent) {
-        api.deleteEmployeeWorkEvent(
-            t.employeeId,
-            t.id!!
-        )
+        try {
+            api.deleteEmployeeWorkEvent(
+                t.employeeId,
+                t.id!!
+            )
+        } catch (_: ClientException) { }
     }
 
     override fun getApi(): WorkEventsApi {
@@ -149,6 +152,35 @@ class WorkEventTestBuilderResource(
         api.deleteEmployeeWorkEvent(employeeId, id)
         removeCloseable {
             it is WorkEvent && it.id == id
+        }
+    }
+
+    /**
+     * Asserts that event deletion fails with status
+     *
+     * @param employeeId employee id
+     * @param id id
+     * @param expectedStatus expected error code
+     */
+    fun assertDeleteFail(employeeId: UUID, id: UUID, expectedStatus: Int) {
+        try {
+            api.deleteEmployeeWorkEvent(employeeId, id)
+            Assert.fail(String.format("Expected delete to fail with status %d", expectedStatus))
+        } catch (ex: ClientException) {
+            assertClientExceptionStatus(expectedStatus, ex)
+        }
+    }
+
+    /**
+     * Adds employee shift start to closeables
+     *
+     * @param employeeId employee id
+     */
+    fun addEmployeeShiftStartToCloseables(employeeId: UUID) {
+        api.listEmployeeWorkEvents(employeeId = employeeId).forEach { event ->
+            if (event.workEventType == WorkEventType.SHIFT_START) {
+                addClosable(event)
+            }
         }
     }
 }
