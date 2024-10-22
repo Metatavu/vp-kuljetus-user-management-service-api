@@ -54,7 +54,6 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
         MessagingClient.publishMessage(startWorkEvent)
         Awaitility.await().atMost(Duration.ofMinutes(2)).until {
             val workEvents = tb.manager.workEvents.listWorkEvents(driverId)
-            println("work events size: ${workEvents.size}")
             workEvents.size == 1 && workEvents[0].truckId == startWorkEvent.truckId
         }
         // Check that truck id was added to work shift data
