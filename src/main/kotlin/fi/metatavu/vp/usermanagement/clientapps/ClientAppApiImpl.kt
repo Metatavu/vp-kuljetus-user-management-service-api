@@ -115,7 +115,7 @@ class ClientAppApiImpl: ClientAppsApi, AbstractApi() {
         if (requestApiKey != apiKey) return@withCoroutineScope createForbidden(INVALID_API_KEY)
 
         if (verifyClientAppRequest.deviceId == null) return@withCoroutineScope createBadRequest("Device ID is required")
-        val clientApp = clientAppController.find(verifyClientAppRequest.deviceId) ?: return@withCoroutineScope createNotFound("Client app not found")
+        val clientApp = clientAppController.find(verifyClientAppRequest.deviceId) ?: return@withCoroutineScope createOk(false)
         if (clientApp.status == ClientAppStatus.APPROVED) {
             createOk(true)
         } else {

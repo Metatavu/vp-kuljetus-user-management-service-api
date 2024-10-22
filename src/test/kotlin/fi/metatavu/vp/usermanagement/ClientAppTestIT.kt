@@ -152,7 +152,9 @@ class ClientAppTestIT: AbstractFunctionalTest() {
         val verifiedResult2 = it.manager.clientApps.verifyClientApp(VerifyClientAppRequest(createdClientApp.deviceId))
         assertTrue(verifiedResult2)
 
-        it.manager.clientApps.assertVerifyClientAppFail(VerifyClientAppRequest(UUID.randomUUID().toString()), 404)
+        val verifiedUnknownDevice = it.manager.clientApps.verifyClientApp(VerifyClientAppRequest(UUID.randomUUID().toString()))
+        assertFalse(verifiedUnknownDevice)
+
         it.setApiKey("invalid-api-key").clientApps.assertVerifyClientAppFail(VerifyClientAppRequest(createdClientApp.deviceId), 403)
     }
 }
