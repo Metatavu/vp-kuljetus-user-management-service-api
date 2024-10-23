@@ -2,6 +2,7 @@ package fi.metatavu.vp.usermanagement.clientapps
 
 import fi.metatavu.vp.usermanagement.model.ClientApp
 import fi.metatavu.vp.usermanagement.model.ClientAppStatus
+import fi.metatavu.vp.usermanagement.model.VerifyClientAppRequest
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.ClientAppsApi
 import io.quarkus.hibernate.reactive.panache.common.WithSession
@@ -110,4 +111,15 @@ class ClientAppApiImpl: ClientAppsApi, AbstractApi() {
         createOk(clientAppTranslator.translate(updatedClientApp))
     }
 
+    override fun verifyClientApp(verifyClientAppRequest: VerifyClientAppRequest): Uni<Response> = withCoroutineScope {
+        if (requestApiKey != apiKey) return@withCoroutineScope createForbidden(INVALID_API_KEY)
+
+        if (verifyClientAppRequest.deviceId == null) return@withCoroutineScope createBadRequest("Device ID is required")
+        val clientApp = clientAppController.find(verifyClientAppRequest.deviceId) ?: return@withCoroutineScope createOk(false)
+        if (clientApp.status == ClientAppStatus.APPROVED) {
+            createOk(true)
+        } else {
+            createOk(false)
+        }
+    }
 }
