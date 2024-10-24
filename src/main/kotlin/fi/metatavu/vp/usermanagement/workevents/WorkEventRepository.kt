@@ -99,24 +99,23 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
      * @param employeeId employee id
      * @return latest work event
      */
-    suspend fun findLatestWorkEvent(employeeId: UUID?): WorkEventEntity? {
+    suspend fun findLatestWorkEvent(employeeId: UUID?, time: OffsetDateTime): WorkEventEntity? {
         return find(
-            "employeeId = :employeeId order by time desc limit 1",
-            Parameters.with("employeeId", employeeId)
+            "employeeId = :employeeId and time < :time order by time desc limit 1",
+            Parameters.with("employeeId", employeeId).and("time", time),
         ).firstResult<WorkEventEntity>().awaitSuspending()
     }
 
     /**
-     * Finds earliest work event in the shift
+     * Updates work event type
      *
-     * @param workShift work shift
-     * @return earliest work event
+     * @param latestWorkEvent latest work event
+     * @param shiftEnd new work event type
+     * @return updated work event
      */
-    suspend fun findEarliestWorkEvent(workShift: WorkShiftEntity): WorkEventEntity? {
-        return find(
-            "workShift = :workShift order by time asc limit 1",
-            Parameters.with("workShift", workShift)
-        ).firstResult<WorkEventEntity>().awaitSuspending()
+    suspend fun updateEventType(latestWorkEvent: WorkEventEntity, shiftEnd: WorkEventType): WorkEventEntity {
+        latestWorkEvent.workEventType = shiftEnd
+        return persistSuspending(latestWorkEvent)
     }
 
 }

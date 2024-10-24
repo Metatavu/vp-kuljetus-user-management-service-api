@@ -5,6 +5,7 @@ import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
+import io.smallrye.mutiny.coroutines.awaitSuspending
 import jakarta.enterprise.context.ApplicationScoped
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -27,6 +28,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
      * @param perDiemAllowance per diem allowance
      * @param startedAt started at
      * @param endedAt ended at
+     * @param dayOffWorkAllowance day off work allowance
      * @return created employee work shift
      */
     suspend fun create(
@@ -37,7 +39,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         absence: AbsenceType?,
         perDiemAllowance: PerDiemAllowanceType?,
         startedAt: LocalDate?,
-        endedAt: LocalDate?
+        endedAt: LocalDate?,
+        dayOffWorkAllowance: Boolean? = null
     ): WorkShiftEntity {
         val employeeWorkShift = WorkShiftEntity()
         employeeWorkShift.id = id
@@ -48,6 +51,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         employeeWorkShift.perDiemAllowance = perDiemAllowance
         employeeWorkShift.startedAt = startedAt
         employeeWorkShift.endedAt = endedAt
+        employeeWorkShift.dayOffWorkAllowance = dayOffWorkAllowance
         return persistSuspending(employeeWorkShift)
     }
 
@@ -65,8 +69,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         employeeId: UUID,
         startedAfter: OffsetDateTime?,
         startedBefore: OffsetDateTime?,
-        first: Int,
-        max: Int
+        first: Int? = null,
+        max: Int? = null
     ): Pair<List<WorkShiftEntity>, Long> {
         val queryBuilder = StringBuilder()
         val parameters = Parameters()
@@ -89,6 +93,49 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
             firstIndex = first,
             maxResults = max
         )
+    }
+
+    /**
+     * Finds employee work shift by date and employee id
+     *
+     * @param employeeId employee id
+     * @param workEventTime work event time
+     * @return employee work shift or null if not found
+     */
+    suspend fun findSameDayWorkShift(employeeId: UUID?, workEventTime: OffsetDateTime): WorkShiftEntity? {
+        val queryBuilder = StringBuilder()
+        val parameters = Parameters()
+
+        queryBuilder.append("employeeId = :employeeId")
+        parameters.and("employeeId", employeeId)
+
+        queryBuilder.append(" AND date = :date")
+        parameters.and("date", workEventTime.toLocalDate())
+
+
+        return find(queryBuilder.toString(), parameters).firstResult<WorkShiftEntity>().awaitSuspending()
+
+    }
+
+    /**
+     * Finds latest employee work shift before work event time
+     *
+     * @param employeeId employee id
+     * @param beforeWorkEventTime before work event time
+     * @return employee work shift or null if not found
+     */
+    suspend fun findLatestEmployeeWorkShift(employeeId: UUID?, beforeWorkEventTime: OffsetDateTime): WorkShiftEntity? {
+        val queryBuilder = StringBuilder()
+        val parameters = Parameters()
+
+        queryBuilder.append("employeeId = :employeeId")
+        parameters.and("employeeId", employeeId)
+
+        queryBuilder.append(" AND date < :date")
+        parameters.and("date", beforeWorkEventTime.toLocalDate())
+
+        return find(queryBuilder.toString(), Sort.descending("date"), parameters).firstResult<WorkShiftEntity>().awaitSuspending()
+
     }
 
 }

@@ -24,7 +24,9 @@ class WorkShiftTestBuilderResource(
 ) : ApiTestBuilderResource<EmployeeWorkShift, ApiClient>(testBuilder, apiClient) {
 
     override fun clean(t: EmployeeWorkShift) {
-        api.deleteEmployeeWorkShift(t.employeeId, t.id!!)
+        try {
+            api.deleteEmployeeWorkShift(t.employeeId, t.id!!)
+        } catch (_: ClientException) { }
     }
 
     override fun getApi(): EmployeeWorkShiftsApi {

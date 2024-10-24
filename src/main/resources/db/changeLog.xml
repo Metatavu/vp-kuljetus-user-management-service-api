@@ -176,4 +176,10 @@
             </column>
         </createTable>
     </changeSet>
+    
+    <changeSet id="shift_off_work_allowance" author="katja danilova">
+        <addColumn tableName="workshift">
+            <column name="dayoffworkallowance" type="boolean"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

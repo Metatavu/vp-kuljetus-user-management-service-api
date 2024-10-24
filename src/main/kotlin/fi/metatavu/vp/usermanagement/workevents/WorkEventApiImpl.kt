@@ -6,6 +6,7 @@ import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.WorkEventsApi
 import fi.metatavu.vp.usermanagement.users.UserController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftRepository
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -36,6 +37,9 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
     @Inject
     lateinit var employeeWorkShiftController: WorkShiftController
 
+    @Inject
+    lateinit var workShiftRepository: WorkShiftRepository
+
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     @WithTransaction
     override fun createEmployeeWorkEvent(employeeId: UUID, workEvent: WorkEvent): Uni<Response> =
@@ -64,6 +68,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
                 workEventType = workEvent.workEventType,
                 truckId = workEvent.truckId
             )
+
 
             createCreated(workEventTranslator.translate(created))
         }
@@ -211,12 +216,12 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
         }
 
         if (shiftEnd != null && newWorkEventData.workEventType == WorkEventType.SHIFT_START
-            && newWorkEventData.time.isAfter(shiftEnd.time)
+            && newWorkEventData.time.isAfter(shiftEnd)
         ) {
             return "Shift start event must be before shift end event"
         }
         if (shiftStart != null && newWorkEventData.workEventType == WorkEventType.SHIFT_END
-            && newWorkEventData.time.isBefore(shiftStart.time)
+            && newWorkEventData.time.isBefore(shiftStart)
         ) {
             return "Shift start event must be before shift end event"
         }
@@ -258,14 +263,32 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
     private suspend fun isWorkEventCreatable(workEventData: WorkEvent): String? {
         val latestWorkEvent =
             workEventController.list(employeeId = workEventData.employeeId, first = 0, max = 1).first.firstOrNull()
-        val newShiftNeeded = workEventController.requiresNewShift(latestWorkEvent, workEventData.time)
-        if (newShiftNeeded) {
+        val latestWorkShiftEntity = workShiftRepository.findLatestEmployeeWorkShift(workEventData.employeeId, workEventData.time)
+        val oldShiftIsEnded = workEventController.oldShiftIsEnded(
+            latestWorkEvent,
+            workEventData.time,
+            latestWorkShiftEntity
+        )
+        if (oldShiftIsEnded) {
             return null
         }
 
+        // If the latest shift is empty then new event is recorded there
         val workShiftEvents = workEventController.list(employeeWorkShift = latestWorkEvent?.workShift).first
-        val shiftStart = workShiftEvents.find { it.workEventType == WorkEventType.SHIFT_START }
-        val shiftEnd = workShiftEvents.find { it.workEventType == WorkEventType.SHIFT_END }
+        if (latestWorkShiftEntity != null) {
+            val latestWorkShiftEvents = workEventController.list(employeeWorkShift = latestWorkShiftEntity).first
+            if (latestWorkShiftEvents.isEmpty()) {
+                return null
+            }
+        }
+
+        // and this is based on work events
+        val shiftStart = workShiftEvents.find { it.workEventType == WorkEventType.SHIFT_START }?.time
+        val shiftEnd = workShiftEvents.find { it.workEventType == WorkEventType.SHIFT_END }?.time
+
+        if (shiftStart == null && shiftEnd == null) {
+            return null
+        }
 
         if (workEventController.isDuplicateStartOrEndEvent(shiftStart, shiftEnd, workEventData.workEventType)) {
             return "Cannot have two start or end events in the same shift"
@@ -278,12 +301,12 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
         }
 
         if (shiftEnd != null && workEventData.workEventType == WorkEventType.SHIFT_START
-            && workEventData.time.isAfter(shiftEnd.time)
+            && workEventData.time.isAfter(shiftEnd)
         ) {
             return "Shift start event must be before shift end event"
         }
         if (shiftStart != null && workEventData.workEventType == WorkEventType.SHIFT_END
-            && workEventData.time.isBefore(shiftStart.time)
+            && workEventData.time.isBefore(shiftStart)
         ) {
             return "Shift start event must be before shift end event"
         }
