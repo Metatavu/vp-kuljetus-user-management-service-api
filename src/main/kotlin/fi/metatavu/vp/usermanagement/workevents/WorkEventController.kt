@@ -270,7 +270,7 @@ class WorkEventController {
     }
 
     /**
-     * Returns the work shift for the work event, creates a new shift if needed (or selectes and suitable running shift)
+     * Returns the work shift for the work event.  Creates a new shift (if needed) or selects a suitable running shift
      *  and updates/creates other work events related to shift starting and ending.
      *
      * @param latestWorkEvent latest work event
