@@ -314,6 +314,11 @@ class UserController {
         } else {
             attributes[PHONE_NUMBER_ATTRIBUTE] = emptyArray()
         }
+        if (employee.pinCode != null) {
+            attributes[PIN_CODE_ATTRIBUTE] = arrayOf(employee.pinCode)
+        } else {
+            attributes[PIN_CODE_ATTRIBUTE] = emptyArray()
+        }
         return attributes
     }
 
@@ -349,6 +354,7 @@ class UserController {
         const val LAST_READ_OUT_ATTRIBUTE = "lastReadOut"
         const val EMPLOYEE_NUMBER_ATTRIBUTE = "employeeNumber"
         const val PHONE_NUMBER_ATTRIBUTE = "phoneNumber"
+        const val PIN_CODE_ATTRIBUTE = "pinCode"
     }
 
 }
