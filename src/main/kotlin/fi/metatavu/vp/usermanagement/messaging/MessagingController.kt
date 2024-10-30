@@ -35,7 +35,7 @@ class MessagingController: WithCoroutineScope() {
      */
     @ConsumeEvent("DRIVER_WORKING_STATE_CHANGE")
     @WithTransaction
-    fun processWorkingStateChangeEvent(event: DriverWorkEventGlobalEvent): Uni<Boolean> = withCoroutineScope {
+    fun processWorkingStateChangeEvent(event: DriverWorkEventGlobalEvent): Uni<Boolean> = withCoroutineScope(60_000) {
         logger.info("Processing event ${event.type}")
         val foundDriver = userController.find(event.driverId)
 
