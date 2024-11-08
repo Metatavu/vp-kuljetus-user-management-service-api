@@ -101,13 +101,28 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
         workShiftId: UUID,
         employeeWorkShift: EmployeeWorkShift
     ): Uni<Response> = withCoroutineScope{
-        val foundShift = workShiftController.findEmployeeWorkShift(employeeId, workShiftId)
+        val existingWorkShift = workShiftController.findEmployeeWorkShift(employeeId, workShiftId)
           ?: return@withCoroutineScope createNotFoundWithMessage(WORK_SHIFT, workShiftId)
 
-        if (employeeId != foundShift.employeeId) {
+        if (employeeId != existingWorkShift.employeeId) {
             return@withCoroutineScope createBadRequest("employeeId in path and body do not match")
         }
-        val updated = workShiftController.updateEmployeeWorkShift(foundShift, employeeWorkShift.approved)
+
+        val workShiftStaysApproved = existingWorkShift.approved && employeeWorkShift.approved
+        val workShiftModified = existingWorkShift.absence != employeeWorkShift.absence ||
+            existingWorkShift.perDiemAllowance != employeeWorkShift.perDiemAllowance ||
+            existingWorkShift.dayOffWorkAllowance != employeeWorkShift.dayOffWorkAllowance ||
+            existingWorkShift.notes != employeeWorkShift.notes
+
+        if (workShiftStaysApproved && workShiftModified) {
+            return@withCoroutineScope createBadRequest("Approved work shifts cannot be updated")
+        }
+
+        val updated = workShiftController.updateEmployeeWorkShift(
+            existingWorkShift = existingWorkShift,
+            updatedWorkShift = employeeWorkShift
+        )
+
         createOk(workShiftTranslator.translate(updated))
     }
 }

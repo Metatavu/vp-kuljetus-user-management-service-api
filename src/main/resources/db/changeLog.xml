@@ -182,4 +182,10 @@
             <column name="dayoffworkallowance" type="boolean"/>
         </addColumn>
     </changeSet>
+
+    <changeSet id="notes_to_employee_work_shift" author="lauri lukkarinen">
+        <addColumn tableName="workshift">
+            <column name="notes" type="text"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

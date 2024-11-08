@@ -1,6 +1,8 @@
 package fi.metatavu.vp.usermanagement
 
+import fi.metatavu.vp.test.client.models.AbsenceType
 import fi.metatavu.vp.test.client.models.EmployeeWorkShift
+import fi.metatavu.vp.test.client.models.PerDiemAllowanceType
 import fi.metatavu.vp.test.client.models.WorkEvent
 import fi.metatavu.vp.test.client.models.WorkEventType
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
@@ -277,23 +279,50 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 date = now.toLocalDate().toString(),
                 employeeId = employee1,
-                approved = false
+                approved = false,
             )
         )
 
-        val approved = it.manager.workShifts.updateEmployeeWorkShift(
+        val updatedWorkShift = it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee1,
             id = workShift.id!!,
-            workShift = workShift.copy(approved = true)
+            workShift = workShift.copy(
+                approved = true,
+                dayOffWorkAllowance = true,
+                perDiemAllowance = PerDiemAllowanceType.FULL,
+                absence = AbsenceType.OFFICIAL_DUTIES,
+                notes = "approved"
+            )
         )
-        assertEquals(true, approved.approved)
+        assertEquals(true, updatedWorkShift.approved, "After update, work shift should be approved")
+        assertEquals(true, updatedWorkShift.dayOffWorkAllowance, "After update, day off work allowance should be true")
+        assertEquals(PerDiemAllowanceType.FULL, updatedWorkShift.perDiemAllowance, "After update, per diem allowance should be FULL")
+        assertEquals(AbsenceType.OFFICIAL_DUTIES, updatedWorkShift.absence, "After update, absence should be OFFICIAL_DUTIES")
+        assertEquals("approved", updatedWorkShift.notes, "After update, notes should be 'approved'")
 
         // Employee ID not found
-        it.manager.workShifts.assertUpdateFail(employeeId = UUID.randomUUID(), id = workShift.id, workShift = workShift, expectedStatus = 404)
+        it.manager.workShifts.assertUpdateFail(
+            employeeId = UUID.randomUUID(),
+            id = workShift.id,
+            workShift = workShift,
+            expectedStatus = 404
+        )
+
         // Employee IDs don't fit
-        it.manager.workShifts.assertUpdateFail(employeeId = employee2, id = workShift.id, workShift = workShift, expectedStatus = 404)
-        // Cannot update other fields
-        it.manager.workShifts.assertUpdateFail(employeeId = employee1, id = workShift.id, workShift = workShift.copy(date = "12-02-2010", approved = false), expectedStatus = 400)
+        it.manager.workShifts.assertUpdateFail(
+            employeeId = employee2,
+            id = workShift.id,
+            workShift = workShift,
+            expectedStatus = 404
+        )
+
+        // Cannot update when already approved
+        it.manager.workShifts.assertUpdateFail(
+            employeeId = employee1,
+            id = updatedWorkShift.id!!,
+            workShift = updatedWorkShift.copy(notes = "Trying to update already approved"),
+            expectedStatus = 400
+        )
     }
 
     /**
