@@ -2,6 +2,7 @@ package fi.metatavu.vp.usermanagement.workshifts
 
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
 import fi.metatavu.vp.usermanagement.model.AbsenceType
+import fi.metatavu.vp.usermanagement.model.EmployeeWorkShift
 import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
@@ -60,9 +61,10 @@ class WorkShiftController {
             dayOffWorkAllowance = dayOffWorkAllowance
         )
 
-        val hours = workShiftHoursController.createWorkShiftHours(
+        workShiftHoursController.createWorkShiftHours(
             workShiftEntity = shift
         )
+
         return shift
     }
 
@@ -109,7 +111,7 @@ class WorkShiftController {
     /**
      * Lists employee work shifts
      *
-     * @param employee employee
+     * @param employeeId employee ID
      * @param startedAfter started after
      * @param startedBefore started before
      * @param first first
@@ -133,18 +135,24 @@ class WorkShiftController {
     }
 
     /**
-     * Updates employee work shift status
+     * Updates employee work shift
      *
-     * @param foundShift found shift
-     * @param approved status
+     * @param existingWorkShift existing work shift
+     * @param updatedWorkShift updated work shift
      * @return updated employee work shift
      */
     suspend fun updateEmployeeWorkShift(
-        foundShift: WorkShiftEntity,
-        approved: Boolean
+        existingWorkShift: WorkShiftEntity,
+        updatedWorkShift: EmployeeWorkShift
     ): WorkShiftEntity {
-        foundShift.approved = approved
-        return workShiftRepository.persistSuspending(foundShift)
+        return workShiftRepository.update(
+            workShiftEntity = existingWorkShift,
+            absence = updatedWorkShift.absence,
+            dayOffWorkAllowance = updatedWorkShift.dayOffWorkAllowance,
+            perDiemAllowance = updatedWorkShift.perDiemAllowance,
+            notes = updatedWorkShift.notes,
+            approved = updatedWorkShift.approved,
+        )
     }
 
     /**
