@@ -97,7 +97,7 @@ class WorkShiftController {
         first: Int,
         max: Int
     ): Pair<List<WorkShiftEntity>, Long> {
-        return workShiftRepository.listEmployeeWorkShifts(
+        return listEmployeeWorkShifts(
             UUID.fromString(employee.id),
             startedAfter,
             startedBefore,
@@ -130,6 +130,16 @@ class WorkShiftController {
             first,
             max
         )
+    }
+
+    /**
+     * Lists work shifts that are not completed yet (no end time set)
+     *
+     * @param first first
+     * @param last last
+     */
+    suspend fun listUnfinishedWorkShifts(first: Int, last: Int) : List<WorkShiftEntity> {
+        return workShiftRepository.listUnfinishedWorkShifts(first, last)
     }
 
     /**

@@ -99,9 +99,8 @@ class WorkEventController {
         val updatedShift = recalculateWorkShiftTimes(workShift = workShift)
         workShiftHoursController.recalculateWorkShiftHours(
             workShift = updatedShift,
-            workShiftHours =  workShiftHoursController.listWorkShiftHours(workShiftFilter = workShift).first,
-            force = true
         )
+
         return createdWorkEvent
     }
 
@@ -135,9 +134,7 @@ class WorkEventController {
         val updated = workEventRepository.persistSuspending(foundWorkEvent)
 
         val updatedShift = recalculateWorkShiftTimes(workShift = foundWorkEvent.workShift)
-        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedShift,
-            workShiftHours =  workShiftHoursController.listWorkShiftHours(workShiftFilter = foundWorkEvent.workShift).first ,
-            force = true)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedShift)
         return updated
     }
 
@@ -158,8 +155,7 @@ class WorkEventController {
         }
 
         val updatedWorkShift = recalculateWorkShiftTimes(workShift = foundWorkEvent.workShift)
-        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedWorkShift,
-            workShiftHours =  workShiftHoursController.listWorkShiftHours(workShiftFilter = foundWorkEvent.workShift).first, force = true)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedWorkShift)
     }
 
     /**

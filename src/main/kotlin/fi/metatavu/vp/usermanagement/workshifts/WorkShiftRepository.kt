@@ -96,6 +96,20 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
     }
 
     /**
+     * Lists all work shifts with endedAt property null
+     *
+     * @param first first
+     * @param last last
+     * @return unfinished work shift list
+     */
+    suspend fun listUnfinishedWorkShifts(
+        first: Int,
+        last: Int
+    ): List<WorkShiftEntity> {
+        return find("endedAt IS NULL").range<WorkShiftEntity>(first, last).list<WorkShiftEntity>().awaitSuspending()
+    }
+
+    /**
      * Finds employee work shift by date and employee id
      *
      * @param employeeId employee id
