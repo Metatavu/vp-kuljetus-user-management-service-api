@@ -5,8 +5,7 @@ import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.testcontainers.shaded.org.awaitility.Awaitility
 import java.time.Duration
@@ -42,7 +41,6 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
         workShiftHours.forEach {
             assertEquals(workShift.id, it.employeeWorkShiftId)
             assertNull(it.actualHours)
-            assertEquals(0.0f, it.calculatedHours)
         }
     }
 
@@ -219,11 +217,11 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
 
         Awaitility.await()
             .pollDelay(Duration.ofMinutes(1))
-            .atMost(Duration.ofMinutes(2))
+            .atMost(Duration.ofMinutes(3))
             .untilAsserted {
                 val workShiftHours = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee1)
                 assertEquals(WorkType.entries.size, workShiftHours.size)
-                assertEquals(61f / 60f, workShiftHours.find { it.workType == WorkType.PAID_WORK }?.calculatedHours)
+                assertTrue(workShiftHours.find { it.workType == WorkType.PAID_WORK }?.calculatedHours!! > 1.0)
             }
     }
 

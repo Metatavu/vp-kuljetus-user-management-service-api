@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.workshifthours
 
+import fi.metatavu.vp.usermanagement.WithCoroutineScope
 import fi.metatavu.vp.usermanagement.holidays.HolidayController
 import fi.metatavu.vp.usermanagement.holidays.HolidayEntity
 import fi.metatavu.vp.usermanagement.model.WorkEventType
@@ -8,19 +9,23 @@ import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.workevents.WorkEventEntity
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction
+import io.quarkus.scheduler.Scheduled
 import io.vertx.core.Vertx
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
+import org.jboss.logging.Logger
 import java.time.DayOfWeek
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 /**
  * Controller for Work Shift Hours
  */
 @ApplicationScoped
-class WorkShiftHoursController {
+class WorkShiftHoursController: WithCoroutineScope() {
 
     @Inject
     lateinit var workShiftHoursRepository: WorkShiftHoursRepository
@@ -37,24 +42,49 @@ class WorkShiftHoursController {
     @Inject
     lateinit var vertx: Vertx
 
+    @Inject
+    lateinit var logger: Logger
+
+    /**
+     * Method to periodically recalculate work shift hours
+     */
+    @Scheduled(
+        concurrentExecution = Scheduled.ConcurrentExecution.SKIP,
+        every = "\${workShiftHours.recalculate.interval}",
+        delay = 10,
+        delayUnit = TimeUnit.SECONDS
+    )
+    @WithTransaction
+    fun updateWorkShiftHours() = withCoroutineScope {
+        logger.debug("Processing the active work shift hours.")
+        val now = System.currentTimeMillis()
+        var total = 0
+        var start = 0
+        val step = 10
+
+       var workShifts = workShiftController.listUnfinishedWorkShifts(start, step + start)
+        while (workShifts.isNotEmpty()) {
+            workShifts.forEach { shift ->
+                recalculateWorkShiftHours(shift)
+            }
+            total += workShifts.size
+            start += step
+            workShifts = workShiftController.listUnfinishedWorkShifts(start, step + start)
+        }
+        logger.debug("Processed $total work shifts in ${System.currentTimeMillis() - now} ms.")
+    }.replaceWithVoid()
 
     /**
      * Recalculates work shift hours for a work shift, saving the updated hours to the database
      *
      * @param workShift work shift
-     * @param workShiftHours all found hours by shift
-     * @param force force recalculation (if disabled only missing hours or unfinished shifts are recalculated)
      * @return recalculated work shift hours
      */
     suspend fun recalculateWorkShiftHours(
         workShift: WorkShiftEntity,
-        workShiftHours: List<WorkShiftHoursEntity>,
-        force: Boolean
     ): List<WorkShiftHoursEntity> {
         val publicHolidays = holidayController.list().first
-        val updatableWorkShiftHours = if (force) {
-            workShiftHours
-        } else workShiftHours.filter { it.calculatedHours == null || it.workShift.endedAt == null }
+        val updatableWorkShiftHours = listWorkShiftHours(workShiftFilter = workShift).first
 
         val temporaryHoursForTypes = WorkType.entries.associateWith { 0f }.toMutableMap()
 
@@ -115,7 +145,7 @@ class WorkShiftHoursController {
     }
 
     /**
-     * Lists work shift hours (recalculating the hours if needed)
+     * Lists work shift hours
      *
      * @param employeeId employee id
      * @param workShiftFilter work shift filter
@@ -131,27 +161,13 @@ class WorkShiftHoursController {
         employeeWorkShiftStartedAfter: OffsetDateTime? = null,
         employeeWorkShiftStartedBefore: OffsetDateTime? = null
     ): Pair<List<WorkShiftHoursEntity>, Long> {
-        val allFoundHours = workShiftHoursRepository.listWorkShiftHours(
+        return workShiftHoursRepository.listWorkShiftHours(
             employeeId = employeeId,
             workShift = workShiftFilter,
             workType = workType,
             employeeWorkShiftStartedAfter = employeeWorkShiftStartedAfter,
             employeeWorkShiftStartedBefore = employeeWorkShiftStartedBefore
         )
-
-        val workShiftHours = allFoundHours.first.groupBy { it.workShift }
-
-        val updatedWorkShiftHours = mutableListOf<WorkShiftHoursEntity>()
-        workShiftHours.forEach { (t, u) ->
-            updatedWorkShiftHours.addAll(recalculateWorkShiftHours(t, u, false))
-        }
-
-        // Unites original found hours with the updated hours
-        val unitedList = allFoundHours.first.map { foundHr ->
-            updatedWorkShiftHours.find { foundHr.id == it.id } ?: foundHr
-        }
-
-        return Pair(unitedList, allFoundHours.second)
     }
 
     /**
