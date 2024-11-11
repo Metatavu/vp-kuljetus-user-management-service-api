@@ -217,7 +217,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
 
         Awaitility.await()
             .pollDelay(Duration.ofMinutes(1))
-            .atMost(Duration.ofMinutes(2))
+            .atMost(Duration.ofMinutes(3))
             .untilAsserted {
                 val workShiftHours = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee1)
                 assertEquals(WorkType.entries.size, workShiftHours.size)

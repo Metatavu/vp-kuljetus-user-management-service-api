@@ -19,6 +19,7 @@ import java.time.DayOfWeek
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 /**
  * Controller for Work Shift Hours
@@ -50,7 +51,8 @@ class WorkShiftHoursController: WithCoroutineScope() {
     @Scheduled(
         concurrentExecution = Scheduled.ConcurrentExecution.SKIP,
         every = "\${workShiftHours.recalculate.interval}",
-        delay = 10
+        delay = 10,
+        delayUnit = TimeUnit.SECONDS
     )
     @WithTransaction
     fun updateWorkShiftHours() = withCoroutineScope {
