@@ -22,7 +22,9 @@ class WorkShiftTranslator: AbstractTranslator<WorkShiftEntity, EmployeeWorkShift
             date = entity.date,
             approved = entity.approved,
             absence = entity.absence,
+            dayOffWorkAllowance = entity.dayOffWorkAllowance,
             perDiemAllowance = entity.perDiemAllowance,
+            notes = entity.notes,
             truckIds = workEventController
                 .list(employeeWorkShift = entity)
                 .first

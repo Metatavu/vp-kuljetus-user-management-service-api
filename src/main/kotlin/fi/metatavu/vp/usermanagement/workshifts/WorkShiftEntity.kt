@@ -39,4 +39,7 @@ class WorkShiftEntity {
 
     @Column
     var dayOffWorkAllowance: Boolean? = null
+
+    @Column
+    var notes: String? = null
 }

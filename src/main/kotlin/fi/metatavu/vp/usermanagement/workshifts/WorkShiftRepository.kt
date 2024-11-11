@@ -152,4 +152,27 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
 
     }
 
+    /**
+     * Updates employee work shift
+     *
+     * @param workShiftEntity employee work shift entity
+     * @return updated holiday
+     */
+    suspend fun update(
+        workShiftEntity: WorkShiftEntity,
+        absence: AbsenceType?,
+        dayOffWorkAllowance: Boolean?,
+        perDiemAllowance: PerDiemAllowanceType?,
+        notes: String?,
+        approved: Boolean
+    ): WorkShiftEntity {
+        workShiftEntity.absence = absence
+        workShiftEntity.dayOffWorkAllowance = dayOffWorkAllowance
+        workShiftEntity.perDiemAllowance = perDiemAllowance
+        workShiftEntity.notes = notes
+        workShiftEntity.approved = approved
+
+        return persistSuspending(workShiftEntity)
+    }
+
 }
