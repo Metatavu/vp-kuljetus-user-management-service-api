@@ -62,7 +62,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
         delayUnit = TimeUnit.SECONDS
     )
     @WithSession
-    fun updateWorkShiftHours(): Uni<Void> = withCoroutineScope(60000) {
+    fun updateWorkShiftHours(): Uni<Void> = withCoroutineScope() {
         logger.debug("Processing the active work shift hours.")
         val now = System.currentTimeMillis()
         var total = 0
@@ -73,7 +73,6 @@ class WorkShiftHoursController: WithCoroutineScope() {
         while (workShifts.isNotEmpty()) {
             workShifts.forEach { shift ->
                 eventBus.publish("workShiftHours.update", shift.id)
-                recalculateWorkShiftHours(shift)
             }
             total += workShifts.size
             start += step
