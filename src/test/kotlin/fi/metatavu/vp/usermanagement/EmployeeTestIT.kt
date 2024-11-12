@@ -60,14 +60,14 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         assertEquals(1, byArchived.size)
 
         val byArchived2 = it.manager.employees.listEmployees()
-        assertEquals(5, byArchived2.size)
+        assertEquals(6, byArchived2.size)
 
         val paging = it.manager.employees.listEmployees(first = 0, max = 2)
         assertEquals(2, paging.size)
         val paging2 = it.manager.employees.listEmployees(first = 2, max = 2)
         assertEquals(2, paging2.size)
         val paging3 = it.manager.employees.listEmployees(first = 4, max = 2)
-        assertEquals(1, paging3.size)
+        assertEquals(2, paging3.size)
 
         val bySalaryPaging = it.manager.employees.listEmployees(salaryGroup = SalaryGroup.OFFICE, max = 1, first = 1)
         val bySalaryPaging2 = it.manager.employees.listEmployees(salaryGroup = SalaryGroup.OFFICE, max = 1, first = 0)
@@ -189,7 +189,7 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         assertNotNull(it.manager.employees.updateEmployee(created.id, created.copy(firstName = "updated1", lastName = "updated1")))
         assertNotNull(it.manager.employees.createEmployee(created.copy(employeeNumber = "004")))
         assertNotNull(it.manager.employees.createEmployee(created.copy(employeeNumber = "005", firstName = "updated1", lastName = "updated1")))
-        assertEquals(4, it.manager.employees.listEmployees().size)
+        assertEquals(5, it.manager.employees.listEmployees().size)
 
         // Tests that updates/creations of already existing employee numbers is not allowed
         it.manager.employees.assertCreateFail(created, 400)
