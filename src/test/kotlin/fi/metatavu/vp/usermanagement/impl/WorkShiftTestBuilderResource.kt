@@ -139,4 +139,18 @@ class WorkShiftTestBuilderResource(
         }
     }
 
+    /**
+     * Asserts that listing returns expected count
+     *
+     * @param employeeId employee id
+     * @param startedAfter started after
+     * @param startedBefore started before
+     * @param expectedCount expected count
+     * @param first first
+     * @param max max
+     */
+    fun assertListCount(employeeId: UUID, startedAfter: String? = null, startedBefore: String? = null, expectedCount: Int, first: Int? = 0, max: Int? = 10) {
+        val list = listEmployeeWorkShifts(employeeId, startedAfter, startedBefore, first, max)
+        Assert.assertEquals(expectedCount, list.size)
+    }
 }

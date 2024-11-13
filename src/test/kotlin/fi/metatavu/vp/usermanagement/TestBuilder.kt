@@ -21,6 +21,7 @@ class TestBuilder(private val config: Map<String, String>): AbstractAccessTokenT
     val driver1 = createTestBuilderAuthentication(username = "driver1", password = "test")
     val driver2 = createTestBuilderAuthentication(username = "driver2", password = "test")
     val manager = createTestBuilderAuthentication(username = "manager", password = "test")
+    val employee = createTestBuilderAuthentication(username = "employee", password = "test")
 
     override fun createTestBuilderAuthentication(
         abstractTestBuilder: AbstractTestBuilder<ApiClient, AccessTokenProvider>,

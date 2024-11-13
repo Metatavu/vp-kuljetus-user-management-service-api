@@ -11,6 +11,7 @@ import org.skyscreamer.jsonassert.JSONCompare
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.skyscreamer.jsonassert.JSONCompareResult
 import org.skyscreamer.jsonassert.comparator.CustomComparator
+import java.util.*
 
 /**
  * Abstract base class for functional tests
@@ -100,4 +101,7 @@ abstract class AbstractFunctionalTest {
         return config.propertyNames.associateWith { config.getConfigValue(it).rawValue }
     }
 
+    companion object {
+        val EMPLOYEE_USER_ID = UUID.fromString("f1cc426d-8191-4046-8047-b6abe3ef4fde")
+    }
 }

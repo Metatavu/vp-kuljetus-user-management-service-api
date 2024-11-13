@@ -36,7 +36,7 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
     @ConfigProperty(name = "env")
     lateinit var env: Optional<String>
 
-    @RolesAllowed(MANAGER_ROLE)
+    @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
     override fun listEmployeeWorkShifts(
         employeeId: UUID,
         startedAfter: OffsetDateTime?,
@@ -46,6 +46,9 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
     ): Uni<Response> = withCoroutineScope {
         val employee = employeeController.find(employeeId)
           ?: return@withCoroutineScope createNotFoundWithMessage(EMPLOYEE_ENTITY, employeeId)
+        if (!isManager() && employeeId != loggedUserId ) {
+            return@withCoroutineScope createForbidden("Employees can only list their own work shifts")
+        }
         val (employeeWorkShifts, count) = workShiftController.listEmployeeWorkShifts(employee, startedAfter, startedBefore, first, max)
         createOk(workShiftTranslator.translate(employeeWorkShifts), count)
     }
