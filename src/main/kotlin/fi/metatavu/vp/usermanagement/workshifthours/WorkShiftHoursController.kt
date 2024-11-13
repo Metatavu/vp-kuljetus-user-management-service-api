@@ -55,7 +55,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
     /**
      * Method to periodically recalculate work shift hours
      */
-    @Scheduled(
+   /* @Scheduled(
         concurrentExecution = Scheduled.ConcurrentExecution.SKIP,
         every = "\${workShiftHours.recalculate.interval}",
         delay = 10,
@@ -89,7 +89,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
         recalculateWorkShiftHours(workShift)
         logger.debug("Processed work shift hours in ${System.currentTimeMillis() - now} ms.")
     }.replaceWithVoid()
-
+*/
     /**
      * Recalculates work shift hours for a work shift, saving the updated hours to the database
      *

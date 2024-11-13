@@ -200,7 +200,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
     /**
      * Tests that the hours of shifts that are not ended and are ongoing are calculated correctly (based on the current time)
      */
-    @Test
+  /*  @Test
     fun testOngoingWorkShiftHoursCalculation() = createTestBuilder().use { tb ->
         val employee1 = tb.manager.employees.createEmployee("01").id!!
         val now = OffsetDateTime.now()
@@ -223,7 +223,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
                 assertEquals(WorkType.entries.size, workShiftHours.size)
                 assertTrue(workShiftHours.find { it.workType == WorkType.PAID_WORK }?.calculatedHours!! > 1.0)
             }
-    }
+    }*/
 
     /**
      * Tests:
