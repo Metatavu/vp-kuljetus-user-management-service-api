@@ -18,6 +18,8 @@ import io.vertx.core.Vertx
 import io.vertx.mutiny.core.eventbus.EventBus
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
+import kotlinx.coroutines.delay
+import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.jboss.logging.Logger
 import java.time.DayOfWeek
 import java.time.OffsetDateTime
@@ -52,6 +54,9 @@ class WorkShiftHoursController: WithCoroutineScope() {
     @Inject
     lateinit var logger: Logger
 
+    @ConfigProperty(name = "workShiftHours.recalculate.batchSize", defaultValue = "50")
+    var batchSize: Int = 0
+
     /**
      * Method to periodically recalculate work shift hours
      */
@@ -62,32 +67,34 @@ class WorkShiftHoursController: WithCoroutineScope() {
         delayUnit = TimeUnit.SECONDS
     )
     @WithSession
-    fun updateWorkShiftHours(): Uni<Void> = withCoroutineScope() {
-        logger.debug("Processing the active work shift hours.")
-        val now = System.currentTimeMillis()
+    fun updateWorkShiftHours(): Uni<Void> = withCoroutineScope {
+        logger.info("Processing the active work shift hours with batch size $batchSize")
         var total = 0
         var start = 0
-        val step = 100
+        val step = batchSize
 
-        var workShifts = workShiftController.listUnfinishedWorkShifts(start, step + start)
+        var workShifts = workShiftController.listUnfinishedWorkShifts(start, step)
         while (workShifts.isNotEmpty()) {
-            workShifts.forEach { shift ->
-                eventBus.publish("workShiftHours.update", shift.id)
-            }
+            delay(5000)
+            eventBus.publish("workShiftHours.update", workShifts.map { it.id })
             total += workShifts.size
             start += step
             workShifts = workShiftController.listUnfinishedWorkShifts(start, step + start)
         }
-        logger.info("Processed hours of $total work shifts in ${System.currentTimeMillis() - now} ms.")
+        logger.info("Processed hours of $total work shifts")
     }.replaceWithVoid()
 
     @ConsumeEvent("workShiftHours.update")
     @WithTransaction
-    fun consume(shiftId: UUID): Uni<Void> = withCoroutineScope {
+    fun consume(shiftIds: List<UUID>): Uni<Void> = withCoroutineScope {
         val now = System.currentTimeMillis()
-        val workShift = workShiftController.findEmployeeWorkShift(shiftId = shiftId) ?: return@withCoroutineScope
-        recalculateWorkShiftHours(workShift)
-        logger.debug("Processed work shift hours in ${System.currentTimeMillis() - now} ms.")
+        shiftIds.forEach {
+            val workShift = workShiftController.findEmployeeWorkShift(shiftId = it)
+            if (workShift != null) {
+                recalculateWorkShiftHours(workShift)
+            }
+        }
+        logger.debug("Processed ${shiftIds.size} work shift hours in ${System.currentTimeMillis() - now} ms.")
     }.replaceWithVoid()
 
     /**
