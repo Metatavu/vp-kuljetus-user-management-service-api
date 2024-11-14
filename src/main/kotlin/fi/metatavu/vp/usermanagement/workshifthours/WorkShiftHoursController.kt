@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.workshifthours
 
+import ScheduleShiftsCache
 import fi.metatavu.vp.usermanagement.WithCoroutineScope
 import fi.metatavu.vp.usermanagement.holidays.HolidayController
 import fi.metatavu.vp.usermanagement.holidays.HolidayEntity
@@ -12,10 +13,8 @@ import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.scheduler.Scheduled
-import io.quarkus.vertx.ConsumeEvent
 import io.smallrye.mutiny.Uni
 import io.vertx.core.Vertx
-import io.vertx.mutiny.core.eventbus.EventBus
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
@@ -47,15 +46,15 @@ class WorkShiftHoursController: WithCoroutineScope() {
     lateinit var vertx: Vertx
 
     @Inject
-    lateinit var eventBus: EventBus
+    lateinit var logger: Logger
 
     @Inject
-    lateinit var logger: Logger
+    lateinit var scheduleShiftsCache: ScheduleShiftsCache
 
     /**
      * Method to periodically recalculate work shift hours
      */
-   /* @Scheduled(
+    @Scheduled(
         concurrentExecution = Scheduled.ConcurrentExecution.SKIP,
         every = "\${workShiftHours.recalculate.interval}",
         delay = 10,
@@ -63,7 +62,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
     )
     @WithSession
     fun updateWorkShiftHours(): Uni<Void> = withCoroutineScope() {
-        logger.debug("Processing the active work shift hours.")
+        logger.info("Processing the active work shift hours.")
         val now = System.currentTimeMillis()
         var total = 0
         var start = 0
@@ -72,7 +71,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
         var workShifts = workShiftController.listUnfinishedWorkShifts(start, step + start)
         while (workShifts.isNotEmpty()) {
             workShifts.forEach { shift ->
-                eventBus.publish("workShiftHours.update", shift.id)
+                scheduleShiftsCache.addShift(shift.id)
             }
             total += workShifts.size
             start += step
@@ -81,15 +80,23 @@ class WorkShiftHoursController: WithCoroutineScope() {
         logger.info("Processed hours of $total work shifts in ${System.currentTimeMillis() - now} ms.")
     }.replaceWithVoid()
 
-    @ConsumeEvent("workShiftHours.update")
+    @Scheduled(
+        concurrentExecution = Scheduled.ConcurrentExecution.SKIP,
+        every = "5s",
+        delay = 10,
+        delayUnit = TimeUnit.SECONDS
+    )
     @WithTransaction
-    fun consume(shiftId: UUID): Uni<Void> = withCoroutineScope {
+    fun processHours(): Uni<Void> = withCoroutineScope {
         val now = System.currentTimeMillis()
-        val workShift = workShiftController.findEmployeeWorkShift(shiftId = shiftId) ?: return@withCoroutineScope
-        recalculateWorkShiftHours(workShift)
+        scheduleShiftsCache.take(10).mapNotNull {
+            workShiftController.findEmployeeWorkShift(shiftId = it)
+        }.forEach {
+            recalculateWorkShiftHours(it)
+        }
         logger.debug("Processed work shift hours in ${System.currentTimeMillis() - now} ms.")
     }.replaceWithVoid()
-*/
+
     /**
      * Recalculates work shift hours for a work shift, saving the updated hours to the database
      *

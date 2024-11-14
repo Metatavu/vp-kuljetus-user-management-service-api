@@ -106,7 +106,12 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         first: Int,
         last: Int
     ): List<WorkShiftEntity> {
-        return find("endedAt IS NULL").range<WorkShiftEntity>(first, last).list<WorkShiftEntity>().awaitSuspending()
+        val query = """
+        SELECT ws FROM WorkShiftEntity ws
+        LEFT JOIN WorkShiftHoursEntity wh ON ws.id = wh.workShift.id
+        WHERE ws.endedAt IS NULL OR wh.calculatedHours IS NULL
+        """
+        return find(query).range<WorkShiftEntity>(first, last).list<WorkShiftEntity>().awaitSuspending()
     }
 
     /**
