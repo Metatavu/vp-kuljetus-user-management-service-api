@@ -38,7 +38,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.toLocalDate().toString(),
                 employeeId = employee1,
                 approved = false,
-                startedAt = now.toLocalDate().toString()
+                startedAt = now.toString()
             )
         )
         it.manager.workShifts.createEmployeeWorkShift(
@@ -47,7 +47,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.plusDays(2).toLocalDate().toString(),
                 employeeId = employee2,
                 approved = false,
-                startedAt = now.plusDays(2).toLocalDate().toString(),
+                startedAt = now.plusDays(2).toString(),
             )
         )
         it.manager.workShifts.createEmployeeWorkShift(
@@ -56,7 +56,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.plusDays(3).toLocalDate().toString(),
                 employeeId = employee2,
                 approved = false,
-                startedAt = now.plusDays(3).toLocalDate().toString(),
+                startedAt = now.plusDays(3).toString(),
             )
         )
 
@@ -92,7 +92,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.toLocalDate().toString(),
                 employeeId = EMPLOYEE_USER_ID,
                 approved = false,
-                startedAt = now.toLocalDate().toString()
+                startedAt = now.toString()
             )
         )
         // Employee has one shift
@@ -139,8 +139,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.toLocalDate().toString(),
                 employeeId = employee1.id,
                 approved = false,
-                startedAt = now.toLocalDate().toString(),
-                endedAt = now.plusHours(25).toLocalDate().toString()
+                startedAt = now.toString(),
+                endedAt = now.plusHours(25).toString()
             )
         )
         assertNotNull(created)
@@ -181,8 +181,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         val workShifts = tb.manager.workShifts.listEmployeeWorkShifts(employeeId = employeeId)
         assertEquals(1, workShifts.size)
         assertEquals(now.minusDays(10).toLocalDate().toString(), workShifts[0].date)
-        assertEquals(getWorkEventDate(workEvent1.time), workShifts[0].startedAt)
-        assertEquals(getWorkEventDate(workEvent2.time), workShifts[0].endedAt)
+        assertEquals(workEvent1.time, workShifts[0].startedAt)
+        assertEquals(workEvent2.time, workShifts[0].endedAt)
 
         val workEvent3 = tb.manager.workEvents.createWorkEvent(employeeId, now.minusDays(13).toString(), WorkEventType.SHIFT_START)
         val workEvent4 = tb.manager.workEvents.createWorkEvent(employeeId, now.minusDays(11).toString(), WorkEventType.SHIFT_END)
@@ -228,7 +228,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         )
         workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
         assertEquals(getWorkEventDate(updatedShiftStart.time), workShifts[0].date)
-        assertEquals(getWorkEventDate(updatedShiftStart.time), workShifts[0].startedAt)
+        assertEquals(updatedShiftStart.time, workShifts[0].startedAt)
 
         // Update work shift end to later
         val updatedShiftEnd = it.manager.workEvents.updateWorkEvent(
@@ -242,8 +242,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         )
         workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
         assertEquals(getWorkEventDate(updatedShiftStart.time), workShifts[0].date)
-        assertEquals(getWorkEventDate(updatedShiftStart.time), workShifts[0].startedAt)
-        assertEquals(getWorkEventDate(updatedShiftEnd.time), workShifts[0].endedAt)
+        assertEquals(updatedShiftStart.time, workShifts[0].startedAt)
+        assertEquals(updatedShiftEnd.time, workShifts[0].endedAt)
 
 
         // Delete meat cellar event

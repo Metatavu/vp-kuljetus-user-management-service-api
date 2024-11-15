@@ -188,4 +188,13 @@
             <column name="notes" type="text"/>
         </addColumn>
     </changeSet>
+
+    <changeSet id="work_shift_started_at_and_ended_at_to_date_time" author="Ville Juutila">
+        <modifyDataType tableName="workshift" columnName="startedat" newDataType="datetime(6)"/>
+        <modifyDataType tableName="workshift" columnName="endedat" newDataType="datetime(6)"/>
+        <sql>
+            UPDATE workshift SET startedat = CAST(startedat AS datetime(6));
+            UPDATE workshift SET endedat = CAST(endedat AS datetime(6));
+        </sql>
+    </changeSet>
 </databaseChangeLog>
