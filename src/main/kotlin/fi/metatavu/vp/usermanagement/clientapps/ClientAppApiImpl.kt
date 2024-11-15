@@ -95,8 +95,6 @@ class ClientAppApiImpl: ClientAppsApi, AbstractApi() {
     override fun updateClientApp(clientAppId: UUID, clientApp: ClientApp): Uni<Response> = withCoroutineScope {
         val userId = loggedUserId ?: return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
 
-        if (clientAppId != clientApp.id) return@withCoroutineScope createBadRequest("Client App ID in path and body don't match")
-
         val foundClientApp = clientAppController.find(clientAppId) ?: return@withCoroutineScope createNotFound(createNotFoundMessage(CLIENT_APP, clientAppId))
 
         val updatedClientApp = clientAppController.update(

@@ -107,8 +107,6 @@ class ClientAppTestIT: AbstractFunctionalTest() {
         assertEquals(foundClientApp.metadata.deviceOSVersion, "0.1")
         assertEquals(foundClientApp.metadata.appVersion, "0.2")
         assertEquals(foundClientApp.metadata.deviceOS, ClientAppMetadata.DeviceOS.ANDROID)
-
-        it.manager.clientApps.assertUpdateFail(UUID.randomUUID(),updatedClientApp, 400)
     }
 
     @Test
