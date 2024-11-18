@@ -5,6 +5,7 @@ import fi.metatavu.vp.test.client.models.EmployeeWorkShift
 import fi.metatavu.vp.test.client.models.PerDiemAllowanceType
 import fi.metatavu.vp.test.client.models.WorkEvent
 import fi.metatavu.vp.test.client.models.WorkEventType
+import fi.metatavu.vp.usermanagement.assertions.Assertions
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
@@ -181,8 +182,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         val workShifts = tb.manager.workShifts.listEmployeeWorkShifts(employeeId = employeeId)
         assertEquals(1, workShifts.size)
         assertEquals(now.minusDays(10).toLocalDate().toString(), workShifts[0].date)
-        assertEquals(workEvent1.time, workShifts[0].startedAt)
-        assertEquals(workEvent2.time, workShifts[0].endedAt)
+        Assertions.assertOffsetDateTimeEquals(workEvent1.time, workShifts[0].startedAt)
+        Assertions.assertOffsetDateTimeEquals(workEvent2.time, workShifts[0].endedAt)
 
         val workEvent3 = tb.manager.workEvents.createWorkEvent(employeeId, now.minusDays(13).toString(), WorkEventType.SHIFT_START)
         val workEvent4 = tb.manager.workEvents.createWorkEvent(employeeId, now.minusDays(11).toString(), WorkEventType.SHIFT_END)
@@ -228,7 +229,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         )
         workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
         assertEquals(getWorkEventDate(updatedShiftStart.time), workShifts[0].date)
-        assertEquals(updatedShiftStart.time, workShifts[0].startedAt)
+        Assertions.assertOffsetDateTimeEquals(updatedShiftStart.time, workShifts[0].startedAt)
 
         // Update work shift end to later
         val updatedShiftEnd = it.manager.workEvents.updateWorkEvent(
