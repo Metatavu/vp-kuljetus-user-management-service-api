@@ -191,8 +191,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         assertEquals(2, workShifts2.size)
         val anotherShift = workShifts2.find { it.startedAt == workEvent3.time }!!
         assertNotNull(anotherShift)
-        assertEquals(getWorkEventDate(workEvent3.time), anotherShift.startedAt)
-        assertEquals(getWorkEventDate(workEvent4.time), anotherShift.endedAt)
+        assertEquals(workEvent3.time, anotherShift.startedAt)
+        assertEquals(workEvent4.time, anotherShift.endedAt)
         assertEquals(now.minusDays(13).toLocalDate().toString(), anotherShift.date)
 
     }
