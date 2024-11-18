@@ -45,8 +45,8 @@ class WorkShiftController {
         date: LocalDate,
         absenceType: AbsenceType? = null,
         perDiemAllowanceType: PerDiemAllowanceType? = null,
-        startedAt: LocalDate? = null,
-        endedAt: LocalDate? = null,
+        startedAt: OffsetDateTime? = null,
+        endedAt: OffsetDateTime? = null,
         dayOffWorkAllowance: Boolean? = null
     ): WorkShiftEntity {
         val shift = workShiftRepository.create(

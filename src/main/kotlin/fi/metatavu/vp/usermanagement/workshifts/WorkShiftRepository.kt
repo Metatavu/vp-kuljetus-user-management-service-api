@@ -38,8 +38,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         approved: Boolean,
         absence: AbsenceType?,
         perDiemAllowance: PerDiemAllowanceType?,
-        startedAt: LocalDate?,
-        endedAt: LocalDate?,
+        startedAt: OffsetDateTime?,
+        endedAt: OffsetDateTime?,
         dayOffWorkAllowance: Boolean? = null
     ): WorkShiftEntity {
         val employeeWorkShift = WorkShiftEntity()
@@ -80,12 +80,12 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
 
         if (startedAfter != null) {
             queryBuilder.append(" AND startedAt >= :startedAfter")
-            parameters.and("startedAfter", startedAfter.toLocalDate())
+            parameters.and("startedAfter", startedAfter)
         }
 
         if (startedBefore != null) {
             queryBuilder.append(" AND startedAt <= :startedBefore")
-            parameters.and("startedBefore", startedBefore.toLocalDate())
+            parameters.and("startedBefore", startedBefore)
         }
 
         return queryWithCount(
