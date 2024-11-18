@@ -243,8 +243,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         )
         workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
         assertEquals(getWorkEventDate(updatedShiftStart.time), workShifts[0].date)
-        assertEquals(updatedShiftStart.time, workShifts[0].startedAt)
-        assertEquals(updatedShiftEnd.time, workShifts[0].endedAt)
+        Assertions.assertOffsetDateTimeEquals(updatedShiftStart.time, workShifts[0].startedAt)
+        Assertions.assertOffsetDateTimeEquals(updatedShiftEnd.time, workShifts[0].endedAt)
 
 
         // Delete meat cellar event
