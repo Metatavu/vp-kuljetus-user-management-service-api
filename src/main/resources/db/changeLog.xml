@@ -188,4 +188,15 @@
             <column name="notes" type="text"/>
         </addColumn>
     </changeSet>
+
+    <changeSet id="work_shift_processing_tasks" author="katja danilova">
+        <createTable tableName="workshifttask">
+            <column name="id" type="binary(16)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="workshiftid" type="binary(16)">
+                <constraints unique="true" nullable="false" />
+            </column>
+        </createTable>
+    </changeSet>
 </databaseChangeLog>
