@@ -25,6 +25,9 @@ class RabbitMQTestProfile: QuarkusTestProfile {
         config["mp.messaging.outgoing.vp-out.connector"] = "smallrye-rabbitmq"
         config["mp.messaging.outgoing.vp-out.exchange.name"] = EXCHANGE_NAME
 
+        config["workShiftHours.recalculate.interval"] = "disabled"
+        config["workShiftHours.add.interval"] = "disabled"
+
         config["env"] = "TEST"
         return config
     }

@@ -10,6 +10,8 @@ import fi.metatavu.vp.usermanagement.workevents.WorkEventEntity
 import fi.metatavu.vp.usermanagement.workshifthours.workshifthourstasks.WorkShiftTaskEntityRepository
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
+import io.quarkus.hibernate.reactive.panache.Panache
+import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.scheduler.Scheduled
 import io.smallrye.mutiny.Uni
@@ -67,7 +69,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
         delay = 10,
         delayUnit = TimeUnit.SECONDS
     )
-    @WithTransaction
+    @WithSession
     fun updateWorkShiftHours(): Uni<Void> = withCoroutineScope(20000L) {
         val now = System.currentTimeMillis()
         var total = 0
@@ -75,9 +77,13 @@ class WorkShiftHoursController: WithCoroutineScope() {
 
         var workShifts = workShiftController.listUnfinishedWorkShifts(start, searchBatchSize!!)
         while (workShifts.isNotEmpty()) {
-            workShifts.forEach { shift ->
-                if (workShiftTaskRepository.findByWorkShift(shift) == null) {
-                    workShiftTaskRepository.create(UUID.randomUUID(), shift)
+            Panache.withTransaction {
+                withCoroutineScope {
+                    workShifts.forEach { shift ->
+                        if (workShiftTaskRepository.findByWorkShift(shift) == null) {
+                            workShiftTaskRepository.create(UUID.randomUUID(), shift)
+                        }
+                    }
                 }
             }
             total += workShifts.size
@@ -100,12 +106,16 @@ class WorkShiftHoursController: WithCoroutineScope() {
     fun processHours(): Uni<Void> = withCoroutineScope {
         val now = System.currentTimeMillis()
         val scheduledTasks = workShiftTaskRepository.list(0, recalculateBatchSize!!)
-        scheduledTasks.forEach {
+        val tasksToRemove = scheduledTasks.map {
             val shift = workShiftController.findEmployeeWorkShift(shiftId = it.workShiftId)
             if (shift != null) {
                 recalculateWorkShiftHours(shift)
-                workShiftTaskRepository.deleteSuspending(it)
+                return@map it
             }
+            null
+        }
+        tasksToRemove.filterNotNull().forEach {
+            workShiftTaskRepository.deleteSuspending(it)
         }
         logger.debug("Recalculated hours of ${scheduledTasks.size} work shifts in ${System.currentTimeMillis() - now} ms.")
     }.replaceWithVoid()

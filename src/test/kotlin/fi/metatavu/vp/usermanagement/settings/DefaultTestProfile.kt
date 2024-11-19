@@ -15,7 +15,7 @@ class DefaultTestProfile: QuarkusTestProfile {
         config["vp.keycloak.admin.password"] = "test"
         config["vp.vehiclemanagement.telematics.apiKey"] = "test-api-key"
         config["workShiftHours.recalculate.interval"] = "1s"
-        config["workShiftHours.add.interval"] = "1s"
+        config["workShiftHours.add.interval"] = "10s"
         config["env"] = "TEST"
         return config
     }
