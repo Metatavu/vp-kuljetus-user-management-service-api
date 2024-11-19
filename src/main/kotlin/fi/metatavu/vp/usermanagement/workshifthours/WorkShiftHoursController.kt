@@ -137,7 +137,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
             if (nextTime == null || nextTime < workEvent.time) return@forEachIndexed
 
             when (workEvent.workEventType) {
-                WorkEventType.VEGETABLE, WorkEventType.DRY, WorkEventType.MEAT_CELLAR, WorkEventType.MEIRA,
+                WorkEventType.OFFICE, WorkEventType.VEGETABLE, WorkEventType.DRY, WorkEventType.MEAT_CELLAR, WorkEventType.MEIRA,
                 WorkEventType.PALTE, WorkEventType.BREWERY, WorkEventType.GREASE, WorkEventType.OTHER_WORK,
                 WorkEventType.DRIVE, WorkEventType.LOADING, WorkEventType.UNLOADING, WorkEventType.AVAILABILITY -> {
                     addHours(

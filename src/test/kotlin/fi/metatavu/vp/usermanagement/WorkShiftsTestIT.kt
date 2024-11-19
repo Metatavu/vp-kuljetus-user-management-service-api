@@ -5,6 +5,7 @@ import fi.metatavu.vp.test.client.models.EmployeeWorkShift
 import fi.metatavu.vp.test.client.models.PerDiemAllowanceType
 import fi.metatavu.vp.test.client.models.WorkEvent
 import fi.metatavu.vp.test.client.models.WorkEventType
+import fi.metatavu.vp.usermanagement.assertions.Assertions
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
@@ -38,7 +39,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.toLocalDate().toString(),
                 employeeId = employee1,
                 approved = false,
-                startedAt = now.toLocalDate().toString()
+                startedAt = now.toString()
             )
         )
         it.manager.workShifts.createEmployeeWorkShift(
@@ -47,7 +48,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.plusDays(2).toLocalDate().toString(),
                 employeeId = employee2,
                 approved = false,
-                startedAt = now.plusDays(2).toLocalDate().toString(),
+                startedAt = now.plusDays(2).toString(),
             )
         )
         it.manager.workShifts.createEmployeeWorkShift(
@@ -56,7 +57,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.plusDays(3).toLocalDate().toString(),
                 employeeId = employee2,
                 approved = false,
-                startedAt = now.plusDays(3).toLocalDate().toString(),
+                startedAt = now.plusDays(3).toString(),
             )
         )
 
@@ -81,6 +82,22 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
 
         val allShifts4 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2, startedBefore = now.plusDays(2).toString())
         assertEquals(1, allShifts4.size)
+
+        // Employee doesn't have any shifts
+        it.employee.workShifts.assertListCount(employeeId = EMPLOYEE_USER_ID, expectedCount = 0)
+
+        // Create shift for the employee
+        it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = EMPLOYEE_USER_ID,
+            workShift = EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                employeeId = EMPLOYEE_USER_ID,
+                approved = false,
+                startedAt = now.toString()
+            )
+        )
+        // Employee has one shift
+        it.employee.workShifts.assertListCount(employeeId = EMPLOYEE_USER_ID, expectedCount = 1)
     }
 
 
@@ -123,8 +140,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.toLocalDate().toString(),
                 employeeId = employee1.id,
                 approved = false,
-                startedAt = now.toLocalDate().toString(),
-                endedAt = now.plusHours(25).toLocalDate().toString()
+                startedAt = now.toString(),
+                endedAt = now.plusHours(25).toString()
             )
         )
         assertNotNull(created)
@@ -165,18 +182,18 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         val workShifts = tb.manager.workShifts.listEmployeeWorkShifts(employeeId = employeeId)
         assertEquals(1, workShifts.size)
         assertEquals(now.minusDays(10).toLocalDate().toString(), workShifts[0].date)
-        assertEquals(getWorkEventDate(workEvent1.time), workShifts[0].startedAt)
-        assertEquals(getWorkEventDate(workEvent2.time), workShifts[0].endedAt)
+        Assertions.assertOffsetDateTimeEquals(workEvent1.time, workShifts[0].startedAt)
+        Assertions.assertOffsetDateTimeEquals(workEvent2.time, workShifts[0].endedAt)
 
         val workEvent3 = tb.manager.workEvents.createWorkEvent(employeeId, now.minusDays(13).toString(), WorkEventType.SHIFT_START)
         val workEvent4 = tb.manager.workEvents.createWorkEvent(employeeId, now.minusDays(11).toString(), WorkEventType.SHIFT_END)
 
         val workShifts2 = tb.manager.workShifts.listEmployeeWorkShifts(employeeId = employeeId)
         assertEquals(2, workShifts2.size)
-        val anotherShift = workShifts2.find { it.startedAt == getWorkEventDate(workEvent3.time) }!!
+        val anotherShift = workShifts2.find { OffsetDateTime.parse(it.startedAt).toEpochSecond() == OffsetDateTime.parse(workEvent3.time).toEpochSecond() }!!
         assertNotNull(anotherShift)
-        assertEquals(getWorkEventDate(workEvent3.time), anotherShift.startedAt)
-        assertEquals(getWorkEventDate(workEvent4.time), anotherShift.endedAt)
+        Assertions.assertOffsetDateTimeEquals(workEvent3.time, anotherShift.startedAt)
+        Assertions.assertOffsetDateTimeEquals(workEvent4.time, anotherShift.endedAt)
         assertEquals(now.minusDays(13).toLocalDate().toString(), anotherShift.date)
 
     }
@@ -212,7 +229,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         )
         workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
         assertEquals(getWorkEventDate(updatedShiftStart.time), workShifts[0].date)
-        assertEquals(getWorkEventDate(updatedShiftStart.time), workShifts[0].startedAt)
+        Assertions.assertOffsetDateTimeEquals(updatedShiftStart.time, workShifts[0].startedAt)
 
         // Update work shift end to later
         val updatedShiftEnd = it.manager.workEvents.updateWorkEvent(
@@ -226,8 +243,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         )
         workShifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee1.id)
         assertEquals(getWorkEventDate(updatedShiftStart.time), workShifts[0].date)
-        assertEquals(getWorkEventDate(updatedShiftStart.time), workShifts[0].startedAt)
-        assertEquals(getWorkEventDate(updatedShiftEnd.time), workShifts[0].endedAt)
+        Assertions.assertOffsetDateTimeEquals(updatedShiftStart.time, workShifts[0].startedAt)
+        Assertions.assertOffsetDateTimeEquals(updatedShiftEnd.time, workShifts[0].endedAt)
 
 
         // Delete meat cellar event

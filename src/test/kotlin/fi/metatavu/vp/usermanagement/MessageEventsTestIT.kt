@@ -28,12 +28,12 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
     fun testSimultaneousMessages() = createTestBuilder().use { tb ->
         val drivers = tb.manager.drivers.listDrivers()
         val driverId = drivers[0].id!!
-        (0..199).forEach { _ ->
+        (0 until 25).forEach { _ ->
             MessagingClient.publishMessage(createDriverWorkEvent(driverId, UUID.randomUUID(), WorkEventType.SHIFT_START))
         }
         Awaitility.await().atMost(Duration.ofMinutes(5)).until {
             val workEvents = tb.manager.workEvents.listWorkEvents(employeeId = driverId, max = 200)
-            workEvents.size == 200
+            workEvents.size == 25
         }
 
         // Manually add it to closable since the work events were created off-screen

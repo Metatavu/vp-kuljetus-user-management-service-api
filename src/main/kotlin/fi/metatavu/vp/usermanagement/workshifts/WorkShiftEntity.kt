@@ -4,6 +4,7 @@ import fi.metatavu.vp.usermanagement.model.AbsenceType
 import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
 import jakarta.persistence.*
 import java.time.LocalDate
+import java.time.OffsetDateTime
 import java.util.*
 
 /**
@@ -32,10 +33,10 @@ class WorkShiftEntity {
     var perDiemAllowance: PerDiemAllowanceType? = null
 
     @Column
-    var startedAt: LocalDate? = null
+    var startedAt: OffsetDateTime? = null
 
     @Column
-    var endedAt: LocalDate? = null
+    var endedAt: OffsetDateTime? = null
 
     @Column
     var dayOffWorkAllowance: Boolean? = null

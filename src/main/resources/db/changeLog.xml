@@ -189,6 +189,15 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="work_shift_started_at_and_ended_at_to_date_time" author="Ville Juutila">
+        <modifyDataType tableName="workshift" columnName="startedat" newDataType="datetime(6)"/>
+        <modifyDataType tableName="workshift" columnName="endedat" newDataType="datetime(6)"/>
+        <sql>
+            UPDATE workshift SET startedat = CAST(startedat AS datetime(6));
+            UPDATE workshift SET endedat = CAST(endedat AS datetime(6));
+        </sql>
+    </changeSet>
+
     <changeSet id="work_shift_processing_tasks" author="katja danilova">
         <createTable tableName="workshifttask">
             <column name="id" type="binary(16)">

@@ -256,9 +256,9 @@ class WorkEventController {
         workShift.endedAt = null
         workEventsForShift.forEach { workEvent ->
             if (workEvent.workEventType == WorkEventType.SHIFT_START) {
-                workShift.startedAt = workEvent.time.toLocalDate()
+                workShift.startedAt = workEvent.time
             } else if (workEvent.workEventType == WorkEventType.SHIFT_END) {
-                workShift.endedAt = workEvent.time.toLocalDate()
+                workShift.endedAt = workEvent.time
             }
         }
 
