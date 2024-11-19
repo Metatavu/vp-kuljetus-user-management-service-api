@@ -55,7 +55,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
     val recalculateBatchSize: Int? = 5
 
     @ConfigProperty(name = "workShiftHours.add.batch")
-    val searchBatchSize: Int? = 50
+    val searchBatchSize: Int? = 100
 
     /**
      * Finds work shifts that need to have their hours recalculated and adds them to
