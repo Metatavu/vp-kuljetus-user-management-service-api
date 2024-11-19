@@ -33,12 +33,12 @@ class WorkShiftTaskEntityRepository : AbstractRepository<WorkShiftTaskEntity, UU
     /**
      * Lists work shift tasks
      *
-     * @param page page number
-     * @param size page size
+     * @param start start
+     * @param end end
      * @return work shift task list
      */
-    suspend fun list(page: Int, size: Int): List<WorkShiftTaskEntity> {
-        return findAll().page<WorkShiftTaskEntity>(page, size).list<WorkShiftTaskEntity>().awaitSuspending()
+    suspend fun list(start: Int, end: Int): List<WorkShiftTaskEntity> {
+        return findAll().range<WorkShiftTaskEntity>(start, end).list<WorkShiftTaskEntity>().awaitSuspending()
     }
 
     /**

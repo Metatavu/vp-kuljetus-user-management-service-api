@@ -15,6 +15,7 @@ import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.scheduler.Scheduled
 import io.smallrye.mutiny.Uni
+import io.smallrye.mutiny.coroutines.awaitSuspending
 import io.vertx.core.Vertx
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -85,7 +86,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
                         }
                     }
                 }
-            }
+            }.awaitSuspending()
             total += workShifts.size
             start += searchBatchSize!!
             workShifts = workShiftController.listUnfinishedWorkShifts(start, searchBatchSize!! + start)
@@ -106,16 +107,12 @@ class WorkShiftHoursController: WithCoroutineScope() {
     fun processHours(): Uni<Void> = withCoroutineScope {
         val now = System.currentTimeMillis()
         val scheduledTasks = workShiftTaskRepository.list(0, recalculateBatchSize!!)
-        val tasksToRemove = scheduledTasks.map {
+        scheduledTasks.forEach {
             val shift = workShiftController.findEmployeeWorkShift(shiftId = it.workShiftId)
             if (shift != null) {
                 recalculateWorkShiftHours(shift)
-                return@map it
+                workShiftTaskRepository.deleteSuspending(it)
             }
-            null
-        }
-        tasksToRemove.filterNotNull().forEach {
-            workShiftTaskRepository.deleteSuspending(it)
         }
         logger.debug("Recalculated hours of ${scheduledTasks.size} work shifts in ${System.currentTimeMillis() - now} ms.")
     }.replaceWithVoid()
