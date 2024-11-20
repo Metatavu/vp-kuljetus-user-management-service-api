@@ -17,16 +17,16 @@ class WorkShiftTaskEntityRepository : AbstractRepository<WorkShiftTaskEntity, UU
      * Creates a new work shift task record
      *
      * @param id id
-     * @param workShift work shift
+     * @param workShiftId work shift id
      * @return created entity
      */
     suspend fun create(
         id: UUID,
-        workShift: WorkShiftEntity
+        workShiftId: UUID
     ): WorkShiftTaskEntity {
         val new = WorkShiftTaskEntity()
         new.id = id
-        new.workShiftId = workShift.id
+        new.workShiftId = workShiftId
         return persist(new).awaitSuspending()
     }
 

@@ -82,7 +82,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
                 withCoroutineScope {
                     workShifts.forEach { shift ->
                         if (workShiftTaskRepository.findByWorkShift(shift) == null) {
-                            workShiftTaskRepository.create(UUID.randomUUID(), shift)
+                            workShiftTaskRepository.create(UUID.randomUUID(), shift.id)
                         }
                     }
                 }
@@ -108,10 +108,14 @@ class WorkShiftHoursController: WithCoroutineScope() {
         val now = System.currentTimeMillis()
         val scheduledTasks = workShiftTaskRepository.list(0, recalculateBatchSize!!)
         scheduledTasks.forEach {
-            val shift = workShiftController.findEmployeeWorkShift(shiftId = it.workShiftId)
-            if (shift != null) {
-                recalculateWorkShiftHours(shift)
-                workShiftTaskRepository.deleteSuspending(it)
+            try {
+                val shift = workShiftController.findEmployeeWorkShift(shiftId = it.workShiftId)
+                if (shift != null) {
+                    recalculateWorkShiftHours(shift)
+                    workShiftTaskRepository.deleteSuspending(it)
+                }
+            } catch (ex: Exception) {
+                logger.warn("Error recalculating hours of shift ${it.workShiftId}")
             }
         }
         logger.debug("Recalculated hours of ${scheduledTasks.size} work shifts in ${System.currentTimeMillis() - now} ms.")
