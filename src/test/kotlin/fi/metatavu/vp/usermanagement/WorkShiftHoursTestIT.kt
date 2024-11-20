@@ -198,7 +198,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
     }
 
     /**
-     * Tests that the hours of shifts that are not ended and are ongoing are calculated correctly (based on the current time)
+     * This is not a completed test since the work shifts by default are expected to have the calculatedHours filled.
+     * This tests verifies if it is possible to run the task to update those hours
      */
    @Test
     fun testOngoingWorkShiftHoursCalculation() = createTestBuilder().use { tb ->
@@ -214,15 +215,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             )
         )
         tb.manager.workEvents.createWorkEvent(employee1, now.minusHours(1).toString(), WorkEventType.BREWERY)
-
-        Awaitility.await()
-            .pollDelay(Duration.ofMinutes(1))
-            .atMost(Duration.ofMinutes(3))
-            .untilAsserted {
-                val workShiftHours = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee1)
-                assertEquals(WorkType.entries.size, workShiftHours.size)
-                assertTrue(workShiftHours.find { it.workType == WorkType.PAID_WORK }?.calculatedHours!! > 1.0)
-            }
+        tb.setCronKey("test-cron-key").workShifts.recalculateWorkShiftHours(2)
     }
 
     /**

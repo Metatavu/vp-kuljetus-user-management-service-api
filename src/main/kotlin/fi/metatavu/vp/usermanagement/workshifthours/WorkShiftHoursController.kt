@@ -7,25 +7,17 @@ import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.workevents.WorkEventEntity
-import fi.metatavu.vp.usermanagement.workshifthours.workshifthourstasks.WorkShiftTaskEntityRepository
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
-import io.quarkus.hibernate.reactive.panache.Panache
-import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
-import io.quarkus.scheduler.Scheduled
-import io.smallrye.mutiny.Uni
-import io.smallrye.mutiny.coroutines.awaitSuspending
+import io.quarkus.vertx.ConsumeEvent
 import io.vertx.core.Vertx
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.eclipse.microprofile.config.inject.ConfigProperty
-import org.jboss.logging.Logger
 import java.time.DayOfWeek
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 /**
  * Controller for Work Shift Hours
@@ -48,88 +40,31 @@ class WorkShiftHoursController: WithCoroutineScope() {
     @Inject
     lateinit var vertx: Vertx
 
-    @Inject
-    lateinit var logger: Logger
-
-    @Inject
-    lateinit var workShiftTaskRepository: WorkShiftTaskEntityRepository
-
-    @ConfigProperty(name = "workShiftHours.recalculate.batch")
-    val recalculateBatchSize: Int? = 5
-
-    @ConfigProperty(name = "workShiftHours.add.batch")
-    val searchBatchSize: Int? = 100
-
     /**
-     * Finds work shifts that need to have their hours recalculated and adds them to
-     * the db table for further processing in processHours() method.
+     * Event for calculating hours for work shift
+     *
+     * @param shiftId shift id
      */
-    @Scheduled(
-        concurrentExecution = Scheduled.ConcurrentExecution.SKIP,
-        every = "\${workShiftHours.add.interval}",
-        delay = 10,
-        delayUnit = TimeUnit.SECONDS
-    )
-    @WithSession
-    fun updateWorkShiftHours(): Uni<Void> = withCoroutineScope(20000L) {
-        val now = System.currentTimeMillis()
-        var total = 0
-        var start = 0
-
-        var workShifts = workShiftController.listUnfinishedWorkShifts(start, searchBatchSize!!)
-        while (workShifts.isNotEmpty()) {
-            Panache.withTransaction {
-                withCoroutineScope {
-                    workShifts.forEach { shift ->
-                        if (workShiftTaskRepository.findByWorkShift(shift) == null) {
-                            workShiftTaskRepository.create(UUID.randomUUID(), shift.id)
-                        }
-                    }
-                }
-            }.awaitSuspending()
-            total += workShifts.size
-            start += searchBatchSize!!
-            workShifts = workShiftController.listUnfinishedWorkShifts(start, searchBatchSize!! + start)
-        }
-        logger.info("Added hours of $total work shifts for future processing in ${System.currentTimeMillis() - now} ms.")
-    }.replaceWithVoid()
-
-    /**
-     * Processes n records of work shifts to be updated
-     */
-    @Scheduled(
-        concurrentExecution = Scheduled.ConcurrentExecution.SKIP,
-        every = "\${workShiftHours.recalculate.interval}",
-        delay = 10,
-        delayUnit = TimeUnit.SECONDS
-    )
+    @ConsumeEvent("workShiftHours.calculate")
     @WithTransaction
-    fun processHours(): Uni<Void> = withCoroutineScope {
-        val now = System.currentTimeMillis()
-        val scheduledTasks = workShiftTaskRepository.list(0, recalculateBatchSize!!)
-        scheduledTasks.forEach {
-            try {
-                val shift = workShiftController.findEmployeeWorkShift(shiftId = it.workShiftId)
-                if (shift != null) {
-                    recalculateWorkShiftHours(shift)
-                    workShiftTaskRepository.deleteSuspending(it)
-                }
-            } catch (ex: Exception) {
-                logger.warn("Error recalculating hours of shift ${it.workShiftId}")
-            }
-        }
-        logger.debug("Recalculated hours of ${scheduledTasks.size} work shifts in ${System.currentTimeMillis() - now} ms.")
+    fun recalculateHours(
+        shiftId: UUID
+    ) = withCoroutineScope {
+        val workShift = workShiftController.findEmployeeWorkShift(shiftId = shiftId) ?: return@withCoroutineScope
+        recalculateWorkShiftHours(workShift)
     }.replaceWithVoid()
 
     /**
-     * Recalculates work shift hours for a work shift, saving the updated hours to the database
+     * Recalculates work shift hours for a work shift, saving the updated hours to the database.
+     * Calculates all the hours but if the shift is still ongoing (latest event is not shift_end), ignores the last work
+     * event.
      *
      * @param workShift work shift
      * @return recalculated work shift hours
      */
     suspend fun recalculateWorkShiftHours(
         workShift: WorkShiftEntity,
-    ): List<WorkShiftHoursEntity> {
+    ) {
         val publicHolidays = holidayController.list().first
         val updatableWorkShiftHours = listWorkShiftHours(workShiftFilter = workShift).first
 
@@ -139,10 +74,10 @@ class WorkShiftHoursController: WithCoroutineScope() {
         workEvents.forEachIndexed { index, workEvent ->
             val isShiftOffWork = isDayOffWork(workEvent)
 
-            var nextTime = workEvents.getOrNull(index + 1)?.time
+            val nextTime = workEvents.getOrNull(index + 1)?.time
             if (index == workEvents.size - 1 && workEvent.workEventType != WorkEventType.SHIFT_END) {
-                //if this is the last event and it is not a shift end still continue counting
-                nextTime = OffsetDateTime.now()
+                //if this is the last event and it is not a shift end then do not calculate
+                return@forEachIndexed
             }
 
             if (nextTime == null || nextTime < workEvent.time) return@forEachIndexed
@@ -185,7 +120,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
             }
         }
 
-        return updatableWorkShiftHours.map {
+        updatableWorkShiftHours.forEach {
             it.calculatedHours = temporaryHoursForTypes[it.workType]
             workShiftHoursRepository.persistSuspending(it)
         }

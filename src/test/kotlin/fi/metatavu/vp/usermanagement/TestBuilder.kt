@@ -38,7 +38,18 @@ class TestBuilder(private val config: Map<String, String>): AbstractAccessTokenT
      */
     fun setApiKey(apiKey: String? = null): TestBuilderAuthentication {
         val key = apiKey ?: "test-api-key"
-        return TestBuilderAuthentication(this, NullAccessTokenProvider(), key)
+        return TestBuilderAuthentication(this, NullAccessTokenProvider(), apiKey = key)
+    }
+
+    /**
+     * Returns authentication with cron key
+     *
+     * @param cronKey cron task key
+     * @return authorized client
+     */
+    fun setCronKey(cronKey: String? = null): TestBuilderAuthentication {
+        val key = cronKey ?: "test-cron-key"
+        return TestBuilderAuthentication(this, NullAccessTokenProvider(), cronKey = key)
     }
 
     /**

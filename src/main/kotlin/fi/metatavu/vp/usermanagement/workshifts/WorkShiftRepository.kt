@@ -96,20 +96,20 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
     }
 
     /**
-     * Lists all work shifts with endedAt property null
+     * Lists all finished work shifts with missing calculated hours
      *
      * @param first first
      * @param last last
      * @return unfinished work shift list
      */
-    suspend fun listUnfinishedWorkShifts(
+    suspend fun listsNotCalculatedWorkShifts(
         first: Int,
         last: Int
     ): List<WorkShiftEntity> {
         val query = """
         SELECT ws FROM WorkShiftEntity ws
         LEFT JOIN WorkShiftHoursEntity wh ON ws.id = wh.workShift.id
-        WHERE ws.endedAt IS NULL OR wh.calculatedHours IS NULL
+        WHERE wh.calculatedHours IS NULL AND ws.endedAt IS NOT NULL
         """
         return find(query).range<WorkShiftEntity>(first, last).list<WorkShiftEntity>().awaitSuspending()
     }

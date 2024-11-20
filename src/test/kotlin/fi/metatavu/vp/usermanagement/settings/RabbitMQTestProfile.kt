@@ -15,6 +15,7 @@ class RabbitMQTestProfile: QuarkusTestProfile {
         config["vp.keycloak.admin.password"] = "test"
         config["workShiftHours.recalculate.interval"] = "1s"
         config["vp.vehiclemanagement.telematics.apiKey"] = "test-api-key"
+        config["vp.vehiclemanagement.cron.apiKey"] = "test-cron-key"
 
         config["mp.messaging.incoming.vp-in.connector"] = "smallrye-rabbitmq"
         config["mp.messaging.incoming.vp-in.queue.name"] = "incoming_queue"
@@ -24,9 +25,6 @@ class RabbitMQTestProfile: QuarkusTestProfile {
 
         config["mp.messaging.outgoing.vp-out.connector"] = "smallrye-rabbitmq"
         config["mp.messaging.outgoing.vp-out.exchange.name"] = EXCHANGE_NAME
-
-        config["workShiftHours.recalculate.interval"] = "disabled"
-        config["workShiftHours.add.interval"] = "disabled"
 
         config["env"] = "TEST"
         return config

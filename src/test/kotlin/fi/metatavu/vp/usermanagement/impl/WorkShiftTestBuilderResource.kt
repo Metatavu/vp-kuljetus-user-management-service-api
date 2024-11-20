@@ -20,6 +20,7 @@ import java.util.*
 class WorkShiftTestBuilderResource(
     testBuilder: TestBuilder,
     private val accessTokenProvider: AccessTokenProvider?,
+    private val cronKey: String?,
     apiClient: ApiClient
 ) : ApiTestBuilderResource<EmployeeWorkShift, ApiClient>(testBuilder, apiClient) {
 
@@ -30,6 +31,10 @@ class WorkShiftTestBuilderResource(
     }
 
     override fun getApi(): EmployeeWorkShiftsApi {
+        if (cronKey != null) {
+            ApiClient.apiKey["X-CRON-Key"] = cronKey
+        }
+
         ApiClient.accessToken = accessTokenProvider?.accessToken
         return EmployeeWorkShiftsApi(ApiTestSettings.apiBasePath)
     }
@@ -69,6 +74,15 @@ class WorkShiftTestBuilderResource(
      */
     fun createEmployeeWorkShift(employeeId: UUID, workShift: EmployeeWorkShift): EmployeeWorkShift {
         return addClosable(api.createEmployeeWorkShift(employeeId, workShift))
+    }
+
+    /**
+     * Starts the task of recalculating n finished work shifts with null calculated hours
+     *
+     * @param number uncalculated work shifts to recalculate
+     */
+    fun recalculateWorkShiftHours(number: Int) {
+        return api.recalculateWorkHours(number)
     }
 
     /**
