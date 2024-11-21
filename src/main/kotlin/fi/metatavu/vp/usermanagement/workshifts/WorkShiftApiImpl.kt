@@ -53,6 +53,10 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
         createOk(workShiftTranslator.translate(employeeWorkShifts), count)
     }
 
+    override fun recalculateWorkHours(count: Int?): Uni<Response> = withCoroutineScope {
+        createOk()
+    }
+
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
     override fun createEmployeeWorkShift(employeeId: UUID, employeeWorkShift: EmployeeWorkShift): Uni<Response> {

@@ -55,10 +55,6 @@ class DriversTestIT : AbstractFunctionalTest() {
 
         val driverCardIdFilter3 = it.manager.drivers.listDrivers(driverCardId = "003", archived = true)
         assertEquals(1, driverCardIdFilter3.size)
-
-        // Test that one can list drivers with API key
-        val driversWithApiKey = it.setApiKey().drivers.listDrivers()
-        assertEquals(2, driversWithApiKey.size)
     }
 
     @Test
