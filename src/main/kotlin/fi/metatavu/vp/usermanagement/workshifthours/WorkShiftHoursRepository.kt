@@ -21,7 +21,6 @@ class WorkShiftHoursRepository: AbstractRepository<WorkShiftHoursEntity, UUID>()
      * @param id id
      * @param workShiftEntity work shift entity
      * @param workType work type
-     * @param actualHours actual hours
      * @return created work shift hours
      */
     suspend fun create(
@@ -33,6 +32,7 @@ class WorkShiftHoursRepository: AbstractRepository<WorkShiftHoursEntity, UUID>()
         workShiftHours.id = id
         workShiftHours.workShift = workShiftEntity
         workShiftHours.workType = workType
+        workShiftHours.calculatedHours = 0.0F
         return persistSuspending(workShiftHours)
     }
 

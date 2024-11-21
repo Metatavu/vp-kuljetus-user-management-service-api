@@ -153,6 +153,62 @@ class WorkShiftHoursController: WithCoroutineScope() {
     }
 
     /**
+     * Creates a new work shift hours record for each work type
+     *
+     * @param workShiftEntity work shift entity
+     * @param actualHours actual hours
+     * @return created work shift hours
+     */
+    suspend fun createWorkShiftHours(
+        workShiftEntity: WorkShiftEntity,
+        actualHours: Float? = null
+    ): List<WorkShiftHoursEntity> {
+        return WorkType.entries.map {
+            val created = workShiftHoursRepository.create(
+                id = UUID.randomUUID(),
+                workShiftEntity = workShiftEntity,
+                workType = it
+            )
+
+            created
+        }
+    }
+
+    /**
+     * Finds work shift hours by id
+     *
+     * @param workShiftHoursId work shift hours id
+     * @return work shift hours or null if not found
+     */
+    suspend fun findWorkShiftHours(workShiftHoursId: UUID): WorkShiftHoursEntity? {
+        return workShiftHoursRepository.findByIdSuspending(workShiftHoursId)
+    }
+
+    /**
+     * Updates work shift hours (only actual hours)
+     *
+     * @param existingWorkShiftHours existing work shift hours
+     * @param actualHours actualHours
+     * @return updated work shift hours
+     */
+    suspend fun updateWorkShiftHours(
+        existingWorkShiftHours: WorkShiftHoursEntity,
+        actualHours: Float?
+    ): WorkShiftHoursEntity {
+        existingWorkShiftHours.actualHours = actualHours
+        return workShiftHoursRepository.persistSuspending(existingWorkShiftHours)
+    }
+
+    /**
+     * Deletes work shift hours
+     *
+     * @param workShiftHours work shift hours
+     */
+    suspend fun deleteWorkShiftHours(workShiftHours: WorkShiftHoursEntity) {
+        workShiftHoursRepository.deleteSuspending(workShiftHours)
+    }
+
+    /**
      * Checks if the work event is a day off work
      *
      * @param workEvent work event
@@ -315,7 +371,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
      * @param publicHolidays list of public holidays (for holiday allowance)
      * @param isShiftOffWork is day off work (based on the shifts) (for holiday allowance)
      */
-    fun addHours(
+    private fun addHours(
         temporaryHoursForTypes: MutableMap<WorkType, Float>,
         workEventTime: OffsetDateTime,
         nextWorkEventTime: OffsetDateTime,
@@ -336,60 +392,5 @@ class WorkShiftHoursController: WithCoroutineScope() {
         }
     }
 
-    /**
-     * Creates a new work shift hours record for each work type
-     *
-     * @param workShiftEntity work shift entity
-     * @param actualHours actual hours
-     * @return created work shift hours
-     */
-    suspend fun createWorkShiftHours(
-        workShiftEntity: WorkShiftEntity,
-        actualHours: Float? = null
-    ): List<WorkShiftHoursEntity> {
-        return WorkType.entries.map {
-            val created = workShiftHoursRepository.create(
-                id = UUID.randomUUID(),
-                workShiftEntity = workShiftEntity,
-                workType = it
-            )
-
-            created
-        }
-    }
-
-    /**
-     * Finds work shift hours by id
-     *
-     * @param workShiftHoursId work shift hours id
-     * @return work shift hours or null if not found
-     */
-    suspend fun findWorkShiftHours(workShiftHoursId: UUID): WorkShiftHoursEntity? {
-        return workShiftHoursRepository.findByIdSuspending(workShiftHoursId)
-    }
-
-    /**
-     * Updates work shift hours (only actual hours)
-     *
-     * @param existingWorkShiftHours existing work shift hours
-     * @param actualHours actualHours
-     * @return updated work shift hours
-     */
-    suspend fun updateWorkShiftHours(
-        existingWorkShiftHours: WorkShiftHoursEntity,
-        actualHours: Float?
-    ): WorkShiftHoursEntity {
-        existingWorkShiftHours.actualHours = actualHours
-        return workShiftHoursRepository.persistSuspending(existingWorkShiftHours)
-    }
-
-    /**
-     * Deletes work shift hours
-     *
-     * @param workShiftHours work shift hours
-     */
-    suspend fun deleteWorkShiftHours(workShiftHours: WorkShiftHoursEntity) {
-        workShiftHoursRepository.deleteSuspending(workShiftHours)
-    }
 
 }
