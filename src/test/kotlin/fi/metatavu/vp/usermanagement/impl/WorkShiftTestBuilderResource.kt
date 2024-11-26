@@ -40,6 +40,8 @@ class WorkShiftTestBuilderResource(
      * @param employeeId employee id
      * @param startedAfter started after
      * @param startedBefore started before
+     * @param dateAfter date after
+     * @param dateBefore date before
      * @param first first
      * @param max max
      * @return list of work shifts
@@ -48,6 +50,8 @@ class WorkShiftTestBuilderResource(
         employeeId: UUID,
         startedAfter: String? = null,
         startedBefore: String? = null,
+        dateAfter: String? = null,
+        dateBefore: String? = null,
         first: Int? = 0,
         max: Int? = 10
     ): Array<EmployeeWorkShift> {
@@ -55,6 +59,8 @@ class WorkShiftTestBuilderResource(
             employeeId = employeeId,
             startedBefore = startedBefore,
             startedAfter = startedAfter,
+            dateAfter = dateAfter,
+            dateBefore = dateBefore,
             first = first,
             max = max
         )
@@ -149,8 +155,8 @@ class WorkShiftTestBuilderResource(
      * @param first first
      * @param max max
      */
-    fun assertListCount(employeeId: UUID, startedAfter: String? = null, startedBefore: String? = null, expectedCount: Int, first: Int? = 0, max: Int? = 10) {
-        val list = listEmployeeWorkShifts(employeeId, startedAfter, startedBefore, first, max)
+    fun assertListCount(employeeId: UUID, startedAfter: String? = null, startedBefore: String? = null, dateAfter: String? = null, dateBefore: String? = null, expectedCount: Int, first: Int? = 0, max: Int? = 10) {
+        val list = listEmployeeWorkShifts(employeeId, startedAfter, startedBefore, dateAfter, dateBefore, first, max)
         Assert.assertEquals(expectedCount, list.size)
     }
 }

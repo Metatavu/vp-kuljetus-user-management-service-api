@@ -196,7 +196,9 @@ class WorkShiftHoursController: WithCoroutineScope() {
         val shiftsDuringThisDay = workShiftController.listEmployeeWorkShifts(
             employeeId = workEvent.employeeId,
             startedAfter = workEvent.time.withHour(0).withMinute(0).withSecond(0),
-            startedBefore = workEvent.time.withHour(23).withMinute(59).withSecond(59)
+            startedBefore = workEvent.time.withHour(23).withMinute(59).withSecond(59),
+            dateAfter = null,
+            dateBefore = null
         ).first
 
         return shiftsDuringThisDay.any { it.dayOffWorkAllowance == true }

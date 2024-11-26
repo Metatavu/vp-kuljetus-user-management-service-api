@@ -41,15 +41,25 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
         employeeId: UUID,
         startedAfter: OffsetDateTime?,
         startedBefore: OffsetDateTime?,
+        dateAfter: OffsetDateTime?,
+        dateBefore: OffsetDateTime?,
         first: Int,
         max: Int
     ): Uni<Response> = withCoroutineScope {
-        val employee = employeeController.find(employeeId)
+        employeeController.find(employeeId)
           ?: return@withCoroutineScope createNotFoundWithMessage(EMPLOYEE_ENTITY, employeeId)
         if (!isManager() && employeeId != loggedUserId ) {
             return@withCoroutineScope createForbidden("Employees can only list their own work shifts")
         }
-        val (employeeWorkShifts, count) = workShiftController.listEmployeeWorkShifts(employee, startedAfter, startedBefore, first, max)
+        val (employeeWorkShifts, count) = workShiftController.listEmployeeWorkShifts(
+            employeeId = employeeId,
+            startedAfter = startedAfter,
+            startedBefore = startedBefore,
+            dateAfter = dateAfter,
+            dateBefore = dateBefore,
+            first = first,
+            max = max
+        )
         createOk(workShiftTranslator.translate(employeeWorkShifts), count)
     }
 

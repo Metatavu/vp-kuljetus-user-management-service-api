@@ -85,35 +85,11 @@ class WorkShiftController {
     /**
      * Lists employee work shifts
      *
-     * @param employee employee
-     * @param startedAfter started after
-     * @param startedBefore started before
-     * @param first first
-     * @param max max
-     * @return pair of list of employee work shifts and count
-     */
-    suspend fun listEmployeeWorkShifts(
-        employee: UserRepresentation,
-        startedAfter: OffsetDateTime?,
-        startedBefore: OffsetDateTime?,
-        first: Int,
-        max: Int
-    ): Pair<List<WorkShiftEntity>, Long> {
-        return listEmployeeWorkShifts(
-            UUID.fromString(employee.id),
-            startedAfter,
-            startedBefore,
-            first,
-            max
-        )
-    }
-
-    /**
-     * Lists employee work shifts
-     *
      * @param employeeId employee ID
      * @param startedAfter started after
      * @param startedBefore started before
+     * @param dateAfter date after
+     * @param dateBefore date before
      * @param first first
      * @param max max
      * @return pair of list of employee work shifts and count
@@ -122,6 +98,8 @@ class WorkShiftController {
         employeeId: UUID,
         startedAfter: OffsetDateTime?,
         startedBefore: OffsetDateTime?,
+        dateAfter: OffsetDateTime?,
+        dateBefore: OffsetDateTime?,
         first: Int? = null,
         max: Int? = null
     ): Pair<List<WorkShiftEntity>, Long> {
@@ -129,6 +107,8 @@ class WorkShiftController {
             employeeId,
             startedAfter,
             startedBefore,
+            dateAfter,
+            dateBefore,
             first,
             max
         )

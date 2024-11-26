@@ -83,6 +83,12 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         val allShifts4 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2, startedBefore = now.plusDays(2).toString())
         assertEquals(1, allShifts4.size)
 
+        val byDate = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2, dateAfter = now.plusDays(3).toString())
+        assertEquals(2, byDate.size)
+
+        val byDate1 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2, dateBefore = now.plusDays(2).toString())
+        assertEquals(1, byDate1.size)
+
         // Employee doesn't have any shifts
         it.employee.workShifts.assertListCount(employeeId = EMPLOYEE_USER_ID, expectedCount = 0)
 
