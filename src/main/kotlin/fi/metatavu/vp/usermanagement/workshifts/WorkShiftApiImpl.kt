@@ -40,7 +40,7 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
     @ConfigProperty(name = "env")
     lateinit var env: Optional<String>
 
-    @ConfigProperty(name = "vp.vehiclemanagement.cron.apiKey")
+    @ConfigProperty(name = "vp.usermanagement.cron.apiKey")
     lateinit var cronKey: String
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
