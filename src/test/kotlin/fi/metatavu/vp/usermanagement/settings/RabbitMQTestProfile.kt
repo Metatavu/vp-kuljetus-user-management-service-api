@@ -15,6 +15,7 @@ class RabbitMQTestProfile: QuarkusTestProfile {
         config["vp.keycloak.admin.password"] = "test"
         config["workShiftHours.recalculate.interval"] = "1s"
         config["vp.vehiclemanagement.telematics.apiKey"] = "test-api-key"
+        config["vp.usermanagement.cron.apiKey"] = "test-cron-key"
 
         config["mp.messaging.incoming.vp-in.connector"] = "smallrye-rabbitmq"
         config["mp.messaging.incoming.vp-in.queue.name"] = "incoming_queue"

@@ -7,6 +7,7 @@ import fi.metatavu.vp.usermanagement.users.UserController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
+import io.vertx.mutiny.core.eventbus.EventBus
 import jakarta.annotation.security.RolesAllowed
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
@@ -33,8 +34,14 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
     @Inject
     lateinit var employeeController: UserController
 
+    @Inject
+    lateinit var eventBus: EventBus
+
     @ConfigProperty(name = "env")
     lateinit var env: Optional<String>
+
+    @ConfigProperty(name = "vp.usermanagement.cron.apiKey")
+    lateinit var cronKey: String
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
     override fun listEmployeeWorkShifts(
@@ -61,10 +68,6 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
             max = max
         )
         createOk(workShiftTranslator.translate(employeeWorkShifts), count)
-    }
-
-    override fun recalculateWorkHours(count: Int?): Uni<Response> = withCoroutineScope {
-        createOk()
     }
 
     @RolesAllowed(MANAGER_ROLE)
@@ -141,5 +144,23 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
         )
 
         createOk(workShiftTranslator.translate(updated))
+    }
+
+    /**
+     * Calculates the work hours for {count} shifts which were ended but their hours not yet calculated
+     */
+    @WithSession
+    override fun recalculateWorkHours(count: Int?): Uni<Response> = withCoroutineScope {
+        if (requestCronKey != cronKey) {
+            return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
+        }
+
+        val lastRecord = count ?: 5
+        val workShifts = workShiftController.listUnfinishedWorkShifts(0, lastRecord)
+        workShifts.forEach {
+            eventBus.send("workShiftHours.calculate", it.id)
+        }
+
+        createOk()
     }
 }

@@ -9,21 +9,15 @@ import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.workevents.WorkEventEntity
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
-import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
-import io.quarkus.scheduler.Scheduled
 import io.quarkus.vertx.ConsumeEvent
-import io.smallrye.mutiny.Uni
 import io.vertx.core.Vertx
-import io.vertx.mutiny.core.eventbus.EventBus
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.jboss.logging.Logger
 import java.time.DayOfWeek
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 /**
  * Controller for Work Shift Hours
@@ -46,59 +40,31 @@ class WorkShiftHoursController: WithCoroutineScope() {
     @Inject
     lateinit var vertx: Vertx
 
-    @Inject
-    lateinit var eventBus: EventBus
-
-    @Inject
-    lateinit var logger: Logger
-
     /**
-     * Method to periodically recalculate work shift hours
+     * Event for calculating hours for work shift
+     *
+     * @param shiftId shift id
      */
-    @Scheduled(
-        concurrentExecution = Scheduled.ConcurrentExecution.SKIP,
-        every = "\${workShiftHours.recalculate.interval}",
-        delay = 10,
-        delayUnit = TimeUnit.SECONDS
-    )
-    @WithSession
-    fun updateWorkShiftHours(): Uni<Void> = withCoroutineScope() {
-        logger.debug("Processing the active work shift hours.")
-        val now = System.currentTimeMillis()
-        var total = 0
-        var start = 0
-        val step = 100
-
-        var workShifts = workShiftController.listUnfinishedWorkShifts(start, step + start)
-        while (workShifts.isNotEmpty()) {
-            workShifts.forEach { shift ->
-                eventBus.publish("workShiftHours.update", shift.id)
-            }
-            total += workShifts.size
-            start += step
-            workShifts = workShiftController.listUnfinishedWorkShifts(start, step + start)
-        }
-        logger.info("Processed hours of $total work shifts in ${System.currentTimeMillis() - now} ms.")
-    }.replaceWithVoid()
-
-    @ConsumeEvent("workShiftHours.update")
+    @ConsumeEvent("workShiftHours.calculate")
     @WithTransaction
-    fun consume(shiftId: UUID): Uni<Void> = withCoroutineScope {
-        val now = System.currentTimeMillis()
+    fun recalculateHours(
+        shiftId: UUID
+    ) = withCoroutineScope {
         val workShift = workShiftController.findEmployeeWorkShift(shiftId = shiftId) ?: return@withCoroutineScope
         recalculateWorkShiftHours(workShift)
-        logger.debug("Processed work shift hours in ${System.currentTimeMillis() - now} ms.")
     }.replaceWithVoid()
 
     /**
-     * Recalculates work shift hours for a work shift, saving the updated hours to the database
+     * Recalculates work shift hours for a work shift, saving the updated hours to the database.
+     * Calculates all the hours but if the shift is still ongoing (latest event is not shift_end), ignores the last work
+     * event.
      *
      * @param workShift work shift
      * @return recalculated work shift hours
      */
     suspend fun recalculateWorkShiftHours(
         workShift: WorkShiftEntity,
-    ): List<WorkShiftHoursEntity> {
+    ) {
         val publicHolidays = holidayController.list().first
         val updatableWorkShiftHours = listWorkShiftHours(workShiftFilter = workShift).first
 
@@ -108,10 +74,10 @@ class WorkShiftHoursController: WithCoroutineScope() {
         workEvents.forEachIndexed { index, workEvent ->
             val isShiftOffWork = isDayOffWork(workEvent)
 
-            var nextTime = workEvents.getOrNull(index + 1)?.time
+            val nextTime = workEvents.getOrNull(index + 1)?.time
             if (index == workEvents.size - 1 && workEvent.workEventType != WorkEventType.SHIFT_END) {
-                //if this is the last event and it is not a shift end still continue counting
-                nextTime = OffsetDateTime.now()
+                //if this is the last event and it is not a shift end then do not calculate
+                return@forEachIndexed
             }
 
             if (nextTime == null || nextTime < workEvent.time) return@forEachIndexed
@@ -154,7 +120,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
             }
         }
 
-        return updatableWorkShiftHours.map {
+        updatableWorkShiftHours.forEach {
             it.calculatedHours = temporaryHoursForTypes[it.workType]
             workShiftHoursRepository.persistSuspending(it)
         }
@@ -184,6 +150,62 @@ class WorkShiftHoursController: WithCoroutineScope() {
             employeeWorkShiftStartedAfter = employeeWorkShiftStartedAfter,
             employeeWorkShiftStartedBefore = employeeWorkShiftStartedBefore
         )
+    }
+
+    /**
+     * Creates a new work shift hours record for each work type
+     *
+     * @param workShiftEntity work shift entity
+     * @param actualHours actual hours
+     * @return created work shift hours
+     */
+    suspend fun createWorkShiftHours(
+        workShiftEntity: WorkShiftEntity,
+        actualHours: Float? = null
+    ): List<WorkShiftHoursEntity> {
+        return WorkType.entries.map {
+            val created = workShiftHoursRepository.create(
+                id = UUID.randomUUID(),
+                workShiftEntity = workShiftEntity,
+                workType = it
+            )
+
+            created
+        }
+    }
+
+    /**
+     * Finds work shift hours by id
+     *
+     * @param workShiftHoursId work shift hours id
+     * @return work shift hours or null if not found
+     */
+    suspend fun findWorkShiftHours(workShiftHoursId: UUID): WorkShiftHoursEntity? {
+        return workShiftHoursRepository.findByIdSuspending(workShiftHoursId)
+    }
+
+    /**
+     * Updates work shift hours (only actual hours)
+     *
+     * @param existingWorkShiftHours existing work shift hours
+     * @param actualHours actualHours
+     * @return updated work shift hours
+     */
+    suspend fun updateWorkShiftHours(
+        existingWorkShiftHours: WorkShiftHoursEntity,
+        actualHours: Float?
+    ): WorkShiftHoursEntity {
+        existingWorkShiftHours.actualHours = actualHours
+        return workShiftHoursRepository.persistSuspending(existingWorkShiftHours)
+    }
+
+    /**
+     * Deletes work shift hours
+     *
+     * @param workShiftHours work shift hours
+     */
+    suspend fun deleteWorkShiftHours(workShiftHours: WorkShiftHoursEntity) {
+        workShiftHoursRepository.deleteSuspending(workShiftHours)
     }
 
     /**
@@ -351,7 +373,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
      * @param publicHolidays list of public holidays (for holiday allowance)
      * @param isShiftOffWork is day off work (based on the shifts) (for holiday allowance)
      */
-    fun addHours(
+    private fun addHours(
         temporaryHoursForTypes: MutableMap<WorkType, Float>,
         workEventTime: OffsetDateTime,
         nextWorkEventTime: OffsetDateTime,
@@ -372,60 +394,5 @@ class WorkShiftHoursController: WithCoroutineScope() {
         }
     }
 
-    /**
-     * Creates a new work shift hours record for each work type
-     *
-     * @param workShiftEntity work shift entity
-     * @param actualHours actual hours
-     * @return created work shift hours
-     */
-    suspend fun createWorkShiftHours(
-        workShiftEntity: WorkShiftEntity,
-        actualHours: Float? = null
-    ): List<WorkShiftHoursEntity> {
-        return WorkType.entries.map {
-            val created = workShiftHoursRepository.create(
-                id = UUID.randomUUID(),
-                workShiftEntity = workShiftEntity,
-                workType = it
-            )
-
-            created
-        }
-    }
-
-    /**
-     * Finds work shift hours by id
-     *
-     * @param workShiftHoursId work shift hours id
-     * @return work shift hours or null if not found
-     */
-    suspend fun findWorkShiftHours(workShiftHoursId: UUID): WorkShiftHoursEntity? {
-        return workShiftHoursRepository.findByIdSuspending(workShiftHoursId)
-    }
-
-    /**
-     * Updates work shift hours (only actual hours)
-     *
-     * @param existingWorkShiftHours existing work shift hours
-     * @param actualHours actualHours
-     * @return updated work shift hours
-     */
-    suspend fun updateWorkShiftHours(
-        existingWorkShiftHours: WorkShiftHoursEntity,
-        actualHours: Float?
-    ): WorkShiftHoursEntity {
-        existingWorkShiftHours.actualHours = actualHours
-        return workShiftHoursRepository.persistSuspending(existingWorkShiftHours)
-    }
-
-    /**
-     * Deletes work shift hours
-     *
-     * @param workShiftHours work shift hours
-     */
-    suspend fun deleteWorkShiftHours(workShiftHours: WorkShiftHoursEntity) {
-        workShiftHoursRepository.deleteSuspending(workShiftHours)
-    }
 
 }

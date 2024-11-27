@@ -115,13 +115,13 @@ class WorkShiftController {
     }
 
     /**
-     * Lists work shifts that are not completed yet (no end time set)
+     * Lists work shifts that do not have their hours calculated yet
      *
      * @param first first
      * @param last last
      */
     suspend fun listUnfinishedWorkShifts(first: Int, last: Int) : List<WorkShiftEntity> {
-        return workShiftRepository.listUnfinishedWorkShifts(first, last)
+        return workShiftRepository.listsNotCalculatedWorkShifts(first, last)
     }
 
     /**

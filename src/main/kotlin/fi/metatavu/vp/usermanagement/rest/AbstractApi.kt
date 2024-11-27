@@ -57,6 +57,16 @@ abstract class AbstractApi: WithCoroutineScope() {
         }
 
     /**
+     * Returns CRON key
+     *
+     * @return request cron key
+     */
+    protected val requestCronKey: String?
+        get() {
+            return headers.getHeaderString("X-CRON-Key")
+        }
+
+    /**
      * Returns logged user id
      *
      * @return logged user id
