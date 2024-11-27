@@ -302,6 +302,7 @@ abstract class AbstractApi: WithCoroutineScope() {
         const val DRIVER_ROLE = "driver"
         const val EMPLOYEE_ROLE = "employee"
         const val MANAGER_ROLE = "manager"
+        const val INTEGRATIONS_ROLE = "integrations"
     }
 
 }

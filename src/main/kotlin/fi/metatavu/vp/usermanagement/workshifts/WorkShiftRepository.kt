@@ -61,6 +61,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
      * @param employeeId employee id
      * @param startedAfter started after
      * @param startedBefore started before
+     * @param dateAfter date after filter
+     * @param dateBefore date before filter
      * @param first first
      * @param max max
      * @return pair of list of employee work shifts and count
@@ -69,6 +71,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         employeeId: UUID,
         startedAfter: OffsetDateTime?,
         startedBefore: OffsetDateTime?,
+        dateAfter: OffsetDateTime?,
+        dateBefore: OffsetDateTime?,
         first: Int? = null,
         max: Int? = null
     ): Pair<List<WorkShiftEntity>, Long> {
@@ -88,8 +92,18 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
             parameters.and("startedBefore", startedBefore)
         }
 
+        if (dateAfter != null) {
+            queryBuilder.append(" AND date >= :dateAfter")
+            parameters.and("dateAfter", dateAfter.toLocalDate())
+        }
+
+        if (dateBefore != null) {
+            queryBuilder.append(" AND date <= :dateBefore")
+            parameters.and("dateBefore", dateBefore.toLocalDate())
+        }
+
         return queryWithCount(
-            query = find(queryBuilder.toString(), Sort.descending("startedAt"), parameters),
+            query = find(queryBuilder.toString(), Sort.descending("date").and("startedAt"), parameters),
             firstIndex = first,
             maxResults = max
         )
