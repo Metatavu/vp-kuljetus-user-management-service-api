@@ -16,13 +16,13 @@ import java.util.*
  *
  * @param testBuilder test builder
  * @param accessTokenProvider access token provider
- * @param apiKey api key
+ * @param driverAppApiKey api key
  * @param apiClient api client
  */
 class ClientAppTestBuilderResource(
     private val testBuilder: TestBuilder,
     private val accessTokenProvider: AccessTokenProvider?,
-    private val apiKey: String?,
+    private val driverAppApiKey: String?,
     apiClient: ApiClient
 ): ApiTestBuilderResource<ClientApp, ApiClient>(testBuilder, apiClient) {
     override fun clean(t: ClientApp) {
@@ -30,8 +30,8 @@ class ClientAppTestBuilderResource(
     }
 
     override fun getApi(): ClientAppsApi {
-        if (apiKey != null) {
-            ApiClient.apiKey["X-DriverApp-API-Key"] = apiKey
+        if (driverAppApiKey != null) {
+            ApiClient.apiKey["X-DriverApp-API-Key"] = driverAppApiKey
         }
 
         ApiClient.accessToken = accessTokenProvider?.accessToken
