@@ -30,7 +30,7 @@ class ClientAppApiImpl: ClientAppsApi, AbstractApi() {
 
     @WithTransaction
     override fun createClientApp(clientApp: ClientApp): Uni<Response> = withCoroutineScope {
-        if (requestApiKey != apiKey) return@withCoroutineScope createForbidden(INVALID_API_KEY)
+        if (requestDriverAppKey != driverAppKeyValue) return@withCoroutineScope createForbidden(INVALID_API_KEY)
 
         // Check if client app already exists with same device id
         clientAppController.find(clientApp.deviceId)?.let {
@@ -67,8 +67,8 @@ class ClientAppApiImpl: ClientAppsApi, AbstractApi() {
 
 
     override fun findClientApp(clientAppId: UUID): Uni<Response> = withCoroutineScope {
-        if (loggedUserId == null && requestApiKey == null) return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
-        if (requestApiKey != null && requestApiKey != apiKey) return@withCoroutineScope createForbidden(INVALID_API_KEY)
+        if (loggedUserId == null && requestDriverAppKey == null) return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
+        if (requestDriverAppKey != null && requestDriverAppKey != driverAppKeyValue) return@withCoroutineScope createForbidden(INVALID_API_KEY)
         if (loggedUserId != null && !hasRealmRole(MANAGER_ROLE)) return@withCoroutineScope createForbidden(FORBIDDEN)
 
         val foundClientApp = clientAppController.find(clientAppId) ?: return@withCoroutineScope createNotFound(createNotFoundMessage(CLIENT_APP, clientAppId))
@@ -110,7 +110,7 @@ class ClientAppApiImpl: ClientAppsApi, AbstractApi() {
     }
 
     override fun verifyClientApp(verifyClientAppRequest: VerifyClientAppRequest): Uni<Response> = withCoroutineScope {
-        if (requestApiKey != apiKey) return@withCoroutineScope createForbidden(INVALID_API_KEY)
+        if (requestDriverAppKey != driverAppKeyValue) return@withCoroutineScope createForbidden(INVALID_API_KEY)
 
         if (verifyClientAppRequest.deviceId == null) return@withCoroutineScope createBadRequest("Device ID is required")
         val clientApp = clientAppController.find(verifyClientAppRequest.deviceId) ?: return@withCoroutineScope createOk(false)

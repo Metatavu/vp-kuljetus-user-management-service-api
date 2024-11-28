@@ -31,7 +31,7 @@ class ClientAppTestBuilderResource(
 
     override fun getApi(): ClientAppsApi {
         if (apiKey != null) {
-            ApiClient.apiKey["X-API-Key"] = apiKey
+            ApiClient.apiKey["X-DriverApp-API-Key"] = apiKey
         }
 
         ApiClient.accessToken = accessTokenProvider?.accessToken

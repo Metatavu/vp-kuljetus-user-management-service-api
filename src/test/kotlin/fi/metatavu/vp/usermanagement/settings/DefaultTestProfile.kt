@@ -13,7 +13,7 @@ class DefaultTestProfile: QuarkusTestProfile {
         config["vp.keycloak.admin.client"] = "api"
         config["vp.keycloak.admin.user"] = "admin"
         config["vp.keycloak.admin.password"] = "test"
-        config["vp.vehiclemanagement.telematics.apiKey"] = "test-api-key"
+        config["vp.usermanagement.app.apiKey"] = "test-api-key"
         config["vp.usermanagement.cron.apiKey"] = "test-cron-key"
         config["env"] = "TEST"
         return config
