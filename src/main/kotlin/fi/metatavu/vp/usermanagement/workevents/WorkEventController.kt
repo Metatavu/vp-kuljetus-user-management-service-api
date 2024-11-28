@@ -292,6 +292,7 @@ class WorkEventController {
             if (latestWorkEvent != null && latestWorkEvent.workEventType != WorkEventType.SHIFT_END) {
                 //if not ended with end event then do it properly
                 workEventRepository.updateEventType(latestWorkEvent, WorkEventType.SHIFT_END)
+                recalculateWorkShiftTimes(workShift = latestWorkEvent.workShift)
             }
 
             val existingEmptyShift = workShiftRepository.findSameDayWorkShift(employeeId, workEventTime)
