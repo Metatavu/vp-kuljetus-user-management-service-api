@@ -9,8 +9,7 @@ import fi.metatavu.vp.usermanagement.assertions.Assertions
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.time.OffsetDateTime
 import java.util.*
@@ -126,6 +125,16 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         it.manager.workEvents.createWorkEvent(employee1.id, now.plusHours(25).toString(), WorkEventType.OTHER_WORK) // ended shift triggers new shift
         val allWorkEvens = it.manager.workEvents.listWorkEvents(employeeId = employee1.id)
         assertEquals(8, allWorkEvens.size)
+        it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee1.id,
+            workShift = EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                employeeId = employee1.id,
+                approved = false,
+                startedAt = now.toString(),
+                endedAt = now.plusHours(25).toString()
+            )
+        )
 
         // employee 2 events
         it.manager.workEvents.createWorkEvent(employee2.id!!, now.toString(), WorkEventType.MEAT_CELLAR)
@@ -140,28 +149,23 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         assertEquals(WorkEventType.SHIFT_END, it.manager.workEvents.findWorkEvent(employee1.id, longBreakEvent.id!!).workEventType)
         assertEquals(WorkEventType.SHIFT_END, it.manager.workEvents.findWorkEvent(employee2.id, longUnknownEvent.id!!).workEventType)
 
-        val created = it.manager.workShifts.createEmployeeWorkShift(
-            employeeId = employee1.id,
-            workShift = EmployeeWorkShift(
-                date = now.toLocalDate().toString(),
-                employeeId = employee1.id,
-                approved = false,
-                startedAt = now.toString(),
-                endedAt = now.plusHours(25).toString()
-            )
-        )
-        assertNotNull(created)
-
         // Check that work shift was created based on work events
         val employee1AllWorkShifts = it.manager.workShifts.listEmployeeWorkShifts(
             employeeId = employee1.id
         )
+        // The first 2 shifts for employee 1 were supposed to get endedAt assigned automatically on next shift creation
+        employee1AllWorkShifts.sortBy { it.startedAt }
+        assertNotNull(employee1AllWorkShifts[0].endedAt)
+        assertNotNull(employee1AllWorkShifts[1].endedAt)
         assertEquals(4, employee1AllWorkShifts.size)
 
         val employee2AllWorkShifts = it.manager.workShifts.listEmployeeWorkShifts(
             employeeId = employee2.id
         )
         assertEquals(2, employee2AllWorkShifts.size)
+        // The first shift for employee 1 is supposed to have endedAt set automatically on next shift creation
+        employee2AllWorkShifts.sortBy { it.startedAt }
+        assertNotNull(employee2AllWorkShifts[0].endedAt)
 
         val workevents = it.manager.workEvents.listWorkEvents(
             employeeId = employee1.id
