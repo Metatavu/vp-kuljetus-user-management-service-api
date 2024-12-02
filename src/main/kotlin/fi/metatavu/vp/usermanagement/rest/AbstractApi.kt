@@ -25,8 +25,11 @@ abstract class AbstractApi: WithCoroutineScope() {
     @Context
     lateinit var headers: HttpHeaders
 
-    @ConfigProperty(name = "vp.usermanagement.app.apiKey")
+    @ConfigProperty(name = "vp.usermanagement.driverapp.apiKey")
     lateinit var driverAppKeyValue: String
+
+    @ConfigProperty(name = "vp.usermanagement.keycloak.apiKey")
+    lateinit var keycloakApiKeyValue: String
 
     @Context
     lateinit var securityContext: SecurityContext
@@ -64,6 +67,16 @@ abstract class AbstractApi: WithCoroutineScope() {
     protected val requestCronKey: String?
         get() {
             return headers.getHeaderString("X-CRON-Key")
+        }
+
+    /**
+     * Returns request keycloak api key
+     *
+     * @return request keycloak api key
+     */
+    protected val requestKeycloakKey: String?
+        get() {
+            return headers.getHeaderString("X-Keycloak-API-Key")
         }
 
     /**

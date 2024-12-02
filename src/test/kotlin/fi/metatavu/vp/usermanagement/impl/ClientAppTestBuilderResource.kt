@@ -23,6 +23,7 @@ class ClientAppTestBuilderResource(
     private val testBuilder: TestBuilder,
     private val accessTokenProvider: AccessTokenProvider?,
     private val driverAppApiKey: String?,
+    private val keycloakApiKey: String?,
     apiClient: ApiClient
 ): ApiTestBuilderResource<ClientApp, ApiClient>(testBuilder, apiClient) {
     override fun clean(t: ClientApp) {
@@ -32,6 +33,10 @@ class ClientAppTestBuilderResource(
     override fun getApi(): ClientAppsApi {
         if (driverAppApiKey != null) {
             ApiClient.apiKey["X-DriverApp-API-Key"] = driverAppApiKey
+        }
+
+        if (keycloakApiKey != null) {
+            ApiClient.apiKey["X-Keycloak-API-Key"] = keycloakApiKey
         }
 
         ApiClient.accessToken = accessTokenProvider?.accessToken

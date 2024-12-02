@@ -16,5 +16,8 @@ class ApiTestSettings {
         val apiBasePath: String
             get() = "http://localhost:8081"
 
+        const val DRIVER_APP_API_KEY = "driver-app-api-key"
+        const val KEYCLOAK_API_KEY = "keycloak-api-key"
+        const val CRON_API_KEY = "cron-api-key"
     }
 }
