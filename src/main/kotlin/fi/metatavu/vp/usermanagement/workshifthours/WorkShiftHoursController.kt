@@ -14,6 +14,7 @@ import io.quarkus.vertx.ConsumeEvent
 import io.vertx.core.Vertx
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
+import org.jboss.logging.Logger
 import java.time.DayOfWeek
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
@@ -40,6 +41,9 @@ class WorkShiftHoursController: WithCoroutineScope() {
     @Inject
     lateinit var vertx: Vertx
 
+    @Inject
+    lateinit var logger: Logger
+
     /**
      * Event for calculating hours for work shift
      *
@@ -52,6 +56,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
     ) = withCoroutineScope {
         val workShift = workShiftController.findEmployeeWorkShift(shiftId = shiftId) ?: return@withCoroutineScope
         recalculateWorkShiftHours(workShift)
+        logger.debug("Recalculated work shift hours for shift $shiftId")
     }.replaceWithVoid()
 
     /**
