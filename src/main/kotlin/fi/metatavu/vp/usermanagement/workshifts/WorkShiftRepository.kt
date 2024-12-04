@@ -123,7 +123,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         val query = """
         SELECT ws FROM WorkShiftEntity ws
         LEFT JOIN WorkShiftHoursEntity wh ON ws.id = wh.workShift.id
-        WHERE wh.calculatedHours IS NULL OR wh.calculatedHours = 0.0F
+        WHERE wh.calculatedHours IS NULL
         """
         return find(query).range<WorkShiftEntity>(first, last).list<WorkShiftEntity>().awaitSuspending()
     }

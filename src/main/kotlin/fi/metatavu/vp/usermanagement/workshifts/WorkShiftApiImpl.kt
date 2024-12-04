@@ -13,6 +13,7 @@ import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.config.inject.ConfigProperty
+import org.jboss.logging.Logger
 import java.time.OffsetDateTime
 import java.util.*
 import kotlin.jvm.optionals.getOrNull
@@ -42,6 +43,9 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
 
     @ConfigProperty(name = "vp.usermanagement.cron.apiKey")
     lateinit var cronKey: String
+
+    @Inject
+    lateinit var logger: Logger
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
     override fun listEmployeeWorkShifts(
@@ -160,7 +164,7 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
         workShifts.forEach {
             eventBus.send("workShiftHours.calculate", it.id)
         }
-
+        logger.info("Created ${workShifts.size} events for recalculating work shift hours")
         createOk()
     }
 }
