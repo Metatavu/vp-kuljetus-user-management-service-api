@@ -20,7 +20,7 @@ class ClientAppTestIT: AbstractFunctionalTest() {
 
     @Test
     fun testCreate() = createTestBuilder().use {
-        val createdClientApp = it.setApiKey().clientApps.create(
+        val createdClientApp = it.setDriverAppKey().clientApps.create(
             ClientApp(
                 deviceId = "456DEF",
                 status = ClientAppStatus.WAITING_FOR_APPROVAL,
@@ -39,17 +39,17 @@ class ClientAppTestIT: AbstractFunctionalTest() {
         assertEquals(foundClientAppWithMetadata.metadata.appVersion, "0.2")
         assertEquals(foundClientAppWithMetadata.metadata.deviceOS, ClientAppMetadata.DeviceOS.ANDROID)
 
-        it.setApiKey("invalid-api-key").clientApps.assertCreateFail(createdClientApp, 403)
+        it.setDriverAppKey("invalid-api-key").clientApps.assertCreateFail(createdClientApp, 403)
 
         // Assert that one cannot create a client app with the same device id if the status is not WAITING_FOR_APPROVAL
         it.manager.clientApps.update(createdClientApp.id, createdClientApp.copy(status = ClientAppStatus.APPROVED))
-        it.setApiKey().clientApps.assertCreateFail(createdClientApp, 409)
+        it.setDriverAppKey().clientApps.assertCreateFail(createdClientApp, 409)
     }
 
     @Test
     fun testList() = createTestBuilder().use {
         for (i in 0..10) {
-            it.setApiKey().clientApps.create(
+            it.setDriverAppKey().clientApps.create(
                 ClientApp(
                     deviceId = "123ABC-$i",
                     status = ClientAppStatus.WAITING_FOR_APPROVAL,
@@ -82,7 +82,7 @@ class ClientAppTestIT: AbstractFunctionalTest() {
 
     @Test
     fun testUpdate() = createTestBuilder().use {
-        val createdClientApp = it.setApiKey().clientApps.create(
+        val createdClientApp = it.setDriverAppKey().clientApps.create(
             ClientApp(
                 deviceId = "123ABC",
                 status = ClientAppStatus.WAITING_FOR_APPROVAL,
@@ -111,7 +111,7 @@ class ClientAppTestIT: AbstractFunctionalTest() {
 
     @Test
     fun testDelete() = createTestBuilder().use {
-        val createdClientApp = it.setApiKey().clientApps.create(
+        val createdClientApp = it.setDriverAppKey().clientApps.create(
             ClientApp(
                 deviceId = "123ABC",
                 status = ClientAppStatus.WAITING_FOR_APPROVAL,
@@ -131,7 +131,7 @@ class ClientAppTestIT: AbstractFunctionalTest() {
 
     @Test
     fun testVerifyClientApp() = createTestBuilder().use {
-        val createdClientApp = it.setApiKey().clientApps.create(
+        val createdClientApp = it.setDriverAppKey().clientApps.create(
             ClientApp(
                 deviceId = "123ABC",
                 status = ClientAppStatus.WAITING_FOR_APPROVAL,
@@ -143,16 +143,16 @@ class ClientAppTestIT: AbstractFunctionalTest() {
             )
         )
 
-        val verifiedResult = it.manager.clientApps.verifyClientApp(VerifyClientAppRequest(createdClientApp.deviceId))
+        val verifiedResult = it.setKeycloakKey().clientApps.verifyClientApp(VerifyClientAppRequest(createdClientApp.deviceId))
         assertFalse(verifiedResult)
 
         it.manager.clientApps.update(createdClientApp.id!!, createdClientApp.copy(status = ClientAppStatus.APPROVED))
-        val verifiedResult2 = it.manager.clientApps.verifyClientApp(VerifyClientAppRequest(createdClientApp.deviceId))
+        val verifiedResult2 = it.setKeycloakKey().clientApps.verifyClientApp(VerifyClientAppRequest(createdClientApp.deviceId))
         assertTrue(verifiedResult2)
 
-        val verifiedUnknownDevice = it.manager.clientApps.verifyClientApp(VerifyClientAppRequest(UUID.randomUUID().toString()))
+        val verifiedUnknownDevice = it.setKeycloakKey().clientApps.verifyClientApp(VerifyClientAppRequest(UUID.randomUUID().toString()))
         assertFalse(verifiedUnknownDevice)
 
-        it.setApiKey("invalid-api-key").clientApps.assertVerifyClientAppFail(VerifyClientAppRequest(createdClientApp.deviceId), 403)
+        it.setKeycloakKey("invalid-api-key").clientApps.assertVerifyClientAppFail(VerifyClientAppRequest(createdClientApp.deviceId), 403)
     }
 }

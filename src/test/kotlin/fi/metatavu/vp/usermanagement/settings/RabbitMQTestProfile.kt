@@ -1,5 +1,8 @@
 package fi.metatavu.vp.usermanagement.settings
 
+import fi.metatavu.vp.usermanagement.settings.ApiTestSettings.Companion.CRON_API_KEY
+import fi.metatavu.vp.usermanagement.settings.ApiTestSettings.Companion.DRIVER_APP_API_KEY
+import fi.metatavu.vp.usermanagement.settings.ApiTestSettings.Companion.KEYCLOAK_API_KEY
 import io.quarkus.test.junit.QuarkusTestProfile
 
 /**
@@ -14,8 +17,9 @@ class RabbitMQTestProfile: QuarkusTestProfile {
         config["vp.keycloak.admin.user"] = "admin"
         config["vp.keycloak.admin.password"] = "test"
         config["workShiftHours.recalculate.interval"] = "1s"
-        config["vp.vehiclemanagement.telematics.apiKey"] = "test-api-key"
-        config["vp.usermanagement.cron.apiKey"] = "test-cron-key"
+        config["vp.usermanagement.driverapp.apiKey"] = DRIVER_APP_API_KEY
+        config["vp.usermanagement.keycloak.apiKey"] = KEYCLOAK_API_KEY
+        config["vp.usermanagement.cron.apiKey"] = CRON_API_KEY
 
         config["mp.messaging.incoming.vp-in.connector"] = "smallrye-rabbitmq"
         config["mp.messaging.incoming.vp-in.queue.name"] = "incoming_queue"
