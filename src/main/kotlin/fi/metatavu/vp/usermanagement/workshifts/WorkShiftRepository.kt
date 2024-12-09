@@ -93,17 +93,17 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         }
 
         if (dateAfter != null) {
-            queryBuilder.append(" AND date >= :dateAfter")
-            parameters.and("dateAfter", dateAfter.toLocalDate())
+            queryBuilder.append(" AND date >= DATE(:dateAfter)")
+            parameters.and("dateAfter", dateAfter)
         }
 
         if (dateBefore != null) {
-            queryBuilder.append(" AND date <= :dateBefore")
-            parameters.and("dateBefore", dateBefore.toLocalDate())
+            queryBuilder.append(" AND date <= DATE(:dateBefore)")
+            parameters.and("dateBefore", dateBefore)
         }
 
         return queryWithCount(
-            query = find(queryBuilder.toString(), Sort.descending("date").and("startedAt"), parameters),
+            query = find(queryBuilder.toString(), Sort.by("date", Sort.Direction.Descending).and("startedAt", Sort.Direction.Descending), parameters),
             firstIndex = first,
             maxResults = max
         )
@@ -123,7 +123,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         val query = """
         SELECT ws FROM WorkShiftEntity ws
         LEFT JOIN WorkShiftHoursEntity wh ON ws.id = wh.workShift.id
-        WHERE wh.calculatedHours IS NULL OR wh.calculatedHours = 0.0F
+        WHERE wh.calculatedHours IS NULL
         """
         return find(query).range<WorkShiftEntity>(first, last).list<WorkShiftEntity>().awaitSuspending()
     }
