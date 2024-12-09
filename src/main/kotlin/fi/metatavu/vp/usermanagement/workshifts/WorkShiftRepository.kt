@@ -93,13 +93,13 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         }
 
         if (dateAfter != null) {
-            queryBuilder.append(" AND date >= :dateAfter")
-            parameters.and("dateAfter", dateAfter.toLocalDate())
+            queryBuilder.append(" AND date >= DATE(:dateAfter)")
+            parameters.and("dateAfter", dateAfter)
         }
 
         if (dateBefore != null) {
-            queryBuilder.append(" AND date <= :dateBefore")
-            parameters.and("dateBefore", dateBefore.toLocalDate())
+            queryBuilder.append(" AND date <= DATE(:dateBefore)")
+            parameters.and("dateBefore", dateBefore)
         }
 
         return queryWithCount(
