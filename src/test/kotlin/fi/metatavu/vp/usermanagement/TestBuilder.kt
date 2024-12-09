@@ -8,6 +8,7 @@ import fi.metatavu.jaxrs.test.functional.builder.auth.KeycloakAccessTokenProvide
 import fi.metatavu.jaxrs.test.functional.builder.auth.NullAccessTokenProvider
 import fi.metatavu.vp.usermanagement.auth.TestBuilderAuthentication
 import fi.metatavu.vp.test.client.infrastructure.ApiClient
+import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import org.eclipse.microprofile.config.ConfigProvider
 
 /**
@@ -33,12 +34,12 @@ class TestBuilder(private val config: Map<String, String>): AbstractAccessTokenT
     /**
      * Returns authentication with api key
      *
-     * @param apiKey device key
+     * @param driverAppKey device key
      * @return authorized client
      */
-    fun setApiKey(apiKey: String? = null): TestBuilderAuthentication {
-        val key = apiKey ?: "test-api-key"
-        return TestBuilderAuthentication(this, NullAccessTokenProvider(), apiKey = key)
+    fun setDriverAppKey(driverAppKey: String? = null): TestBuilderAuthentication {
+        val key = driverAppKey ?: ApiTestSettings.DRIVER_APP_API_KEY
+        return TestBuilderAuthentication(this, NullAccessTokenProvider(), driverAppApiKey = key)
     }
 
     /**
@@ -48,8 +49,19 @@ class TestBuilder(private val config: Map<String, String>): AbstractAccessTokenT
      * @return authorized client
      */
     fun setCronKey(cronKey: String? = null): TestBuilderAuthentication {
-        val key = cronKey ?: "test-cron-key"
+        val key = cronKey ?: ApiTestSettings.CRON_API_KEY
         return TestBuilderAuthentication(this, NullAccessTokenProvider(), cronKey = key)
+    }
+
+    /**
+     * Returns authentication with keycloak key
+     *
+     * @param keycloakKey keycloak task key
+     * @return authorized client
+     */
+    fun setKeycloakKey(keycloakKey: String? = null) : TestBuilderAuthentication {
+        val key = keycloakKey ?: ApiTestSettings.KEYCLOAK_API_KEY
+        return TestBuilderAuthentication(this, NullAccessTokenProvider(), keycloakApiKey = key)
     }
 
     /**
