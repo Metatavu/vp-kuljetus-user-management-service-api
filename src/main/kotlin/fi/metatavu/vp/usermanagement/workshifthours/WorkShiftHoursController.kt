@@ -56,7 +56,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
     ) = withCoroutineScope {
         val workShift = workShiftController.findEmployeeWorkShift(shiftId = shiftId) ?: return@withCoroutineScope
         recalculateWorkShiftHours(workShift)
-        logger.debug("Recalculated work shift hours for shift $shiftId")
+        logger.info("Recalculated work shift hours for shift $shiftId")
     }.replaceWithVoid()
 
     /**
