@@ -80,7 +80,6 @@ class WorkShiftHoursController: WithCoroutineScope() {
         val temporaryHoursForTypes = WorkType.entries.associateWith { 0f }.toMutableMap()
 
         val workEvents = workEventController.list(employeeWorkShift = workShift).first.reversed()
-        println("Calculating hours ${updatableWorkShiftHours.count()} for ${workEvents.size} work events")
         workEvents.forEachIndexed { index, workEvent ->
             val isShiftOffWork = isDayOffWork(workEvent)
 
