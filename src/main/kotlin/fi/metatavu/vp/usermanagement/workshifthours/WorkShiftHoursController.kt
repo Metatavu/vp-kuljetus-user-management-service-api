@@ -53,7 +53,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
     @WithTransaction
     fun recalculateHours(
         shiftId: UUID
-    ) = withCoroutineScope {
+    ) = withCoroutineScope(20000L) {
         val workShift = workShiftController.findEmployeeWorkShift(shiftId = shiftId)
         if (workShift == null) {
             logger.warn("Did not find work shift $shiftId")
