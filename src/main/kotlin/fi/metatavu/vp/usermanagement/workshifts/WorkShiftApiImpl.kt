@@ -4,6 +4,7 @@ import fi.metatavu.vp.usermanagement.model.EmployeeWorkShift
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.EmployeeWorkShiftsApi
 import fi.metatavu.vp.usermanagement.users.UserController
+import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -161,10 +162,11 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
 
         val lastRecord = count ?: 5
         val workShifts = workShiftController.listUnfinishedWorkShifts(0, lastRecord)
+        println("Found ${workShifts.size} unfinished work shifts")
         workShifts.forEach {
-            eventBus.send("workShiftHours.calculate", it.id)
+            eventBus.send(WorkShiftHoursController.RECALCULATE_WORK_SHIFT_HOURS, it.id)
         }
-        logger.info("Created ${workShifts.size} events for recalculating work shift hours")
+        logger.info("Created events for recalculating work shift hours")
         createOk()
     }
 }
