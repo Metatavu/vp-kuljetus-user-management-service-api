@@ -162,7 +162,6 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
 
         val lastRecord = count ?: 5
         val workShifts = workShiftController.listUnfinishedWorkShifts(0, lastRecord)
-        println("Found ${workShifts.size} unfinished work shifts")
         workShifts.forEach {
             eventBus.send(WorkShiftHoursController.RECALCULATE_WORK_SHIFT_HOURS, it.id)
         }
