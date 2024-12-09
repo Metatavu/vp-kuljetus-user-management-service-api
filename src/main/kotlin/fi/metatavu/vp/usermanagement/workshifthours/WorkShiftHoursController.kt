@@ -49,12 +49,16 @@ class WorkShiftHoursController: WithCoroutineScope() {
      *
      * @param shiftId shift id
      */
-    @ConsumeEvent("workShiftHours.calculate")
+    @ConsumeEvent(RECALCULATE_WORK_SHIFT_HOURS)
     @WithTransaction
     fun recalculateHours(
         shiftId: UUID
     ) = withCoroutineScope {
-        val workShift = workShiftController.findEmployeeWorkShift(shiftId = shiftId) ?: return@withCoroutineScope
+        val workShift = workShiftController.findEmployeeWorkShift(shiftId = shiftId)
+        if (workShift == null) {
+            logger.warn("Did not find work shift $shiftId")
+            return@withCoroutineScope
+        }
         recalculateWorkShiftHours(workShift)
         logger.info("Recalculated work shift hours for shift $shiftId")
     }.replaceWithVoid()
@@ -76,6 +80,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
         val temporaryHoursForTypes = WorkType.entries.associateWith { 0f }.toMutableMap()
 
         val workEvents = workEventController.list(employeeWorkShift = workShift).first.reversed()
+        println("Calculating hours ${updatableWorkShiftHours.count()} for ${workEvents.size} work events")
         workEvents.forEachIndexed { index, workEvent ->
             val isShiftOffWork = isDayOffWork(workEvent)
 
@@ -397,6 +402,10 @@ class WorkShiftHoursController: WithCoroutineScope() {
                 isShiftOffWork = isShiftOffWork
             )
         }
+    }
+
+    companion object {
+        const val RECALCULATE_WORK_SHIFT_HOURS = "RECALCULATE_WORK_SHIFT_HOURS"
     }
 
 
