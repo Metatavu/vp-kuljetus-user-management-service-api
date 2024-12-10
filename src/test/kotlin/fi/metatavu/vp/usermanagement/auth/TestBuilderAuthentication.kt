@@ -15,22 +15,24 @@ import fi.metatavu.vp.usermanagement.impl.*
  *
  * @param testBuilder test builder instance
  * @param accessTokenProvider access token provider
- * @param apiKey api key
+ * @param driverAppApiKey driver app api key
+ * @param cronKey cron key
  */
 class TestBuilderAuthentication(
     private val testBuilder: TestBuilder,
     val accessTokenProvider: AccessTokenProvider,
-    private val apiKey: String? = null,
-    private val cronKey: String? = null
+    private val driverAppApiKey: String? = null,
+    private val cronKey: String? = null,
+    private val keycloakApiKey: String? = null
 ) : AccessTokenTestBuilderAuthentication<ApiClient>(testBuilder, accessTokenProvider) {
 
-    val drivers = DriverTestBuilderResource(testBuilder, accessTokenProvider, this.apiKey, createClient(accessTokenProvider))
+    val drivers = DriverTestBuilderResource(testBuilder, accessTokenProvider,createClient(accessTokenProvider))
     val employees = EmployeeTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
     val workEvents = WorkEventTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
     val holidays = HolidayTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
-    val workShifts = WorkShiftTestBuilderResource(testBuilder, accessTokenProvider, this.cronKey, createClient(accessTokenProvider))
+    val workShifts = WorkShiftTestBuilderResource(testBuilder, accessTokenProvider, cronKey = this.cronKey, createClient(accessTokenProvider))
     val workShiftHours = WorkShiftHoursTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
-    val clientApps = ClientAppTestBuilderResource(testBuilder, accessTokenProvider, this.apiKey, createClient(accessTokenProvider))
+    val clientApps = ClientAppTestBuilderResource(testBuilder, accessTokenProvider, driverAppApiKey = this.driverAppApiKey, keycloakApiKey = this.keycloakApiKey, createClient(accessTokenProvider))
 
     override fun createClient(authProvider: AccessTokenProvider): ApiClient {
         val result = ApiClient(ApiTestSettings.apiBasePath)

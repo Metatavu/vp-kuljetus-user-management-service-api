@@ -15,13 +15,11 @@ import java.util.UUID
  *
  * @param testBuilder test builder
  * @param accessTokenProvider access token provider
- * @param apiKey api key
  * @param apiClient api client
  */
 class DriverTestBuilderResource(
     testBuilder: TestBuilder,
     private val accessTokenProvider: AccessTokenProvider?,
-    private val apiKey: String?,
     apiClient: ApiClient
 ) : ApiTestBuilderResource<Driver, ApiClient>(testBuilder, apiClient) {
 
@@ -30,9 +28,6 @@ class DriverTestBuilderResource(
     }
 
     override fun getApi(): DriversApi {
-        if (apiKey != null) {
-            ApiClient.apiKey["X-API-Key"] = apiKey
-        }
         ApiClient.accessToken = accessTokenProvider?.accessToken
         return DriversApi(ApiTestSettings.apiBasePath)
     }

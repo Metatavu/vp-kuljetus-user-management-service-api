@@ -215,7 +215,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             )
         )
         tb.manager.workEvents.createWorkEvent(employee1, now.minusHours(1).toString(), WorkEventType.BREWERY)
-        tb.setCronKey("test-cron-key").workShifts.recalculateWorkShiftHours(2)
+        tb.setCronKey().workShifts.recalculateWorkShiftHours(2)
     }
 
     /**
