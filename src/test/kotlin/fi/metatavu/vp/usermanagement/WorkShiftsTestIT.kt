@@ -317,14 +317,14 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 approved = true,
                 dayOffWorkAllowance = true,
                 perDiemAllowance = PerDiemAllowanceType.FULL,
-                absence = AbsenceType.OFFICIAL_DUTIES,
+                absence = AbsenceType.COMPENSATORY_LEAVE,
                 notes = "approved"
             )
         )
         assertEquals(true, updatedWorkShift.approved, "After update, work shift should be approved")
         assertEquals(true, updatedWorkShift.dayOffWorkAllowance, "After update, day off work allowance should be true")
         assertEquals(PerDiemAllowanceType.FULL, updatedWorkShift.perDiemAllowance, "After update, per diem allowance should be FULL")
-        assertEquals(AbsenceType.OFFICIAL_DUTIES, updatedWorkShift.absence, "After update, absence should be OFFICIAL_DUTIES")
+        assertEquals(AbsenceType.COMPENSATORY_LEAVE, updatedWorkShift.absence, "After update, absence should be COMPENSATORY_LEAVE")
         assertEquals("approved", updatedWorkShift.notes, "After update, notes should be 'approved'")
 
         // Employee ID not found
