@@ -203,4 +203,12 @@
             <column name="createdat" type="datetime(6)"/>
         </addColumn>
     </changeSet>
+
+    <changeSet id="old_work_shift_absences_fix" author="katja danilova">
+        <sql>
+            UPDATE workshift
+            SET absence = null
+            WHERE absence IN ('TRAINING', 'OFFICIAL_DUTIES', 'SICK_LEAVE');
+        </sql>
+    </changeSet>
 </databaseChangeLog>
