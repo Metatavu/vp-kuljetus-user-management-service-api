@@ -110,7 +110,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
     }
 
     /**
-     * Lists all finished work shifts with missing calculated hours
+     * Lists all finished work shifts with missing calculated hours (excluding those hours that are not calculated)
      *
      * @param first first
      * @param last last
@@ -123,7 +123,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         val query = """
         SELECT ws FROM WorkShiftEntity ws
         LEFT JOIN WorkShiftHoursEntity wh ON ws.id = wh.workShift.id
-        WHERE wh.calculatedHours IS NULL
+        WHERE wh.calculatedHours IS NULL AND wh.workType NOT IN ('OFFICIAL_DUTIES','SICK_LEAVE','TRAINING','UNPAID')
         """
         return find(query).range<WorkShiftEntity>(first, last).list<WorkShiftEntity>().awaitSuspending()
     }

@@ -204,11 +204,56 @@
         </addColumn>
     </changeSet>
 
-    <changeSet id="old_work_shift_absences_fix" author="katja danilova">
+    <changeSet id="old_work_shift_absences_hours_fix" author="katja danilova">
         <sql>
             UPDATE workshift
             SET absence = null
             WHERE absence IN ('TRAINING', 'OFFICIAL_DUTIES', 'SICK_LEAVE');
         </sql>
+        <sql>
+            INSERT INTO workshifthours (id, workshift_id, worktype, actualhours, calculatedhours)
+            SELECT UUID_TO_BIN(uuid()), ws.id, 'OFFICIAL_DUTIES', NULL, NULL
+            FROM workshift ws
+            WHERE NOT EXISTS (
+            SELECT 1
+            FROM workshifthours wsh
+            WHERE wsh.workshift_id = ws.id
+            AND wsh.worktype = 'OFFICIAL_DUTIES'
+            );
+        </sql>
+        <sql>
+            INSERT INTO workshifthours (id, workshift_id, worktype, actualhours, calculatedhours)
+            SELECT UUID_TO_BIN(uuid()), ws.id, 'SICK_LEAVE', NULL, NULL
+            FROM workshift ws
+            WHERE NOT EXISTS (
+            SELECT 1
+            FROM workshifthours wsh
+            WHERE wsh.workshift_id = ws.id
+            AND wsh.worktype = 'SICK_LEAVE'
+            );
+        </sql>
+        <sql>
+            INSERT INTO workshifthours (id, workshift_id, worktype, actualhours, calculatedhours)
+            SELECT UUID_TO_BIN(uuid()), ws.id, 'TRAINING', NULL, NULL
+            FROM workshift ws
+            WHERE NOT EXISTS (
+            SELECT 1
+            FROM workshifthours wsh
+            WHERE wsh.workshift_id = ws.id
+            AND wsh.worktype = 'TRAINING'
+            );
+        </sql>
+        <sql>
+            INSERT INTO workshifthours (id, workshift_id, worktype, actualhours, calculatedhours)
+            SELECT UUID_TO_BIN(uuid()), ws.id, 'UNPAID', NULL, NULL
+            FROM workshift ws
+            WHERE NOT EXISTS (
+            SELECT 1
+            FROM workshifthours wsh
+            WHERE wsh.workshift_id = ws.id
+            AND wsh.worktype = 'UNPAID'
+            );
+        </sql>
+
     </changeSet>
 </databaseChangeLog>
