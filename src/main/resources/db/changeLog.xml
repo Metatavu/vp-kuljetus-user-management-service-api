@@ -197,4 +197,10 @@
             UPDATE workshift SET endedat = CAST(endedat AS datetime(6));
         </sql>
     </changeSet>
+
+    <changeSet id="workevent_createdat" author="katja danilova">
+        <addColumn tableName="workevent">
+            <column name="createdat" type="datetime(6)"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

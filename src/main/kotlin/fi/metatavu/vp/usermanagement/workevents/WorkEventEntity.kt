@@ -31,4 +31,11 @@ class WorkEventEntity {
     @Column
     var truckId: UUID? = null
 
+    @Column
+    var createdAt: OffsetDateTime? = null
+
+    @PrePersist
+    fun onCreate() {
+        createdAt = OffsetDateTime.now()
+    }
 }
