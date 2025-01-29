@@ -115,7 +115,7 @@ class WorkShiftController {
     }
 
     /**
-     * Lists work shifts that do not have their hours calculated yet
+     * Lists work shifts that do not have their hours calculated yet (and which are supposed to be calculated)
      *
      * @param first first
      * @param last last
