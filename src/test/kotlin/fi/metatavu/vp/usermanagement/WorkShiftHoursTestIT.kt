@@ -242,7 +242,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
         //18 30 - 19 30, 1h PAID_WORK 1h EVENING_ALLOWANCE
         tb.manager.workEvents.createWorkEvent(employee1, "2024-01-01T19:30:00Z", WorkEventType.BREAK)
         //19 30 - 20 30, 1h break, 0.5 hours to be paid
-        tb.manager.workEvents.createWorkEvent(employee1, "2024-01-01T20:20:00Z", WorkEventType.FROZEN)
+        tb.manager.workEvents.createWorkEvent(employee1, "2024-01-01T20:30:00Z", WorkEventType.FROZEN)
         // 20.30 - 21.30, 1h frozen allowance, 1h paid work, 1h night allowance
         tb.manager.workEvents.createWorkEvent(employee1, "2024-01-01T21:30:00Z", WorkEventType.AVAILABILITY)
         // 21.30 - 12.30, 15h paid work, 8.5 night allowance
