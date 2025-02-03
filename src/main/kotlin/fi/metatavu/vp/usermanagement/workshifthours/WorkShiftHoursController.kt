@@ -19,6 +19,7 @@ import java.time.DayOfWeek
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
+import kotlin.math.min
 
 /**
  * Controller for Work Shift Hours
@@ -85,7 +86,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
 
             val nextTime = workEvents.getOrNull(index + 1)?.time
             if (index == workEvents.size - 1 && workEvent.workEventType != WorkEventType.SHIFT_END) {
-                //if this is the last event and it is not a shift end then do not calculate
+                // If this is the last event and the event is not a shift end, do not calculate
                 return@forEachIndexed
             }
 
@@ -96,29 +97,41 @@ class WorkShiftHoursController: WithCoroutineScope() {
                 WorkEventType.PALTE, WorkEventType.BREWERY, WorkEventType.GREASE, WorkEventType.OTHER_WORK,
                 WorkEventType.DRIVE, WorkEventType.LOADING, WorkEventType.UNLOADING, WorkEventType.AVAILABILITY -> {
                     addHours(
-                        temporaryHoursForTypes = temporaryHoursForTypes, workEventTime = workEvent.time,
-                        nextWorkEventTime = nextTime, type = WorkType.PAID_WORK, publicHolidays = publicHolidays,
+                        temporaryHoursForTypes = temporaryHoursForTypes,
+                        workEventTime = workEvent.time,
+                        nextWorkEventTime = nextTime,
+                        type = WorkType.PAID_WORK,
+                        publicHolidays = publicHolidays,
                         isShiftOffWork = isShiftOffWork
                     )
                 }
 
                 WorkEventType.FROZEN -> {
                     addHours(
-                        temporaryHoursForTypes = temporaryHoursForTypes, workEventTime = workEvent.time,
-                        nextWorkEventTime = nextTime, type = WorkType.PAID_WORK,
-                        publicHolidays = publicHolidays, isShiftOffWork = isShiftOffWork
+                        temporaryHoursForTypes = temporaryHoursForTypes,
+                        workEventTime = workEvent.time,
+                        nextWorkEventTime = nextTime,
+                        type = WorkType.PAID_WORK,
+                        publicHolidays = publicHolidays,
+                        isShiftOffWork = isShiftOffWork
                     )
                     addHours(
-                        temporaryHoursForTypes = temporaryHoursForTypes, workEventTime = workEvent.time,
-                        nextWorkEventTime = nextTime, type = WorkType.FROZEN_ALLOWANCE,
-                        publicHolidays = publicHolidays, isShiftOffWork = isShiftOffWork
+                        temporaryHoursForTypes = temporaryHoursForTypes,
+                        workEventTime = workEvent.time,
+                        nextWorkEventTime = nextTime,
+                        type = WorkType.FROZEN_ALLOWANCE,
+                        publicHolidays = publicHolidays,
+                        isShiftOffWork = isShiftOffWork
                     )
                 }
 
                 WorkEventType.BREAK -> {
                     addHours(
-                        temporaryHoursForTypes = temporaryHoursForTypes, workEventTime = workEvent.time,
-                        nextWorkEventTime = nextTime, type = WorkType.BREAK, publicHolidays = publicHolidays,
+                        temporaryHoursForTypes = temporaryHoursForTypes,
+                        workEventTime = workEvent.time,
+                        nextWorkEventTime = nextTime,
+                        type = WorkType.BREAK,
+                        publicHolidays = publicHolidays,
                         isShiftOffWork = isShiftOffWork
                     )
                 }
@@ -128,6 +141,11 @@ class WorkShiftHoursController: WithCoroutineScope() {
                 }
             }
         }
+
+        // The first 30 minutes of break is paid. As such, add up to the first 30 minutes of break also to paid work.
+        val halfHour = 0.5f
+        val paidBreakTime = min(temporaryHoursForTypes[WorkType.BREAK] ?: 0f, halfHour)
+        temporaryHoursForTypes[WorkType.PAID_WORK] = temporaryHoursForTypes[WorkType.PAID_WORK]!! + paidBreakTime
 
         updatableWorkShiftHours.forEach {
             it.calculatedHours = temporaryHoursForTypes[it.workType]

@@ -241,7 +241,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
         tb.manager.workEvents.createWorkEvent(employee1, "2024-01-01T18:30:00Z", WorkEventType.AVAILABILITY)
         //18 30 - 19 30, 1h PAID_WORK 1h EVENING_ALLOWANCE
         tb.manager.workEvents.createWorkEvent(employee1, "2024-01-01T19:30:00Z", WorkEventType.BREAK)
-        //19 30 - 20 30, 1h break
+        //19 30 - 20 30, 1h break, 0.5 hours to be paid
         tb.manager.workEvents.createWorkEvent(employee1, "2024-01-01T20:30:00Z", WorkEventType.FROZEN)
         // 20.30 - 21.30, 1h frozen allowance, 1h paid work, 1h night allowance
         tb.manager.workEvents.createWorkEvent(employee1, "2024-01-01T21:30:00Z", WorkEventType.AVAILABILITY)
@@ -250,7 +250,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
 
         val workShiftHours = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee1)
         assertEquals(WorkType.entries.size, workShiftHours.size)
-        assertEquals(19f, workShiftHours.find { it.workType == fi.metatavu.vp.test.client.models.WorkType.PAID_WORK }?.calculatedHours)
+        assertEquals(19.5f, workShiftHours.find { it.workType == fi.metatavu.vp.test.client.models.WorkType.PAID_WORK }?.calculatedHours)
         assertEquals(1.5f, workShiftHours.find { it.workType == fi.metatavu.vp.test.client.models.WorkType.EVENING_ALLOWANCE }?.calculatedHours)
         assertEquals(9.5f, workShiftHours.find { it.workType == fi.metatavu.vp.test.client.models.WorkType.NIGHT_ALLOWANCE }?.calculatedHours)
         assertEquals(1f, workShiftHours.find { it.workType == fi.metatavu.vp.test.client.models.WorkType.BREAK }?.calculatedHours)
@@ -350,7 +350,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
         //move time of shift end half hr later
         updated = tb.manager.workEvents.updateWorkEvent(
             employeeId = employee1,
-            id = thirdShiftEnd.id!!,
+            id = thirdShiftEnd.id,
             workEvent = thirdShiftEnd.copy(
                 time = "2024-01-01T19:00:00Z"
             )
@@ -359,7 +359,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
         assertEquals(2.5f, workShiftHours3.find { it.workType == fi.metatavu.vp.test.client.models.WorkType.PAID_WORK }?.calculatedHours)
         assertEquals(0f, workShiftHours3.find { it.workType == fi.metatavu.vp.test.client.models.WorkType.BREAK }?.calculatedHours)
 
-        // change the type of the paid work event to break, so 1.5 hr of paid work turn into break instead
+        // change the type of the paid work event to break, so 1.5 hr of paid work turn into 1.5 hr break and 0.5 hr paid work instead
         updated = tb.manager.workEvents.updateWorkEvent(
             employeeId = employee1,
             id = secondDriveEvent.id!!,
@@ -368,7 +368,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             )
         )
         workShiftHours3 = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee1)
-        assertEquals(1f, workShiftHours3.find { it.workType == fi.metatavu.vp.test.client.models.WorkType.PAID_WORK }?.calculatedHours)
+        assertEquals(1.5f, workShiftHours3.find { it.workType == fi.metatavu.vp.test.client.models.WorkType.PAID_WORK }?.calculatedHours)
         assertEquals(1.5f, workShiftHours3.find { it.workType == fi.metatavu.vp.test.client.models.WorkType.BREAK }?.calculatedHours)
 
         //delete the break event
