@@ -1,6 +1,5 @@
 package fi.metatavu.vp.usermanagement.workshifts
 
-import fi.metatavu.keycloak.adminclient.models.UserRepresentation
 import fi.metatavu.vp.usermanagement.model.AbsenceType
 import fi.metatavu.vp.usermanagement.model.EmployeeWorkShift
 import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
@@ -98,8 +97,8 @@ class WorkShiftController {
         employeeId: UUID,
         startedAfter: OffsetDateTime?,
         startedBefore: OffsetDateTime?,
-        dateAfter: OffsetDateTime?,
-        dateBefore: OffsetDateTime?,
+        dateAfter: LocalDate?,
+        dateBefore: LocalDate?,
         first: Int? = null,
         max: Int? = null
     ): Pair<List<WorkShiftEntity>, Long> {

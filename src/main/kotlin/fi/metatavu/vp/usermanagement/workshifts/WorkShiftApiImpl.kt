@@ -15,6 +15,7 @@ import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.jboss.logging.Logger
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.*
 import kotlin.jvm.optionals.getOrNull
@@ -53,8 +54,8 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
         employeeId: UUID,
         startedAfter: OffsetDateTime?,
         startedBefore: OffsetDateTime?,
-        dateAfter: OffsetDateTime?,
-        dateBefore: OffsetDateTime?,
+        dateAfter: LocalDate?,
+        dateBefore: LocalDate?,
         first: Int,
         max: Int
     ): Uni<Response> = withCoroutineScope {

@@ -71,8 +71,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         employeeId: UUID,
         startedAfter: OffsetDateTime?,
         startedBefore: OffsetDateTime?,
-        dateAfter: OffsetDateTime?,
-        dateBefore: OffsetDateTime?,
+        dateAfter: LocalDate?,
+        dateBefore: LocalDate?,
         first: Int? = null,
         max: Int? = null
     ): Pair<List<WorkShiftEntity>, Long> {
@@ -93,12 +93,12 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         }
 
         if (dateAfter != null) {
-            queryBuilder.append(" AND date >= DATE(:dateAfter)")
+            queryBuilder.append(" AND date >= :dateAfter")
             parameters.and("dateAfter", dateAfter)
         }
 
         if (dateBefore != null) {
-            queryBuilder.append(" AND date <= DATE(:dateBefore)")
+            queryBuilder.append(" AND date <= :dateBefore")
             parameters.and("dateBefore", dateBefore)
         }
 

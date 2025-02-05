@@ -82,10 +82,10 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         val allShifts4 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2, startedBefore = now.plusDays(2).toString())
         assertEquals(1, allShifts4.size)
 
-        val byDate = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2, dateAfter = now.plusDays(3).toString())
+        val byDate = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2, dateAfter = now.plusDays(3).toLocalDate().toString())
         assertEquals(2, byDate.size)
 
-        val byDate1 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2, dateBefore = now.plusDays(2).toString())
+        val byDate1 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee2, dateBefore = now.plusDays(2).toLocalDate().toString())
         assertEquals(1, byDate1.size)
 
         // Employee doesn't have any shifts
@@ -200,7 +200,9 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
 
         val workShifts2 = tb.manager.workShifts.listEmployeeWorkShifts(employeeId = employeeId)
         assertEquals(2, workShifts2.size)
-        val anotherShift = workShifts2.find { OffsetDateTime.parse(it.startedAt).toEpochSecond() == OffsetDateTime.parse(workEvent3.time).toEpochSecond() }!!
+        val anotherShift = workShifts2.find {
+            OffsetDateTime.parse(it.startedAt!!).toEpochSecond() == OffsetDateTime.parse(workEvent3.time).toEpochSecond()
+        }!!
         assertNotNull(anotherShift)
         Assertions.assertOffsetDateTimeEquals(workEvent3.time, anotherShift.startedAt)
         Assertions.assertOffsetDateTimeEquals(workEvent4.time, anotherShift.endedAt)
