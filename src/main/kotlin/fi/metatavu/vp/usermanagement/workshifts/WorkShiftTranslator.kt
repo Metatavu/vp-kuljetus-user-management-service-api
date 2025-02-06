@@ -25,13 +25,14 @@ class WorkShiftTranslator: AbstractTranslator<WorkShiftEntity, EmployeeWorkShift
             dayOffWorkAllowance = entity.dayOffWorkAllowance,
             perDiemAllowance = entity.perDiemAllowance,
             notes = entity.notes,
-            truckIds = workEventController
+            truckIdsFromEvents = workEventController
                 .list(employeeWorkShift = entity)
                 .first
                 .mapNotNull { it.truckId }
                 .distinct(),
             startedAt = entity.startedAt,
-            endedAt = entity.endedAt
+            endedAt = entity.endedAt,
+            defaultTruckId = entity.defaultTruckId
         )
     }
 
