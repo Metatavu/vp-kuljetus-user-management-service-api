@@ -312,6 +312,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
             )
         )
 
+        val defaultTruckId = UUID.randomUUID()
         val updatedWorkShift = it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee1,
             id = workShift.id!!,
@@ -320,7 +321,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 dayOffWorkAllowance = true,
                 perDiemAllowance = PerDiemAllowanceType.FULL,
                 absence = AbsenceType.COMPENSATORY_LEAVE,
-                notes = "approved"
+                notes = "approved",
+                defaultTruckId = defaultTruckId
             )
         )
         assertEquals(true, updatedWorkShift.approved, "After update, work shift should be approved")
@@ -328,7 +330,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         assertEquals(PerDiemAllowanceType.FULL, updatedWorkShift.perDiemAllowance, "After update, per diem allowance should be FULL")
         assertEquals(AbsenceType.COMPENSATORY_LEAVE, updatedWorkShift.absence, "After update, absence should be COMPENSATORY_LEAVE")
         assertEquals("approved", updatedWorkShift.notes, "After update, notes should be 'approved'")
-
+        assertEquals(defaultTruckId, updatedWorkShift.defaultTruckId)
         // Employee ID not found
         it.manager.workShifts.assertUpdateFail(
             employeeId = UUID.randomUUID(),

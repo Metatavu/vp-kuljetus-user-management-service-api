@@ -256,4 +256,10 @@
         </sql>
 
     </changeSet>
+
+    <changeSet id="shift_default_truck_id" author="Simeon Platonov">
+        <addColumn tableName="workshift">
+            <column name="defaulttruckid" type="binary(16)"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

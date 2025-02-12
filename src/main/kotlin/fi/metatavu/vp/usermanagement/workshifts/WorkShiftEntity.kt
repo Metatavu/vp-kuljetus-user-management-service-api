@@ -43,4 +43,7 @@ class WorkShiftEntity {
 
     @Column
     var notes: String? = null
+
+    @Column
+    var defaultTruckId: UUID? = null
 }

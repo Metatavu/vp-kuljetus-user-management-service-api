@@ -58,8 +58,8 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
         }
         // Check that truck id was added to work shift data
         var workShift = tb.manager.workShifts.listEmployeeWorkShifts(employeeId = driverId).first()
-        assertEquals(1, workShift.truckIds!!.size)
-        assertEquals(startWorkEvent.truckId, workShift.truckIds!![0])
+        assertEquals(1, workShift.truckIdsFromEvents!!.size)
+        assertEquals(startWorkEvent.truckId, workShift.truckIdsFromEvents!![0])
 
         // Manually add it to closable since the work events were created off-screen
         tb.manager.workEvents.listWorkEvents(driverId).forEach {
@@ -90,7 +90,7 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
         assertNotNull(driveWorkEvent.time)
 
         workShift = tb.manager.workShifts.listEmployeeWorkShifts(employeeId = driverId).first()
-        assertEquals(2, workShift.truckIds!!.size)
+        assertEquals(2, workShift.truckIdsFromEvents!!.size)
     }
 
     private fun createDriverWorkEvent(
