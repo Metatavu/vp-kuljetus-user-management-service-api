@@ -178,7 +178,8 @@ class WorkEventTestIT : AbstractFunctionalTest() {
         )
         val updateData = created.copy(
             workEventType = WorkEventType.BREWERY,
-            time = OffsetDateTime.now().toString()
+            time = OffsetDateTime.now().toString(),
+            costCenter = "centre"
         )
         val shiftStartEvent = it.manager.workEvents.listWorkEvents(employee1.id).find { e -> e.workEventType == WorkEventType.SHIFT_START }!!
         val updatedEvent = it.manager.workEvents.updateWorkEvent(employee1.id, created.id!!, updateData)
@@ -186,6 +187,7 @@ class WorkEventTestIT : AbstractFunctionalTest() {
         it.manager.workEvents.addEmployeeShiftStartToCloseables(employeeId = employee1.id)
 
         assertEquals(updateData.id, updatedEvent.id)
+        assertEquals(updateData.costCenter, updatedEvent.costCenter)
         assertEquals(updateData.workEventType, updatedEvent.workEventType)
         assertEquals(
             OffsetDateTime.parse(updateData.time).toEpochSecond(),

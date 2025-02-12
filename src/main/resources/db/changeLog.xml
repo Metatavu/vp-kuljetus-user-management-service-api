@@ -262,4 +262,12 @@
             <column name="defaulttruckid" type="binary(16)"/>
         </addColumn>
     </changeSet>
+    <changeSet id="cost_center" author="Simeon Platonov">
+        <addColumn tableName="workevent">
+            <column name="costcenter" type="varchar(191)"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="delete_shift_default_truck_id" author="Simeon Platonov">
+        <dropColumn tableName="workshift" columnName="defaulttruckid"/>
+    </changeSet>
 </databaseChangeLog>

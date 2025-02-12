@@ -37,7 +37,6 @@ class WorkShiftController {
      * @param startedAt started at
      * @param endedAt ended at
      * @param dayOffWorkAllowance day off work allowance
-     * @param defaultTruckId default truck id
      * @return created employee work shift
      */
     suspend fun create(
@@ -47,8 +46,7 @@ class WorkShiftController {
         perDiemAllowanceType: PerDiemAllowanceType? = null,
         startedAt: OffsetDateTime? = null,
         endedAt: OffsetDateTime? = null,
-        dayOffWorkAllowance: Boolean? = null,
-        defaultTruckId: UUID? = null
+        dayOffWorkAllowance: Boolean? = null
     ): WorkShiftEntity {
         val shift = workShiftRepository.create(
             id = UUID.randomUUID(),
@@ -59,8 +57,7 @@ class WorkShiftController {
             perDiemAllowance = perDiemAllowanceType,
             startedAt = startedAt,
             endedAt = endedAt,
-            dayOffWorkAllowance = dayOffWorkAllowance,
-            defaultTruckId = defaultTruckId
+            dayOffWorkAllowance = dayOffWorkAllowance
         )
 
         workShiftHoursController.createWorkShiftHours(
@@ -143,8 +140,7 @@ class WorkShiftController {
             dayOffWorkAllowance = updatedWorkShift.dayOffWorkAllowance,
             perDiemAllowance = updatedWorkShift.perDiemAllowance,
             notes = updatedWorkShift.notes,
-            approved = updatedWorkShift.approved,
-            defaultTruckId = updatedWorkShift.defaultTruckId
+            approved = updatedWorkShift.approved
         )
     }
 

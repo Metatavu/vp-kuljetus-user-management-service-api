@@ -24,6 +24,8 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
      * @param time time
      * @param workEventType work event type
      * @param workShiftEntity work shift entity
+     * @param costCenter cost center
+     * @param truckId truck id
      * @return created work event
      */
     suspend fun create(
@@ -32,6 +34,7 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
         time: OffsetDateTime,
         workEventType: WorkEventType,
         workShiftEntity: WorkShiftEntity,
+        costCenter: String?,
         truckId: UUID? = null
     ): WorkEventEntity {
         val workEventEntity = WorkEventEntity()
@@ -40,6 +43,7 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
         workEventEntity.time = time
         workEventEntity.workEventType = workEventType
         workEventEntity.workShift = workShiftEntity
+        workEventEntity.costCenter = costCenter
         workEventEntity.truckId = truckId
         return persistSuspending(workEventEntity)
     }
