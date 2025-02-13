@@ -94,8 +94,7 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
                 perDiemAllowanceType = employeeWorkShift.perDiemAllowance,
                 startedAt = employeeWorkShift.startedAt,
                 endedAt = employeeWorkShift.endedAt,
-                dayOffWorkAllowance = employeeWorkShift.dayOffWorkAllowance,
-                defaultTruckId = employeeWorkShift.defaultTruckId
+                dayOffWorkAllowance = employeeWorkShift.dayOffWorkAllowance
             )
             createOk(workShiftTranslator.translate(created))
         }

@@ -93,7 +93,8 @@ class WorkEventController {
             time = time,
             workEventType = workEventType,
             workShiftEntity = workShift,
-            truckId = truckId
+            truckId = truckId,
+            costCenter = null
         )
 
         val updatedShift = recalculateWorkShiftTimes(workShift = workShift)
@@ -131,6 +132,7 @@ class WorkEventController {
     suspend fun updateFromRest(foundWorkEvent: WorkEventEntity, workEvent: WorkEvent): WorkEventEntity {
         foundWorkEvent.time = workEvent.time
         foundWorkEvent.workEventType = workEvent.workEventType
+        foundWorkEvent.costCenter = workEvent.costCenter
         val updated = workEventRepository.persistSuspending(foundWorkEvent)
 
         val updatedShift = recalculateWorkShiftTimes(workShift = foundWorkEvent.workShift)
@@ -312,7 +314,8 @@ class WorkEventController {
                     workShiftEntity = newShift,
                     employeeId = employeeId,
                     workEventType = WorkEventType.SHIFT_START,
-                    time = workEventTime.minusSeconds(1)
+                    time = workEventTime.minusSeconds(1),
+                    costCenter = null
                 )
             }
             newShift

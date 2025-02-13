@@ -32,6 +32,9 @@ class WorkEventEntity {
     var truckId: UUID? = null
 
     @Column
+    var costCenter: String? = null
+
+    @Column
     var createdAt: OffsetDateTime? = null
 
     @PrePersist
