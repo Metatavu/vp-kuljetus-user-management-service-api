@@ -31,7 +31,10 @@ class WorkShiftTranslator: AbstractTranslator<WorkShiftEntity, EmployeeWorkShift
                 .mapNotNull { it.truckId }
                 .distinct(),
             startedAt = entity.startedAt,
-            endedAt = entity.endedAt
+            endedAt = entity.endedAt,
+            costCentersFromEvents = workEventController.list(employeeWorkShift = entity).first.mapNotNull {
+                it.costCenter
+            }
         )
     }
 
