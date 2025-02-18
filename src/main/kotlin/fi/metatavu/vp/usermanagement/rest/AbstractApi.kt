@@ -301,6 +301,7 @@ abstract class AbstractApi: WithCoroutineScope() {
         const val NOT_FOUND_MESSAGE = "Not found"
         const val UNAUTHORIZED = "Unauthorized"
         const val FORBIDDEN = "Forbidden"
+        const val CHANGESET_ID_RESERVED_BY_OTHER_WORKSHIFT = "This changeSetId is already being used by another work shift"
         const val MISSING_REQUEST_BODY = "Missing request body"
         const val INVALID_REQUEST_BODY = "Invalid request body"
         const val INVALID_API_KEY = "Invalid API key"

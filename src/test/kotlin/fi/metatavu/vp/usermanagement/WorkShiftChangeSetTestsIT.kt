@@ -76,4 +76,34 @@ class WorkShiftChangeSetTestsIT: AbstractFunctionalTest() {
         assertNull(change.oldValue)
         assertNull(change.newValue)
     }
+
+    @Test
+    fun testCreateWorkShiftChangelogFail() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1")
+        val changeSetId = UUID.randomUUID()
+        it.manager.workShifts.createEmployeeWorkShift(employeeId = employee.id!!,
+            workShift = EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                employeeId = employee.id,
+                approved = false,
+                startedAt = now.toString(),
+                endedAt = now.plusHours(25).toString()
+            ),
+            changeSetId = changeSetId
+        )
+
+        it.manager.workShifts.assertCreateFail(
+            employeeId = employee.id,
+            workShift = EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                employeeId = employee.id,
+                approved = false,
+                startedAt = now.toString(),
+                endedAt = now.plusHours(25).toString()
+            ),
+            changeSetId = changeSetId,
+            expectedStatus = 400
+        )
+
+    }
 }

@@ -110,6 +110,12 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
                 dayOffWorkAllowance = employeeWorkShift.dayOffWorkAllowance
             )
 
+            val existingChangeSet = workShiftChangeSetController.find(workShiftChangeSetId)
+
+            if (existingChangeSet != null) {
+                return@withCoroutineScope createBadRequest(FORBIDDEN)
+            }
+
             val changeSet = workShiftChangeSetController.create(workShiftChangeSetId, created, loggedUserId!!)
 
             workShiftChangeController.create(
