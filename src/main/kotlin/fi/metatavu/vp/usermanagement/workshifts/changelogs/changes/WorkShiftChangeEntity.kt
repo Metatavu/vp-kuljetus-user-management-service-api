@@ -36,7 +36,7 @@ class WorkShiftChangeEntity {
     lateinit var workShift: WorkShiftEntity
 
     @ManyToOne
-    var workShiftHours: WorkShiftHoursEntity? = null
+    var workShiftHour: WorkShiftHoursEntity? = null
 
     @ManyToOne
     var workEvent: WorkEventEntity? = null

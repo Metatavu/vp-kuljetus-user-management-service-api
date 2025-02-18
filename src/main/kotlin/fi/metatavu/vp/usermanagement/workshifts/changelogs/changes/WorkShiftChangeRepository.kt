@@ -43,7 +43,7 @@ class WorkShiftChangeRepository: AbstractRepository<WorkShiftChangeEntity, UUID>
         workShiftChange.creatorId = creatorId
         workShiftChange.workShiftChangeSet = workShiftChangeSet
         workShiftChange.workShift = workShift
-        workShiftChange.workShiftHours = workShiftHours
+        workShiftChange.workShiftHour = workShiftHours
         workShiftChange.workEvent = workEvent
         workShiftChange.oldValue = oldValue
         workShiftChange.newValue = newValue
@@ -55,14 +55,14 @@ class WorkShiftChangeRepository: AbstractRepository<WorkShiftChangeEntity, UUID>
      * List changes that belong to a change set
      * This will be used to build the change set REST entity
      *
-     * @param workShiftChangeEntity
+     * @param workShiftChangeSetEntity
      */
-    suspend fun listByChangeSet(workShiftChangeEntity: WorkShiftChangeEntity): List<WorkShiftChangeEntity> {
+    suspend fun listByChangeSet(workShiftChangeSetEntity: WorkShiftChangeSetEntity): List<WorkShiftChangeEntity> {
         val queryBuilder = StringBuilder()
         val parameters = Parameters()
 
         addCondition(queryBuilder, "workShiftChangeSet = :workShiftChangeSet")
-        parameters.and("workShiftChangeSet", workShiftChangeEntity)
+        parameters.and("workShiftChangeSet", workShiftChangeSetEntity)
 
         return list(queryBuilder.toString(), parameters).awaitSuspending()
     }

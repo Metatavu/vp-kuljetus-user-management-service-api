@@ -1,10 +1,12 @@
 package fi.metatavu.vp.usermanagement.workshifts
 
 import fi.metatavu.vp.usermanagement.model.EmployeeWorkShift
+import fi.metatavu.vp.usermanagement.model.WorkShiftChangeReason
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.EmployeeWorkShiftsApi
 import fi.metatavu.vp.usermanagement.users.UserController
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changes.WorkShiftChangeController
 import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftChangeSetController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
@@ -52,6 +54,9 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
 
     @Inject
     lateinit var logger: Logger
+
+    @Inject
+    lateinit var workShiftChangeController: WorkShiftChangeController
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
     override fun listEmployeeWorkShifts(
@@ -105,7 +110,18 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
                 dayOffWorkAllowance = employeeWorkShift.dayOffWorkAllowance
             )
 
-            workShiftChangeSetController.create(UUID.randomUUID(), created, loggedUserId!!)
+            val changeSet = workShiftChangeSetController.create(workShiftChangeSetId, created, loggedUserId!!)
+
+            workShiftChangeController.create(
+                reason = WorkShiftChangeReason.WORKSHIFT_CREATED.toString(),
+                creatorId = loggedUserId!!,
+                workShiftChangeSet = changeSet,
+                workShift = created,
+                workShiftHours = null,
+                workEvent = null,
+                oldValue = null,
+                newValue = null
+            )
 
             createOk(workShiftTranslator.translate(created))
         }

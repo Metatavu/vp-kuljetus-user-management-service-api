@@ -1,6 +1,7 @@
 package fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets
 
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changes.WorkShiftChangeController
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import java.util.*
@@ -12,6 +13,9 @@ import java.util.*
 class WorkShiftChangeSetController {
     @Inject
     lateinit var workShiftChangeSetRepository: WorkShiftChangeSetRepository
+
+    @Inject
+    lateinit var workShiftChangeController: WorkShiftChangeController
 
     /**
      * Save a new change set to the database
@@ -48,6 +52,10 @@ class WorkShiftChangeSetController {
      * @param workShiftChangeSetEntity change set entity
      */
     suspend fun delete(workShiftChangeSetEntity: WorkShiftChangeSetEntity) {
+        workShiftChangeController.listByChangeSet(workShiftChangeSetEntity).forEach {
+            workShiftChangeController.delete(it)
+        }
+
         workShiftChangeSetRepository.deleteSuspending(workShiftChangeSetEntity)
     }
 }
