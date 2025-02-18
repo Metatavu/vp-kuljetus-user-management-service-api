@@ -7,6 +7,7 @@ import fi.metatavu.vp.usermanagement.spec.WorkEventsApi
 import fi.metatavu.vp.usermanagement.users.UserController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftRepository
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftChangeSetController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -36,6 +37,9 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
 
     @Inject
     lateinit var employeeWorkShiftController: WorkShiftController
+
+    @Inject
+    lateinit var workShiftChangeSetController: WorkShiftChangeSetController
 
     @Inject
     lateinit var workShiftRepository: WorkShiftRepository
@@ -121,7 +125,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
     @WithTransaction
-    override fun updateEmployeeWorkEvent(employeeId: UUID, workEventId: UUID, workEvent: WorkEvent): Uni<Response> =
+    override fun updateEmployeeWorkEvent(employeeId: UUID, workEventId: UUID, workShiftChangeSetId: UUID, workEvent: WorkEvent): Uni<Response> =
         withCoroutineScope {
             if (employeeId != workEvent.employeeId) {
                 return@withCoroutineScope createBadRequest("Employee id in path and in body do not match")
@@ -148,6 +152,13 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
             }
 
             val updatedWorkEvent = workEventController.updateFromRest(foundWorkEvent, workEvent)
+
+            val existingChangeSet = workShiftChangeSetController.find(workShiftChangeSetId)
+
+            if (existingChangeSet == null) {
+                workShiftChangeSetController.create(UUID.randomUUID(), updatedWorkEvent.workShift, loggedUserId!!)
+            }
+
             createOk(workEventTranslator.translate(updatedWorkEvent))
         }
 

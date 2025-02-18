@@ -5,6 +5,7 @@ import fi.metatavu.vp.usermanagement.model.EmployeeWorkShift
 import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftChangeSetController
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import java.time.LocalDate
@@ -25,6 +26,9 @@ class WorkShiftController {
 
     @Inject
     lateinit var workEventController: WorkEventController
+    
+    @Inject
+    lateinit var workShiftChangeSetController: WorkShiftChangeSetController
 
     /**
      * Creates a new employee work shift (unapproved)
@@ -156,6 +160,10 @@ class WorkShiftController {
 
         workEventController.list(employeeWorkShift = employeeWorkShift).first.forEach {
             workEventController.deleteWithNoSideEffects(it)
+        }
+
+        workShiftChangeSetController.listByWorkShift(employeeWorkShift).forEach {
+            workShiftChangeSetController.delete(it)
         }
 
         workShiftRepository.deleteSuspending(employeeWorkShift)

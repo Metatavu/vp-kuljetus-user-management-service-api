@@ -82,7 +82,7 @@ class WorkShiftHoursTestBuilderResource(
      * @return updated work shift hours
      */
     fun updateWorkShiftHours(id: UUID, workShiftHours: WorkShiftHours): WorkShiftHours {
-        return api.updateWorkShiftHours(id, workShiftHours)
+        return api.updateWorkShiftHours(id, UUID.randomUUID(), workShiftHours)
     }
 
     /**
@@ -103,7 +103,7 @@ class WorkShiftHoursTestBuilderResource(
      */
     fun assertUpdateFail(id: UUID, workEvent: WorkShiftHours, expectedStatus: Int) {
         try {
-            api.updateWorkShiftHours(id, workEvent)
+            api.updateWorkShiftHours(id, UUID.randomUUID(), workEvent)
             Assert.fail(String.format("Expected update to fail with status %d", expectedStatus))
         } catch (ex: ClientException) {
             assertClientExceptionStatus(expectedStatus, ex)

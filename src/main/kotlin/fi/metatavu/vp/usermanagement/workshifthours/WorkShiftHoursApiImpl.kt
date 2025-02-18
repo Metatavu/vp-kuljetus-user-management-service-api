@@ -5,6 +5,7 @@ import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.WorkShiftHoursApi
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftChangeSetController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -33,6 +34,9 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
 
     @Inject
     lateinit var workShiftHoursTranslator: WorkShiftHoursTranslator
+
+    @Inject
+    lateinit var workShiftChangeSetController: WorkShiftChangeSetController
 
     @ConfigProperty(name = "env")
     lateinit var env: Optional<String>
@@ -81,7 +85,7 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
 
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
-    override fun updateWorkShiftHours(workShiftHoursId: UUID, workShiftHours: WorkShiftHours): Uni<Response> = withCoroutineScope {
+    override fun updateWorkShiftHours(workShiftHoursId: UUID, workShiftChangeSetId: UUID, workShiftHours: WorkShiftHours): Uni<Response> = withCoroutineScope {
         val existingWorkShiftHours = workShiftHoursController.findWorkShiftHours(workShiftHoursId)
           ?: return@withCoroutineScope createNotFoundWithMessage(WORK_SHIFT_HOURS, workShiftHoursId)
 
@@ -97,6 +101,13 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
         }
 
         val updatedWorkShiftHours = workShiftHoursController.updateWorkShiftHours(existingWorkShiftHours, workShiftHours.actualHours)
+
+        val existingChangeSet = workShiftChangeSetController.find(workShiftChangeSetId)
+
+        if (existingChangeSet == null) {
+            workShiftChangeSetController.create(UUID.randomUUID(), updatedWorkShiftHours.workShift, loggedUserId!!)
+        }
+
         createOk(workShiftHoursTranslator.translate(updatedWorkShiftHours))
     }
 }
