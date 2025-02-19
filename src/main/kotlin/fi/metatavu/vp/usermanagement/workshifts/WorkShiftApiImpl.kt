@@ -1,10 +1,14 @@
 package fi.metatavu.vp.usermanagement.workshifts
 
 import fi.metatavu.vp.usermanagement.model.EmployeeWorkShift
+import fi.metatavu.vp.usermanagement.model.WorkShiftChangeReason
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.EmployeeWorkShiftsApi
 import fi.metatavu.vp.usermanagement.users.UserController
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changes.WorkShiftChangeController
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.ChangeSetExistsWithOtherWorkShiftException
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftChangeSetController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -38,6 +42,9 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
     lateinit var employeeController: UserController
 
     @Inject
+    lateinit var workShiftChangeSetController: WorkShiftChangeSetController
+
+    @Inject
     lateinit var eventBus: EventBus
 
     @ConfigProperty(name = "env")
@@ -48,6 +55,9 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
 
     @Inject
     lateinit var logger: Logger
+
+    @Inject
+    lateinit var workShiftChangeController: WorkShiftChangeController
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
     override fun listEmployeeWorkShifts(
@@ -78,14 +88,24 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
 
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
-    override fun createEmployeeWorkShift(employeeId: UUID, employeeWorkShift: EmployeeWorkShift): Uni<Response> {
+    override fun createEmployeeWorkShift(employeeId: UUID, workShiftChangeSetId: UUID, employeeWorkShift: EmployeeWorkShift): Uni<Response> {
         return withCoroutineScope {
             if (employeeId != employeeWorkShift.employeeId) {
                 return@withCoroutineScope createBadRequest("employeeId in path and body do not match")
             }
 
+            if (loggedUserId == null) {
+                return@withCoroutineScope createForbidden(FORBIDDEN)
+            }
+
             val employee = employeeController.find(employeeId)
               ?: return@withCoroutineScope createNotFoundWithMessage(EMPLOYEE_ENTITY, employeeId)
+
+            val existingChangeSet = workShiftChangeSetController.find(workShiftChangeSetId)
+
+            if (existingChangeSet != null) {
+                return@withCoroutineScope createBadRequest(CHANGESET_ID_RESERVED_BY_OTHER_WORKSHIFT)
+            }
 
             val created = workShiftController.create(
                 employeeId = UUID.fromString(employee.id),
@@ -96,6 +116,20 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
                 endedAt = employeeWorkShift.endedAt,
                 dayOffWorkAllowance = employeeWorkShift.dayOffWorkAllowance
             )
+
+            val changeSet = workShiftChangeSetController.create(workShiftChangeSetId, created, loggedUserId!!)
+
+            workShiftChangeController.create(
+                reason = WorkShiftChangeReason.WORKSHIFT_CREATED.toString(),
+                creatorId = loggedUserId!!,
+                workShiftChangeSet = changeSet,
+                workShift = created,
+                workShiftHours = null,
+                workEvent = null,
+                oldValue = null,
+                newValue = null
+            )
+
             createOk(workShiftTranslator.translate(created))
         }
     }
@@ -125,6 +159,7 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
     override fun updateEmployeeWorkShift(
         employeeId: UUID,
         workShiftId: UUID,
+        workShiftChangeSetId: UUID,
         employeeWorkShift: EmployeeWorkShift
     ): Uni<Response> = withCoroutineScope{
         val existingWorkShift = workShiftController.findEmployeeWorkShift(employeeId, workShiftId)
@@ -132,6 +167,10 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
 
         if (employeeId != existingWorkShift.employeeId) {
             return@withCoroutineScope createBadRequest("employeeId in path and body do not match")
+        }
+
+        if (loggedUserId == null) {
+            return@withCoroutineScope createForbidden(FORBIDDEN)
         }
 
         val workShiftStaysApproved = existingWorkShift.approved && employeeWorkShift.approved
@@ -142,6 +181,18 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
 
         if (workShiftStaysApproved && workShiftModified) {
             return@withCoroutineScope createBadRequest("Approved work shifts cannot be updated")
+        }
+
+        try {
+            val changeSet = workShiftChangeSetController.createOrReturnExisting(workShiftChangeSetId, existingWorkShift, loggedUserId!!)
+            workShiftChangeController.processWorkShiftChanges(
+                oldWorkShift = existingWorkShift,
+                newWorkShift = employeeWorkShift,
+                changeSet = changeSet,
+                creatorId = loggedUserId!!
+            )
+        } catch (exception: ChangeSetExistsWithOtherWorkShiftException) {
+            return@withCoroutineScope createBadRequest(CHANGESET_ID_RESERVED_BY_OTHER_WORKSHIFT)
         }
 
         val updated = workShiftController.updateEmployeeWorkShift(

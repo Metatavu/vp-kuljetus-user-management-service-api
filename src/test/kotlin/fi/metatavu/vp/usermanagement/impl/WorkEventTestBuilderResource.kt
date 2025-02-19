@@ -83,7 +83,8 @@ class WorkEventTestBuilderResource(
      * @return created work event
      */
     fun createWorkEvent(employeeId: UUID, workEvent: WorkEvent): WorkEvent {
-        return addClosable(api.createEmployeeWorkEvent(employeeId, workEvent))
+        val event = api.createEmployeeWorkEvent(employeeId, workEvent)
+        return addClosable(event)
     }
 
     fun createWorkEvent(employeeId: UUID, time: String, type: WorkEventType): WorkEvent {
@@ -110,7 +111,20 @@ class WorkEventTestBuilderResource(
      * @return updated work event
      */
     fun updateWorkEvent(employeeId: UUID, id: UUID, workEvent: WorkEvent): WorkEvent {
-        return api.updateEmployeeWorkEvent(employeeId, id, workEvent)
+        return updateWorkEvent(employeeId, id, UUID.randomUUID(), workEvent)
+    }
+
+    /**
+     * Updates work event
+     *
+     * @param employeeId employee id
+     * @param id work event
+     * @param changeSetId change set id
+     * @param workEvent work event
+     * @return updated work event
+     */
+    fun updateWorkEvent(employeeId: UUID, id: UUID, changeSetId: UUID, workEvent: WorkEvent): WorkEvent {
+        return api.updateEmployeeWorkEvent(employeeId, id, changeSetId, workEvent)
     }
 
     /**
@@ -139,7 +153,7 @@ class WorkEventTestBuilderResource(
      */
     fun assertUpdateFail(employeeId: UUID, id: UUID, workEvent: WorkEvent, expectedStatus: Int) {
         try {
-            api.updateEmployeeWorkEvent(employeeId, id, workEvent)
+            api.updateEmployeeWorkEvent(employeeId, id, UUID.randomUUID(), workEvent)
             Assert.fail(String.format("Expected update to fail with status %d", expectedStatus))
         } catch (ex: ClientException) {
             assertClientExceptionStatus(expectedStatus, ex)

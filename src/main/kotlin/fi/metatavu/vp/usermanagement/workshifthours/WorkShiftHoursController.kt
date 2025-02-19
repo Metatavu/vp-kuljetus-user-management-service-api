@@ -8,6 +8,7 @@ import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changes.WorkShiftChangeRepository
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.vertx.ConsumeEvent
 import io.vertx.core.Vertx
@@ -33,6 +34,9 @@ class WorkShiftHoursController: WithCoroutineScope() {
 
     @Inject
     lateinit var workEventController: WorkEventController
+
+    @Inject
+    lateinit var workShiftChangeRepository: WorkShiftChangeRepository
 
     @Inject
     lateinit var holidayController: HolidayController
@@ -239,6 +243,9 @@ class WorkShiftHoursController: WithCoroutineScope() {
      * @param workShiftHours work shift hours
      */
     suspend fun deleteWorkShiftHours(workShiftHours: WorkShiftHoursEntity) {
+        workShiftChangeRepository.listByWorkshiftHour(workShiftHours).forEach {
+            workShiftChangeRepository.deleteSuspending(it)
+        }
         workShiftHoursRepository.deleteSuspending(workShiftHours)
     }
 

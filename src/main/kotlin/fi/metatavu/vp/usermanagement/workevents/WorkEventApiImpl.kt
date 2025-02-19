@@ -7,6 +7,9 @@ import fi.metatavu.vp.usermanagement.spec.WorkEventsApi
 import fi.metatavu.vp.usermanagement.users.UserController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftRepository
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changes.WorkShiftChangeController
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.ChangeSetExistsWithOtherWorkShiftException
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftChangeSetController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -36,6 +39,12 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
 
     @Inject
     lateinit var employeeWorkShiftController: WorkShiftController
+
+    @Inject
+    lateinit var workShiftChangeController: WorkShiftChangeController
+
+    @Inject
+    lateinit var workShiftChangeSetController: WorkShiftChangeSetController
 
     @Inject
     lateinit var workShiftRepository: WorkShiftRepository
@@ -121,7 +130,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
     @WithTransaction
-    override fun updateEmployeeWorkEvent(employeeId: UUID, workEventId: UUID, workEvent: WorkEvent): Uni<Response> =
+    override fun updateEmployeeWorkEvent(employeeId: UUID, workEventId: UUID, workShiftChangeSetId: UUID, workEvent: WorkEvent): Uni<Response> =
         withCoroutineScope {
             if (employeeId != workEvent.employeeId) {
                 return@withCoroutineScope createBadRequest("Employee id in path and in body do not match")
@@ -147,7 +156,20 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
                 return@withCoroutineScope createBadRequest(it)
             }
 
+            try {
+                val changeSet = workShiftChangeSetController.createOrReturnExisting(workShiftChangeSetId, foundWorkEvent.workShift, loggedUserId!!)
+                workShiftChangeController.processWorkEventChanges(
+                    oldEvent = foundWorkEvent,
+                    newEvent = workEvent,
+                    changeSet = changeSet,
+                    creatorId = loggedUserId!!
+                )
+            } catch (exception: ChangeSetExistsWithOtherWorkShiftException) {
+                return@withCoroutineScope createBadRequest(CHANGESET_ID_RESERVED_BY_OTHER_WORKSHIFT)
+            }
+
             val updatedWorkEvent = workEventController.updateFromRest(foundWorkEvent, workEvent)
+
             createOk(workEventTranslator.translate(updatedWorkEvent))
         }
 

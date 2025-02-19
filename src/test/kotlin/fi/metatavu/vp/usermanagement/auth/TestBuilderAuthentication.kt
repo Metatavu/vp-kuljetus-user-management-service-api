@@ -33,6 +33,7 @@ class TestBuilderAuthentication(
     val workShifts = WorkShiftTestBuilderResource(testBuilder, accessTokenProvider, cronKey = this.cronKey, createClient(accessTokenProvider))
     val workShiftHours = WorkShiftHoursTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
     val clientApps = ClientAppTestBuilderResource(testBuilder, accessTokenProvider, driverAppApiKey = this.driverAppApiKey, keycloakApiKey = this.keycloakApiKey, createClient(accessTokenProvider))
+    val workShiftChangeSets = WorkShiftChangeSetsTestBuilderResource(testBuilder, accessTokenProvider, createClient(accessTokenProvider))
 
     override fun createClient(authProvider: AccessTokenProvider): ApiClient {
         val result = ApiClient(ApiTestSettings.apiBasePath)
