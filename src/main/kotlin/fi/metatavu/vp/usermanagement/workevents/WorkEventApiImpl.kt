@@ -7,6 +7,8 @@ import fi.metatavu.vp.usermanagement.spec.WorkEventsApi
 import fi.metatavu.vp.usermanagement.users.UserController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftRepository
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changes.WorkShiftChangeController
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.ChangeSetExistsWithOtherWorkShiftException
 import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftChangeSetController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
@@ -37,6 +39,9 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
 
     @Inject
     lateinit var employeeWorkShiftController: WorkShiftController
+
+    @Inject
+    lateinit var workShiftChangeController: WorkShiftChangeController
 
     @Inject
     lateinit var workShiftChangeSetController: WorkShiftChangeSetController
@@ -151,13 +156,19 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
                 return@withCoroutineScope createBadRequest(it)
             }
 
-            val updatedWorkEvent = workEventController.updateFromRest(foundWorkEvent, workEvent)
-
-            val existingChangeSet = workShiftChangeSetController.find(workShiftChangeSetId)
-
-            if (existingChangeSet == null) {
-                workShiftChangeSetController.create(UUID.randomUUID(), updatedWorkEvent.workShift, loggedUserId!!)
+            try {
+                val changeSet = workShiftChangeSetController.createOrReturnExisting(workShiftChangeSetId, foundWorkEvent.workShift, loggedUserId!!)
+                workShiftChangeController.processWorkEventChanges(
+                    oldEvent = foundWorkEvent,
+                    newEvent = workEvent,
+                    changeSet = changeSet,
+                    creatorId = loggedUserId!!
+                )
+            } catch (exception: ChangeSetExistsWithOtherWorkShiftException) {
+                return@withCoroutineScope createBadRequest(CHANGESET_ID_RESERVED_BY_OTHER_WORKSHIFT)
             }
+
+            val updatedWorkEvent = workEventController.updateFromRest(foundWorkEvent, workEvent)
 
             createOk(workEventTranslator.translate(updatedWorkEvent))
         }

@@ -140,7 +140,6 @@ class WorkShiftChangeLogTestsIT: AbstractFunctionalTest() {
             notes = "Notes 1"
         )
 
-
         val changeSetId = UUID.randomUUID()
         it.manager.workShifts.updateEmployeeWorkShift(
             id = updatedShift.id!!,

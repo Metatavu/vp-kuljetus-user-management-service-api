@@ -1,6 +1,7 @@
 package fi.metatavu.vp.usermanagement.workshifts.changelogs.changes
 
 import fi.metatavu.vp.usermanagement.model.EmployeeWorkShift
+import fi.metatavu.vp.usermanagement.model.WorkEvent
 import fi.metatavu.vp.usermanagement.model.WorkShiftChangeReason
 import fi.metatavu.vp.usermanagement.model.WorkShiftChangeSet
 import fi.metatavu.vp.usermanagement.workevents.WorkEventEntity
@@ -74,8 +75,8 @@ class WorkShiftChangeController {
      *
      * @param oldWorkShift
      * @param newWorkShift
-     * @param changeSet change set
-     * @param creatorId creator id
+     * @param changeSet
+     * @param creatorId
      */
     suspend fun processWorkShiftChanges(oldWorkShift: WorkShiftEntity, newWorkShift: EmployeeWorkShift, changeSet: WorkShiftChangeSetEntity, creatorId: UUID) {
         if (oldWorkShift.approved != newWorkShift.approved) {
@@ -140,6 +141,55 @@ class WorkShiftChangeController {
                 workEvent = null,
                 oldValue = oldWorkShift.notes.toString(),
                 newValue = newWorkShift.notes.toString()
+            )
+        }
+    }
+
+    /**
+     * Create individual change entries for updated work event fields
+     *
+     * @param oldEvent
+     * @param newEvent
+     * @param changeSet
+     * @param creatorId
+     */
+    suspend fun processWorkEventChanges(oldEvent: WorkEventEntity, newEvent: WorkEvent, changeSet: WorkShiftChangeSetEntity, creatorId: UUID) {
+        if (oldEvent.costCenter != newEvent.costCenter) {
+            create(
+                reason = WorkShiftChangeReason.WORKEVENT_UPDATED_COSTCENTER.toString(),
+                creatorId = creatorId,
+                workShiftChangeSet = changeSet,
+                workShift = oldEvent.workShift,
+                workShiftHours = null,
+                workEvent = oldEvent,
+                oldValue = oldEvent.costCenter,
+                newValue = newEvent.costCenter
+            )
+        }
+
+        if (oldEvent.workEventType.toString() != newEvent.workEventType.toString()) {
+            create(
+                reason = WorkShiftChangeReason.WORKEVENT_UPDATED_TYPE.toString(),
+                creatorId = creatorId,
+                workShiftChangeSet = changeSet,
+                workShift = oldEvent.workShift,
+                workShiftHours = null,
+                workEvent = oldEvent,
+                oldValue = oldEvent.workEventType.toString(),
+                newValue = newEvent.workEventType.toString()
+            )
+        }
+
+        if (oldEvent.time.toString() != newEvent.time.toString()) {
+            create(
+                reason = WorkShiftChangeReason.WORKEVENT_UPDATED_TIMESTAMP.toString(),
+                creatorId = creatorId,
+                workShiftChangeSet = changeSet,
+                workShift = oldEvent.workShift,
+                workShiftHours = null,
+                workEvent = oldEvent,
+                oldValue = oldEvent.time.toString(),
+                newValue = newEvent.time.toString()
             )
         }
     }
