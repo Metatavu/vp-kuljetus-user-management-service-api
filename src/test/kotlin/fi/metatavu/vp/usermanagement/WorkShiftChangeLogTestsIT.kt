@@ -15,7 +15,7 @@ import java.util.UUID
  */
 @QuarkusTest
 @TestProfile(DefaultTestProfile::class)
-class WorkShiftChangeSetTestsIT: AbstractFunctionalTest() {
+class WorkShiftChangeLogTestsIT: AbstractFunctionalTest() {
     val now: OffsetDateTime = OffsetDateTime.now()
 
     @Test
@@ -105,5 +105,12 @@ class WorkShiftChangeSetTestsIT: AbstractFunctionalTest() {
             expectedStatus = 400
         )
 
+    }
+
+    @Test
+    fun testListChangeSetsFail() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1")
+        it.employee.workShiftChangeSets.assertListFail(employeeId = employee.id!!, expectedStatus = 403)
+        it.driver1.workShiftChangeSets.assertListFail(employeeId = employee.id, expectedStatus = 403)
     }
 }

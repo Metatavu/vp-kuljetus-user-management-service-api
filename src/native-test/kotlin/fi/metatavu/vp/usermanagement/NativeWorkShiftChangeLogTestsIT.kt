@@ -9,5 +9,5 @@ import io.quarkus.test.junit.TestProfile
  */
 @QuarkusIntegrationTest
 @TestProfile(DefaultTestProfile::class)
-class NativeWorkShiftChangeSetTestsIT: WorkShiftChangeSetTestsIT() {
+class NativeWorkShiftChangeLogTestsIT: WorkShiftChangeLogTestsIT() {
 }

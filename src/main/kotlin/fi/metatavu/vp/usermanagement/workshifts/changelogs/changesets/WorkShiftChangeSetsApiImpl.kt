@@ -6,6 +6,7 @@ import fi.metatavu.vp.usermanagement.users.UserController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.smallrye.mutiny.Uni
+import jakarta.annotation.security.RolesAllowed
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
@@ -28,6 +29,7 @@ class WorkShiftChangeSetsApiImpl: WorkShiftChangeSetsApi, AbstractApi() {
     @Inject
     lateinit var employeeController: UserController
 
+    @RolesAllowed(MANAGER_ROLE)
     override fun listWorkShiftChangeSets(
         employeeId: UUID,
         workShiftDateAfter: LocalDate?,
@@ -35,10 +37,6 @@ class WorkShiftChangeSetsApiImpl: WorkShiftChangeSetsApi, AbstractApi() {
     ): Uni<Response> = withCoroutineScope {
         employeeController.find(employeeId)
             ?: return@withCoroutineScope createNotFoundWithMessage(EMPLOYEE_ENTITY, employeeId)
-
-        if (!isManager() && employeeId != loggedUserId ) {
-            return@withCoroutineScope createForbidden("Employees can only list their own work shifts")
-        }
 
         val workShifts = workShiftController.listEmployeeWorkShifts(employeeId = employeeId, dateAfter = workShiftDateAfter, dateBefore = workShiftDateBefore, startedBefore = null, startedAfter = null).first
 

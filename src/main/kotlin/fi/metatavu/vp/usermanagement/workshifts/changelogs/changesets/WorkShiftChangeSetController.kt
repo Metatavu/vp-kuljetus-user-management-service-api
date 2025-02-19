@@ -58,4 +58,23 @@ class WorkShiftChangeSetController {
 
         workShiftChangeSetRepository.deleteSuspending(workShiftChangeSetEntity)
     }
+
+    /**
+     * Create new work shift or return existing if exists with the given id
+     *
+     * @param id
+     * @param workShift
+     * @param creatorId
+     *
+     * @throws ChangeSetExistsWithOtherWorkShiftException thrown when a change set with the given id exists with other work shift
+     */
+    suspend fun createOrReturnExisting(id: UUID, workShift: WorkShiftEntity, creatorId: UUID): WorkShiftChangeSetEntity {
+        val existing = find(id) ?: return create(id, workShift, creatorId)
+
+        if (existing.workShift.id != workShift.id) {
+            throw ChangeSetExistsWithOtherWorkShiftException()
+        }
+
+        return existing
+    }
 }

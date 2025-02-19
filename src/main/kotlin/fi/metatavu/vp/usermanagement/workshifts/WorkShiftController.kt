@@ -154,16 +154,16 @@ class WorkShiftController {
      * @param employeeWorkShift employee work shift
      */
     suspend fun deleteEmployeeWorkShift(employeeWorkShift: WorkShiftEntity) {
+        workShiftChangeSetController.listByWorkShift(employeeWorkShift).forEach {
+            workShiftChangeSetController.delete(it)
+        }
+
         workShiftHoursController.listWorkShiftHours(workShiftFilter = employeeWorkShift).first.forEach {
             workShiftHoursController.deleteWorkShiftHours(it)
         }
 
         workEventController.list(employeeWorkShift = employeeWorkShift).first.forEach {
             workEventController.deleteWithNoSideEffects(it)
-        }
-
-        workShiftChangeSetController.listByWorkShift(employeeWorkShift).forEach {
-            workShiftChangeSetController.delete(it)
         }
 
         workShiftRepository.deleteSuspending(employeeWorkShift)
