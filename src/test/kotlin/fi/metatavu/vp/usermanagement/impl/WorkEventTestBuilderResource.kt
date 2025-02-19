@@ -82,10 +82,9 @@ class WorkEventTestBuilderResource(
      * @param workEvent work event
      * @return created work event
      */
-    fun createWorkEvent(employeeId: UUID, workEvent: WorkEvent, addClosable: Boolean = true): WorkEvent {
+    fun createWorkEvent(employeeId: UUID, workEvent: WorkEvent): WorkEvent {
         val event = api.createEmployeeWorkEvent(employeeId, workEvent)
-        if (addClosable) addClosable(event)
-        return event
+        return addClosable(event)
     }
 
     fun createWorkEvent(employeeId: UUID, time: String, type: WorkEventType): WorkEvent {

@@ -32,7 +32,7 @@ class WorkShiftHoursChangeLogTestsIT: AbstractFunctionalTest() {
             ),
             changeSetId = changeSetId
         )
-        val workShiftHours = it.manager.workShiftHours.listWorkShiftHours(employeeId = employeeId, addClosables = false)[0]
+        val workShiftHours = it.manager.workShiftHours.listWorkShiftHours(employeeId = employeeId)[0]
 
         val updateData = workShiftHours.copy(actualHours = 5f)
 
@@ -91,7 +91,7 @@ class WorkShiftHoursChangeLogTestsIT: AbstractFunctionalTest() {
             changeSetId = changeSetId2
         )
 
-        val workShiftHours = it.manager.workShiftHours.listWorkShiftHours(employeeId = employee.id, addClosables = false).find { hours ->
+        val workShiftHours = it.manager.workShiftHours.listWorkShiftHours(employeeId = employee.id).find { hours ->
             hours.employeeWorkShiftId == workShift1.id
         }!!
 

@@ -52,8 +52,7 @@ class WorkShiftHoursTestBuilderResource(
         employeeWorkShiftId: UUID? = null,
         workType: WorkType? = null,
         employeeWorkShiftStartedAfter: String? = null,
-        employeeWorkShiftStartedBefore: String? = null,
-        addClosables: Boolean = true
+        employeeWorkShiftStartedBefore: String? = null
     ): Array<WorkShiftHours> {
         val all = api.listWorkShiftHours(
             employeeId = employeeId,
@@ -63,10 +62,8 @@ class WorkShiftHoursTestBuilderResource(
             employeeWorkShiftStartedAfter = employeeWorkShiftStartedAfter
         )
 
-        if (addClosables) {
-            all.forEach {
-                addClosable(it)
-            }
+        all.forEach {
+            addClosable(it)
         }
 
         return all

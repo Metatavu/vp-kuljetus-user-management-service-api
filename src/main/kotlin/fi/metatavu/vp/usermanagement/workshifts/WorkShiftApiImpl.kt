@@ -101,6 +101,12 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
             val employee = employeeController.find(employeeId)
               ?: return@withCoroutineScope createNotFoundWithMessage(EMPLOYEE_ENTITY, employeeId)
 
+            val existingChangeSet = workShiftChangeSetController.find(workShiftChangeSetId)
+
+            if (existingChangeSet != null) {
+                return@withCoroutineScope createBadRequest(CHANGESET_ID_RESERVED_BY_OTHER_WORKSHIFT)
+            }
+
             val created = workShiftController.create(
                 employeeId = UUID.fromString(employee.id),
                 date = employeeWorkShift.date,
@@ -110,12 +116,6 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
                 endedAt = employeeWorkShift.endedAt,
                 dayOffWorkAllowance = employeeWorkShift.dayOffWorkAllowance
             )
-
-            val existingChangeSet = workShiftChangeSetController.find(workShiftChangeSetId)
-
-            if (existingChangeSet != null) {
-                return@withCoroutineScope createBadRequest(CHANGESET_ID_RESERVED_BY_OTHER_WORKSHIFT)
-            }
 
             val changeSet = workShiftChangeSetController.create(workShiftChangeSetId, created, loggedUserId!!)
 
