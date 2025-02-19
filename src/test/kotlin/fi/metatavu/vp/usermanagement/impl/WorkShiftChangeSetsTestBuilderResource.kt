@@ -9,8 +9,8 @@ import fi.metatavu.vp.test.client.models.WorkShiftChangeSet
 import fi.metatavu.vp.usermanagement.TestBuilder
 import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import org.junit.Assert
+import org.junit.jupiter.api.Assertions.assertEquals
 import java.util.*
-import kotlin.test.assertEquals
 
 /**
  * Test builder resource for work shift change sets api
