@@ -150,7 +150,20 @@ class WorkShiftTestBuilderResource(
      * @return updated work shift
      */
     fun updateEmployeeWorkShift(employeeId: UUID, id: UUID, workShift: EmployeeWorkShift): EmployeeWorkShift {
-        return api.updateEmployeeWorkShift(employeeId, id, UUID.randomUUID(), workShift)
+        return updateEmployeeWorkShift(employeeId, id, UUID.randomUUID(), workShift)
+    }
+
+    /**
+     * Updates work shift
+     *
+     * @param employeeId employee id
+     * @param id work shift id
+     * @param changeSetId change set id
+     * @param workShift work shift
+     * @return updated work shift
+     */
+    fun updateEmployeeWorkShift(employeeId: UUID, id: UUID, changeSetId: UUID, workShift: EmployeeWorkShift): EmployeeWorkShift {
+        return api.updateEmployeeWorkShift(employeeId, id, changeSetId, workShift)
     }
 
     /**

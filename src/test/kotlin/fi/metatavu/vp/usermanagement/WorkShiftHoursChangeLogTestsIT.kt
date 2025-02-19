@@ -12,7 +12,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
- * Test work shift change sets
+ * Test work shift hours change sets
  */
 @QuarkusTest
 @TestProfile(DefaultTestProfile::class)

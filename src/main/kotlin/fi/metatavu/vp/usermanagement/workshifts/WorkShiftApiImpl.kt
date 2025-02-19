@@ -7,6 +7,7 @@ import fi.metatavu.vp.usermanagement.spec.EmployeeWorkShiftsApi
 import fi.metatavu.vp.usermanagement.users.UserController
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import fi.metatavu.vp.usermanagement.workshifts.changelogs.changes.WorkShiftChangeController
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.ChangeSetExistsWithOtherWorkShiftException
 import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftChangeSetController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
@@ -182,16 +183,22 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
             return@withCoroutineScope createBadRequest("Approved work shifts cannot be updated")
         }
 
+        try {
+            val changeSet = workShiftChangeSetController.createOrReturnExisting(workShiftChangeSetId, existingWorkShift, loggedUserId!!)
+            workShiftChangeController.processWorkShiftChanges(
+                oldWorkShift = existingWorkShift,
+                newWorkShift = employeeWorkShift,
+                changeSet = changeSet,
+                creatorId = loggedUserId!!
+            )
+        } catch (exception: ChangeSetExistsWithOtherWorkShiftException) {
+            return@withCoroutineScope createBadRequest(CHANGESET_ID_RESERVED_BY_OTHER_WORKSHIFT)
+        }
+
         val updated = workShiftController.updateEmployeeWorkShift(
             existingWorkShift = existingWorkShift,
             updatedWorkShift = employeeWorkShift
         )
-
-        val existingChangeSet = workShiftChangeSetController.find(workShiftChangeSetId)
-
-        if (existingChangeSet == null) {
-            workShiftChangeSetController.create(UUID.randomUUID(), updated, loggedUserId!!)
-        }
 
         createOk(workShiftTranslator.translate(updated))
     }
