@@ -39,8 +39,7 @@ class WorkEventChangeLogTestsIT: AbstractFunctionalTest() {
                 employeeId = employee.id,
                 id = UUID.randomUUID(),
                 employeeWorkShiftId = shift.id
-            ),
-            addClosable = false
+            )
         )
 
         val updated = event.copy(

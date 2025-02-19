@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.workshifts.changelogs.changes
 
+import fi.metatavu.vp.usermanagement.model.WorkEvent
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
 import fi.metatavu.vp.usermanagement.workevents.WorkEventEntity
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursEntity
@@ -63,6 +64,36 @@ class WorkShiftChangeRepository: AbstractRepository<WorkShiftChangeEntity, UUID>
 
         addCondition(queryBuilder, "workShiftChangeSet = :workShiftChangeSet")
         parameters.and("workShiftChangeSet", workShiftChangeSetEntity)
+
+        return list(queryBuilder.toString(), parameters).awaitSuspending()
+    }
+
+    /**
+     * List changes that belong to a work shift hours entity
+     *
+     * @param workShiftHoursEntity
+     */
+    suspend fun listByWorkshiftHour(workShiftHoursEntity: WorkShiftHoursEntity): List<WorkShiftChangeEntity> {
+        val queryBuilder = StringBuilder()
+        val parameters = Parameters()
+
+        addCondition(queryBuilder, "workShiftHour = :workShiftHour")
+        parameters.and("workShiftHour", workShiftHoursEntity)
+
+        return list(queryBuilder.toString(), parameters).awaitSuspending()
+    }
+
+    /**
+     * List changes that belong to a work event entity
+     *
+     * @param workEvent
+     */
+    suspend fun listByWorkEvent(workEvent: WorkEventEntity): List<WorkShiftChangeEntity> {
+        val queryBuilder = StringBuilder()
+        val parameters = Parameters()
+
+        addCondition(queryBuilder, "workEvent = :workEvent")
+        parameters.and("workEvent", workEvent)
 
         return list(queryBuilder.toString(), parameters).awaitSuspending()
     }
