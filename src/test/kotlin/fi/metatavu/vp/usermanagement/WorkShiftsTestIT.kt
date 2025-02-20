@@ -1,5 +1,7 @@
 package fi.metatavu.vp.usermanagement
 
+import fi.metatavu.vp.messaging.client.MessagingClient
+import fi.metatavu.vp.messaging.events.DriverWorkEventGlobalEvent
 import fi.metatavu.vp.test.client.models.AbsenceType
 import fi.metatavu.vp.test.client.models.EmployeeWorkShift
 import fi.metatavu.vp.test.client.models.PerDiemAllowanceType
@@ -11,6 +13,7 @@ import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.testcontainers.shaded.org.awaitility.Awaitility
 import java.time.OffsetDateTime
 import java.util.*
 
@@ -38,7 +41,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.toLocalDate().toString(),
                 employeeId = employee1,
                 approved = false,
-                startedAt = now.toString()
+                startedAt = now.toString(),
+                costCentersFromEvents = arrayOf()
             )
         )
         it.manager.workShifts.createEmployeeWorkShift(
@@ -48,6 +52,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 employeeId = employee2,
                 approved = false,
                 startedAt = now.plusDays(2).toString(),
+                costCentersFromEvents = arrayOf()
             )
         )
         it.manager.workShifts.createEmployeeWorkShift(
@@ -57,6 +62,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 employeeId = employee2,
                 approved = false,
                 startedAt = now.plusDays(3).toString(),
+                costCentersFromEvents = arrayOf()
             )
         )
 
@@ -66,7 +72,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 date = now.plusDays(3).toLocalDate().toString(),
                 employeeId = employee2,
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
 
@@ -98,13 +105,38 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.toLocalDate().toString(),
                 employeeId = EMPLOYEE_USER_ID,
                 approved = false,
-                startedAt = now.toString()
+                startedAt = now.toString(),
+                costCentersFromEvents = arrayOf()
             )
         )
         // Employee has one shift
         it.employee.workShifts.assertListCount(employeeId = EMPLOYEE_USER_ID, expectedCount = 1)
     }
 
+    @Test
+    fun testWorkShiftCostCenters() = createTestBuilder().use { it ->
+        val costCenter1 = UUID.randomUUID().toString()
+        val costCenter2 = UUID.randomUUID().toString()
+        val employee1 = it.manager.employees.createEmployee("1")
+        val createdShift = it.manager.workShifts.createEmployeeWorkShift(employeeId = employee1.id!!, EmployeeWorkShift(
+            date = now.toLocalDate().toString(),
+            employeeId = employee1.id,
+            approved = false,
+            startedAt = now.toString(),
+            endedAt = now.plusHours(25).toString(),
+            costCentersFromEvents = arrayOf()
+        )
+        )
+        val created1 = it.manager.workEvents.createWorkEvent(employee1.id, now.toString(), WorkEventType.SHIFT_START)
+        val created2 = it.manager.workEvents.createWorkEvent(employee1.id, now.plusMinutes(2).toString(), WorkEventType.DRIVE)
+        it.manager.workEvents.updateWorkEvent(employeeId = employee1.id, created1.id!!, created1.copy(costCenter = costCenter1))
+        it.manager.workEvents.updateWorkEvent(employeeId = employee1.id, created2.id!!, created2.copy(costCenter = costCenter2))
+
+        val workShift = it.manager.workShifts.findEmployeeWorkShift(employeeId = employee1.id, id = createdShift.id!!)
+        assertEquals(2, workShift.costCentersFromEvents.size)
+        assertNotNull(workShift.costCentersFromEvents.find { costCenter -> costCenter == costCenter1 })
+        assertNotNull(workShift.costCentersFromEvents.find { costCenter -> costCenter == costCenter2 })
+    }
 
     /**
      * tests:
@@ -113,28 +145,32 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
      *  - work events additional creation based on shifts
      */
     @Test
-    fun testWorkShiftCreate() = createTestBuilder().use {
+    fun testWorkShiftCreate() = createTestBuilder().use { it ->
         val employee1 = it.manager.employees.createEmployee("1")
         val employee2 = it.manager.employees.createEmployee("2")
 
         // employee 1 events
         it.manager.workEvents.createWorkEvent(employee1.id!!, now.toString(), WorkEventType.MEAT_CELLAR) // first event triggers new shift
         val longBreakEvent = it.manager.workEvents.createWorkEvent(employee1.id, now.plusHours(1).toString(), WorkEventType.BREAK)    //Long break triggers new shift
+
         it.manager.workEvents.createWorkEvent(employee1.id,  now.plusHours(5).toString(), WorkEventType.BREWERY)
         it.manager.workEvents.createWorkEvent(employee1.id, now.plusHours(20).toString(), WorkEventType.SHIFT_END)
         it.manager.workEvents.createWorkEvent(employee1.id, now.plusHours(25).toString(), WorkEventType.OTHER_WORK) // ended shift triggers new shift
         val allWorkEvens = it.manager.workEvents.listWorkEvents(employeeId = employee1.id)
         assertEquals(8, allWorkEvens.size)
-        it.manager.workShifts.createEmployeeWorkShift(
+        val createdWorkShift = it.manager.workShifts.createEmployeeWorkShift(
             employeeId = employee1.id,
             workShift = EmployeeWorkShift(
                 date = now.toLocalDate().toString(),
                 employeeId = employee1.id,
                 approved = false,
                 startedAt = now.toString(),
-                endedAt = now.plusHours(25).toString()
+                endedAt = now.plusHours(25).toString(),
+                costCentersFromEvents = arrayOf()
             )
         )
+
+        it.manager.workShifts.findEmployeeWorkShift(employeeId = employee1.id, id = createdWorkShift.id!!)
 
         // employee 2 events
         it.manager.workEvents.createWorkEvent(employee2.id!!, now.toString(), WorkEventType.MEAT_CELLAR)
@@ -174,7 +210,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
             assertNotNull(event.employeeWorkShiftId)
         }
 
-        it.manager.workShifts.assertCreateFail(UUID.randomUUID(), EmployeeWorkShift(date = now.toLocalDate().toString(), employeeId = UUID.randomUUID(), approved = false), 400)
+        it.manager.workShifts.assertCreateFail(UUID.randomUUID(), EmployeeWorkShift(date = now.toLocalDate().toString(), employeeId = UUID.randomUUID(), approved = false, costCentersFromEvents = arrayOf()), 400)
     }
 
     /**
@@ -309,6 +345,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.toLocalDate().toString(),
                 employeeId = employee1,
                 approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
 
@@ -365,7 +402,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 date = now.toLocalDate().toString(),
                 employeeId = employee1,
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
 
