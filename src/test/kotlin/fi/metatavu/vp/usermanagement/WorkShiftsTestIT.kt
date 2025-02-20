@@ -170,7 +170,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
             )
         )
 
-        it.manager.workShifts.findEmployeeWorkShift(employeeId = employee1.id, id=  createdWorkShift.id!!)
+        it.manager.workShifts.findEmployeeWorkShift(employeeId = employee1.id, id = createdWorkShift.id!!)
 
         // employee 2 events
         it.manager.workEvents.createWorkEvent(employee2.id!!, now.toString(), WorkEventType.MEAT_CELLAR)
