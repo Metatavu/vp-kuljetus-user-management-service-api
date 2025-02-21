@@ -141,6 +141,18 @@ class WorkEventController {
     }
 
     /**
+     * Ends a work shift with the given work event
+     *
+     * @param workEvent
+     */
+    suspend fun setWorkShiftEnd(workEvent: WorkEventEntity) {
+        workEvent.workEventType = WorkEventType.SHIFT_END
+        workEventRepository.persistSuspending(workEvent)
+        val updatedShift = recalculateWorkShiftTimes(workShift = workEvent.workShift)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedShift)
+    }
+
+    /**
      * Deletes work event, removes the work shift if it was the last event for it,
      * recalculates the work shift date if needed,
      * recalculates the work shift hours

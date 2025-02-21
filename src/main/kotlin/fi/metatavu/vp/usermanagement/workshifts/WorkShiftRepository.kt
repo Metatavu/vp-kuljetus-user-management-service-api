@@ -110,6 +110,19 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
     }
 
     /**
+     * Get latest active shift
+     */
+    suspend fun getLatestActiveShift(): WorkShiftEntity? {
+        val queryBuilder = StringBuilder()
+        val parameters = Parameters()
+        queryBuilder.append("endedAt = null")
+        parameters.and("endedAt", null)
+
+        return find(queryBuilder.toString(),  Sort.by("date", Sort.Direction.Descending).and("startedAt", Sort.Direction.Descending), parameters)
+            .range<WorkShiftEntity>(0, 1).list<WorkShiftEntity>().awaitSuspending().firstOrNull()
+    }
+
+    /**
      * Lists all finished work shifts with missing calculated hours (excluding those hours that are not calculated)
      *
      * @param first first
