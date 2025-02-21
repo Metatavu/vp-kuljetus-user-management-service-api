@@ -68,18 +68,17 @@ class WorkEventController {
      * sets the work shift startedAt or endedAt,
      * creates new required work events (start and end)
      *
-     * @param employee employee
+     * @param employeeId employee
      * @param time time
      * @param workEventType work event type
      * @return created work event
      */
     suspend fun create(
-        employee: UserRepresentation,
+        employeeId: UUID,
         time: OffsetDateTime,
         workEventType: WorkEventType,
         truckId: UUID? = null
     ): WorkEventEntity {
-        val employeeId = UUID.fromString(employee.id)
         val latestWorkEvent = workEventRepository.findLatestWorkEvent(employeeId = employeeId, time = time)
         val latestWorkShift = workShiftRepository.findLatestEmployeeWorkShift(
             employeeId = employeeId,
@@ -89,7 +88,7 @@ class WorkEventController {
         val workShift = getWorkEventShift(latestWorkShift, latestWorkEvent, workEventType, time, employeeId)
         val createdWorkEvent = workEventRepository.create(
             id = UUID.randomUUID(),
-            employeeId = UUID.fromString(employee.id),
+            employeeId = employeeId,
             time = time,
             workEventType = workEventType,
             workShiftEntity = workShift,

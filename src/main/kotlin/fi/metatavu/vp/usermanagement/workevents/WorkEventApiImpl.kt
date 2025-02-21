@@ -63,7 +63,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
             }
 
             val created = workEventController.create(
-                employee = employee,
+                employeeId = UUID.fromString(employee.id),
                 time = workEvent.time,
                 workEventType = workEvent.workEventType,
                 truckId = workEvent.truckId
