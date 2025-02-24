@@ -52,7 +52,7 @@ class WorkShiftStopperDriveEventTestIT: AbstractFunctionalTest()  {
                 employeeWorkShiftId = shift.id
             )
         )
-        Thread.sleep(7000)
+        Thread.sleep(5000)
         assertNull(it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first().endedAt)
 
         it.manager.workEvents.updateWorkEvent(
