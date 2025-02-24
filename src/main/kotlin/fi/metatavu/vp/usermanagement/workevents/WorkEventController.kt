@@ -255,7 +255,7 @@ class WorkEventController {
      *
      * @param workShift work shift
      */
-    private suspend fun recalculateWorkShiftTimes(
+    suspend fun recalculateWorkShiftTimes(
         workShift: WorkShiftEntity,
     ): WorkShiftEntity {
         val workEventsForShift = workEventRepository.list(employeeWorkShift = workShift).first

@@ -124,13 +124,6 @@ class WorkShiftController {
     }
 
     /**
-     * Get latest active shift
-     */
-    suspend fun getLatestActiveWorkShift(): WorkShiftEntity? {
-        return workShiftRepository.getLatestActiveShift()
-    }
-
-    /**
      * Updates employee work shift
      *
      * @param existingWorkShift existing work shift

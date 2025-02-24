@@ -3,6 +3,8 @@ package fi.metatavu.vp.usermanagement.workshifts.scheduled
 import fi.metatavu.vp.usermanagement.WithCoroutineScope
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
+import fi.metatavu.vp.usermanagement.workevents.WorkEventRepository
+import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.scheduler.Scheduled
@@ -10,17 +12,26 @@ import io.smallrye.mutiny.Uni
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
+import org.eclipse.microprofile.config.inject.ConfigProperty
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.util.*
 
 @ApplicationScoped
 class WorkShiftScheduledJobs: WithCoroutineScope() {
     @Inject
+    lateinit var workEventRepository: WorkEventRepository
+
+    @Inject
     lateinit var workEventController: WorkEventController
 
     @Inject
-    lateinit var workShiftController: WorkShiftController
+    lateinit var workShiftHoursController: WorkShiftHoursController
+
+    // Set to true only in testing
+    @ConfigProperty(name = "vp.usermanagement.schedulers.workshiftstopper.ignore.starts", defaultValue = "false")
+    lateinit var ignoreShiftStarts: String
 
     /**
      * End work shifts with rest events longer than 3 hours and any event longer than 5 hours
@@ -28,25 +39,42 @@ class WorkShiftScheduledJobs: WithCoroutineScope() {
     @WithTransaction
     @Scheduled(every="\${vp.usermanagement.schedulers.workshiftstopper.interval}")
     fun stopWorkShifts(): Uni<Void>  = withCoroutineScope {
-            val shift = workShiftController.getLatestActiveWorkShift()
+            val breakEvent = workEventRepository.findLatestShiftEndingBreakEvent()
 
-            val event = workEventController.list(employeeWorkShift = shift, max = 1).first.firstOrNull() ?: return@withCoroutineScope
-            if (event.workEventType == WorkEventType.BREAK && timeComparison(event.time, 3)) {
-                workEventController.setWorkShiftEnd(event)
+            if (breakEvent != null) {
+                workEventController.setWorkShiftEnd(breakEvent)
                 return@withCoroutineScope
             }
 
-            /*if (event.time.plusHours(5).isBefore(OffsetDateTime.now())) {
-                workEventController.create(
+            val event = workEventRepository.findLatestShiftEndingEvent(ignoreShiftStarts == "true")
+
+            if (event != null) {
+                if (event.workEventType == WorkEventType.SHIFT_START) {
+                    workEventRepository.create(
+                        id = UUID.randomUUID(),
+                        employeeId = event.employeeId,
+                        time = event.time.plusSeconds(1),
+                        workEventType = WorkEventType.UNKNOWN,
+                        workShiftEntity = event.workShift,
+                        truckId = event.truckId,
+                        costCenter = event.costCenter
+                    )
+                }
+
+                workEventRepository.create(
+                    id = UUID.randomUUID(),
                     employeeId = event.employeeId,
                     time = OffsetDateTime.now(),
-                    workEventType = WorkEventType.SHIFT_END
+                    workEventType = WorkEventType.SHIFT_END,
+                    workShiftEntity = event.workShift,
+                    truckId = event.truckId,
+                    costCenter = event.costCenter
                 )
-            }*/
-        }.replaceWithVoid()
 
-    private fun timeComparison(eventTime: OffsetDateTime, hours: Long): Boolean {
-        val convertedEventTime = eventTime.atZoneSameInstant(ZoneId.systemDefault()).toOffsetDateTime()
-        return convertedEventTime.plusHours(hours).isBefore(OffsetDateTime.now())
-    }
+                val updatedShift = workEventController.recalculateWorkShiftTimes(workShift = event.workShift)
+                workShiftHoursController.recalculateWorkShiftHours(
+                    workShift = updatedShift,
+                )
+            }
+        }.replaceWithVoid()
 }

@@ -414,7 +414,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
     }
 
     @Test
-    fun testWorkShiftEndScheduler() = createTestBuilder().use {
+    fun testWorkShiftEndSchedulerBreakEvent() = createTestBuilder().use {
         val employee = it.manager.employees.createEmployee("1")
         val now = OffsetDateTime.now()
         val shift = it.manager.workShifts.createEmployeeWorkShift(
@@ -426,6 +426,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 costCentersFromEvents = emptyArray()
             )
         )
+
         it.manager.workEvents.createWorkEvent(
             employeeId = employee.id,
             workEvent = WorkEvent(
@@ -436,6 +437,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 employeeWorkShiftId = shift.id!!
             )
         )
+
         val event = it.manager.workEvents.createWorkEvent(
             employeeId = employee.id,
             workEvent = WorkEvent(
@@ -455,8 +457,48 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
              workEvent = event.copy(time = now.minusHours(3).toString())
         )
         Thread.sleep(5000)
-        assertEquals(1, it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).size)
-        assertNotNull(it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first().endedAt)
+        val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
+        assertEquals(1, shifts.size)
+        assertNotNull(shifts.first().endedAt)
+        val events = it.manager.workEvents.listWorkEvents(employeeId = employee.id)
+        assertEquals(2, events.size)
+        assertNotNull(events.find { foundEvent -> foundEvent.workEventType == WorkEventType.SHIFT_START })
+        assertNotNull(events.find { foundEvent -> foundEvent.workEventType == WorkEventType.SHIFT_END })
+    }
+
+    @Test
+    fun testWorkShiftEndSchedulerStartEvent() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1")
+        val now = OffsetDateTime.now()
+        val shift = it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee.id!!,
+            EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                approved = true,
+                employeeId = employee.id,
+                costCentersFromEvents = emptyArray()
+            )
+        )
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.SHIFT_START,
+                time = now.minusHours(5).toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID(),
+                employeeWorkShiftId = shift.id
+            )
+        )
+
+        Thread.sleep(5000)
+        val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
+        assertEquals(1, shifts.size)
+        assertNotNull(shifts.first().endedAt)
+        val events = it.manager.workEvents.listWorkEvents(employeeId = employee.id)
+        assertEquals(3, events.size)
+        assertNotNull(events.find { foundEvent -> foundEvent.workEventType == WorkEventType.SHIFT_START })
+        assertNotNull(events.find { foundEvent -> foundEvent.workEventType == WorkEventType.UNKNOWN })
+        assertNotNull(events.find { foundEvent -> foundEvent.workEventType == WorkEventType.SHIFT_END })
     }
 
     /**
