@@ -44,7 +44,7 @@ class WorkShiftScheduledJobs: WithCoroutineScope() {
 
             val event = workEventRepository.findLatestShiftEndingEvent(ignoreShiftStarts == "true")
 
-            if (event != null) {
+            if (event == null) return@withCoroutineScope
                 if (event.workEventType == WorkEventType.SHIFT_START) {
                     workEventRepository.create(
                         id = UUID.randomUUID(),
