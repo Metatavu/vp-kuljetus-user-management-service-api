@@ -69,9 +69,9 @@ class WorkShiftStopperDriveEventTestIT: AbstractFunctionalTest()  {
         assertNotNull(shifts.first().endedAt, "The work shift should be finished")
         val events = it.manager.workEvents.listWorkEvents(employeeId = employee.id)
         assertEquals(3, events.size, "Shift should have 3 events")
-        assertEquals(events[0].workEventType, WorkEventType.SHIFT_START, "First event should be SHIFT_START")
+        assertEquals(events[2].workEventType, WorkEventType.SHIFT_START, "Third and final event should be SHIFT_END")
         assertEquals(events[1].workEventType, WorkEventType.DRIVE, "Second event should be DRIVE")
-        assertEquals(events[2].workEventType, WorkEventType.SHIFT_END, "Third and final event should be SHIFT_END")
+        assertEquals(events[0].workEventType, WorkEventType.SHIFT_END, "First event should be SHIFT_START")
     }
 
 }
