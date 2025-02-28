@@ -462,8 +462,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         assertNotNull(shifts.first().endedAt)
         val events = it.manager.workEvents.listWorkEvents(employeeId = employee.id)
         assertEquals(2, events.size)
-        assertNotNull(events.find { foundEvent -> foundEvent.workEventType == WorkEventType.SHIFT_START })
-        assertNotNull(events.find { foundEvent -> foundEvent.workEventType == WorkEventType.SHIFT_END })
+        assertEquals(events[0].workEventType, WorkEventType.SHIFT_START )
+        assertEquals(events[1].workEventType, WorkEventType.SHIFT_END )
     }
 
     @Test
