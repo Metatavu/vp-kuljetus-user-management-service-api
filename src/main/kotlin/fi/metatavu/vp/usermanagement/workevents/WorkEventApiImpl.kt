@@ -63,7 +63,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
             }
 
             val created = workEventController.create(
-                employeeId = UUID.fromString(employee.id),
+                employee = employee,
                 time = workEvent.time,
                 workEventType = workEvent.workEventType,
                 truckId = workEvent.truckId
@@ -121,7 +121,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
     @WithTransaction
-    override fun updateEmployeeWorkEvent(employeeId: UUID, workEventId: UUID, workEvent: WorkEvent): Uni<Response> =
+    override fun updateEmployeeWorkEvent(employeeId: UUID, workEventId: UUID, workShiftChangeSetId: UUID, workEvent: WorkEvent): Uni<Response> =
         withCoroutineScope {
             if (employeeId != workEvent.employeeId) {
                 return@withCoroutineScope createBadRequest("Employee id in path and in body do not match")

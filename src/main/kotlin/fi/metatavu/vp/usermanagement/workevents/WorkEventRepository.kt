@@ -113,17 +113,12 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
     /**
      * Finds latest shift ending event
      *
-     * @param ignoreShiftStarts ignore shift starts (USED ONLY IN TESTING)
      * @return shift ending event
      */
-    suspend fun findLatestShiftEndingEvent(ignoreShiftStarts: Boolean): WorkEventEntity? {
+    suspend fun findLatestShiftEndingEvent(): WorkEventEntity? {
         val sb = StringBuilder()
         val parameters = Parameters.with("time", OffsetDateTime.now().minusHours(5))
         addCondition(sb, "workShift.endedAt is NULL and time < :time");
-
-        if (ignoreShiftStarts) {
-            addCondition(sb, "workEventType != 'SHIFT_START'");
-        }
 
         return queryWithCount(
             find(

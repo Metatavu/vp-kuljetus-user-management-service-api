@@ -46,7 +46,7 @@ class MessagingController: WithCoroutineScope() {
         }
 
         workEventController.create(
-            employeeId = UUID.fromString(foundDriver.id),
+            employee = foundDriver,
             time = event.time,
             workEventType = event.workEventType,
             truckId = event.truckId

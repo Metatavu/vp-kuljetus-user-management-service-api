@@ -1,5 +1,7 @@
 package fi.metatavu.vp.usermanagement.workevents
 
+import fi.metatavu.keycloak.adminclient.models.UserRepresentation
+import fi.metatavu.vp.usermanagement.model.Employee
 import fi.metatavu.vp.usermanagement.model.WorkEvent
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
@@ -73,11 +75,12 @@ class WorkEventController {
      * @return created work event
      */
     suspend fun create(
-        employeeId: UUID,
+        employee: UserRepresentation,
         time: OffsetDateTime,
         workEventType: WorkEventType,
         truckId: UUID? = null
     ): WorkEventEntity {
+    val employeeId = UUID.fromString(employee.id!!)
         val latestWorkEvent = workEventRepository.findLatestWorkEvent(employeeId = employeeId, time = time)
         val latestWorkShift = workShiftRepository.findLatestEmployeeWorkShift(
             employeeId = employeeId,

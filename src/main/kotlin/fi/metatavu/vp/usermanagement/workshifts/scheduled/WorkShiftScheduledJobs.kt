@@ -25,52 +25,41 @@ class WorkShiftScheduledJobs: WithCoroutineScope() {
     @Inject
     lateinit var workShiftHoursController: WorkShiftHoursController
 
-    // Use only in testing
-    @ConfigProperty(name = "vp.usermanagement.schedulers.workshiftstopper.ignore.starts", defaultValue = "false")
-    lateinit var ignoreShiftStarts: String
+    suspend fun stopWorkShifts() {
+        val breakEvent = workEventRepository.findLatestShiftEndingBreakEvent()
 
-    /**
-     * End work shifts with rest events longer than 3 hours and any event longer than 5 hours
-     */
-    @WithTransaction
-    @Scheduled(every="\${vp.usermanagement.schedulers.workshiftstopper.interval}")
-    fun stopWorkShifts(): Uni<Void>  = withCoroutineScope {
-            val breakEvent = workEventRepository.findLatestShiftEndingBreakEvent()
+        if (breakEvent != null) {
+            workEventController.changeToWorkShiftEnd(breakEvent)
+            return
+        }
 
-            if (breakEvent != null) {
-                workEventController.changeToWorkShiftEnd(breakEvent)
-                return@withCoroutineScope
-            }
+        val event = workEventRepository.findLatestShiftEndingEvent() ?: return
 
-            val event = workEventRepository.findLatestShiftEndingEvent(ignoreShiftStarts == "true")
+        if (event.workEventType == WorkEventType.SHIFT_START) {
+            workEventRepository.create(
+                id = UUID.randomUUID(),
+                employeeId = event.employeeId,
+                time = event.time,
+                workEventType = WorkEventType.UNKNOWN,
+                workShiftEntity = event.workShift,
+                truckId = event.truckId,
+                costCenter = event.costCenter
+            )
+        }
 
-            if (event == null) return@withCoroutineScope
-                if (event.workEventType == WorkEventType.SHIFT_START) {
-                    workEventRepository.create(
-                        id = UUID.randomUUID(),
-                        employeeId = event.employeeId,
-                        time = event.time.plusSeconds(1),
-                        workEventType = WorkEventType.UNKNOWN,
-                        workShiftEntity = event.workShift,
-                        truckId = event.truckId,
-                        costCenter = event.costCenter
-                    )
-                }
+        workEventRepository.create(
+            id = UUID.randomUUID(),
+            employeeId = event.employeeId,
+            time = OffsetDateTime.now(),
+            workEventType = WorkEventType.SHIFT_END,
+            workShiftEntity = event.workShift,
+            truckId = event.truckId,
+            costCenter = event.costCenter
+        )
 
-                workEventRepository.create(
-                    id = UUID.randomUUID(),
-                    employeeId = event.employeeId,
-                    time = OffsetDateTime.now(),
-                    workEventType = WorkEventType.SHIFT_END,
-                    workShiftEntity = event.workShift,
-                    truckId = event.truckId,
-                    costCenter = event.costCenter
-                )
-
-                val updatedShift = workEventController.recalculateWorkShiftTimes(workShift = event.workShift)
-                workShiftHoursController.recalculateWorkShiftHours(
-                    workShift = updatedShift,
-                )
-            }
-        }.replaceWithVoid()
+        val updatedShift = workEventController.recalculateWorkShiftTimes(workShift = event.workShift)
+        workShiftHoursController.recalculateWorkShiftHours(
+            workShift = updatedShift,
+        )
+    }
 }
