@@ -38,7 +38,7 @@ class WorkShiftScheduledJobs: WithCoroutineScope() {
             val breakEvent = workEventRepository.findLatestShiftEndingBreakEvent()
 
             if (breakEvent != null) {
-                workEventController.setWorkShiftEnd(breakEvent)
+                workEventController.changeToWorkShiftEnd(breakEvent)
                 return@withCoroutineScope
             }
 

@@ -1,6 +1,5 @@
 package fi.metatavu.vp.usermanagement.workevents
 
-import fi.metatavu.keycloak.adminclient.models.UserRepresentation
 import fi.metatavu.vp.usermanagement.model.WorkEvent
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
@@ -144,7 +143,7 @@ class WorkEventController {
      *
      * @param workEvent
      */
-    suspend fun setWorkShiftEnd(workEvent: WorkEventEntity) {
+    suspend fun changeToWorkShiftEnd(workEvent: WorkEventEntity) {
         workEvent.workEventType = WorkEventType.SHIFT_END
         workEventRepository.persistSuspending(workEvent)
         val updatedShift = recalculateWorkShiftTimes(workShift = workEvent.workShift)
