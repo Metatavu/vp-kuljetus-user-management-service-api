@@ -53,7 +53,10 @@ class WorkShiftStopperDriveEventTestIT: AbstractFunctionalTest()  {
             )
         )
         Thread.sleep(5000)
-        assertNull(it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first().endedAt)
+        assertNull(
+            it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first().endedAt,
+            "Work shift should not have ended yet"
+        )
 
         it.manager.workEvents.updateWorkEvent(
             employeeId = employee.id,
