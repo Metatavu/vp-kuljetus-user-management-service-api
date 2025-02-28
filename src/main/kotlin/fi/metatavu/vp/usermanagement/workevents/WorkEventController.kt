@@ -1,6 +1,5 @@
 package fi.metatavu.vp.usermanagement.workevents
 
-import fi.metatavu.keycloak.adminclient.models.UserRepresentation
 import fi.metatavu.vp.usermanagement.model.WorkEvent
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
@@ -68,18 +67,17 @@ class WorkEventController {
      * sets the work shift startedAt or endedAt,
      * creates new required work events (start and end)
      *
-     * @param employee employee
+     * @param employeeId employee
      * @param time time
      * @param workEventType work event type
      * @return created work event
      */
     suspend fun create(
-        employee: UserRepresentation,
+        employeeId: UUID,
         time: OffsetDateTime,
         workEventType: WorkEventType,
         truckId: UUID? = null
     ): WorkEventEntity {
-        val employeeId = UUID.fromString(employee.id)
         val latestWorkEvent = workEventRepository.findLatestWorkEvent(employeeId = employeeId, time = time)
         val latestWorkShift = workShiftRepository.findLatestEmployeeWorkShift(
             employeeId = employeeId,
@@ -89,7 +87,7 @@ class WorkEventController {
         val workShift = getWorkEventShift(latestWorkShift, latestWorkEvent, workEventType, time, employeeId)
         val createdWorkEvent = workEventRepository.create(
             id = UUID.randomUUID(),
-            employeeId = UUID.fromString(employee.id),
+            employeeId = employeeId,
             time = time,
             workEventType = workEventType,
             workShiftEntity = workShift,
@@ -138,6 +136,18 @@ class WorkEventController {
         val updatedShift = recalculateWorkShiftTimes(workShift = foundWorkEvent.workShift)
         workShiftHoursController.recalculateWorkShiftHours(workShift = updatedShift)
         return updated
+    }
+
+    /**
+     * Ends a work shift with the given work event
+     *
+     * @param workEvent
+     */
+    suspend fun changeToWorkShiftEnd(workEvent: WorkEventEntity) {
+        workEvent.workEventType = WorkEventType.SHIFT_END
+        workEventRepository.persistSuspending(workEvent)
+        val updatedShift = recalculateWorkShiftTimes(workShift = workEvent.workShift)
+        workShiftHoursController.recalculateWorkShiftHours(workShift = updatedShift)
     }
 
     /**
@@ -244,7 +254,7 @@ class WorkEventController {
      *
      * @param workShift work shift
      */
-    private suspend fun recalculateWorkShiftTimes(
+    suspend fun recalculateWorkShiftTimes(
         workShift: WorkShiftEntity,
     ): WorkShiftEntity {
         val workEventsForShift = workEventRepository.list(employeeWorkShift = workShift).first

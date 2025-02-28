@@ -4,6 +4,7 @@ import fi.metatavu.jaxrs.test.functional.builder.auth.AccessTokenProvider
 import fi.metatavu.vp.test.client.apis.WorkEventsApi
 import fi.metatavu.vp.test.client.infrastructure.ApiClient
 import fi.metatavu.vp.test.client.infrastructure.ClientException
+import fi.metatavu.vp.test.client.models.EmployeeWorkShift
 import fi.metatavu.vp.test.client.models.WorkEvent
 import fi.metatavu.vp.test.client.models.WorkEventType
 import fi.metatavu.vp.usermanagement.TestBuilder
@@ -57,6 +58,7 @@ class WorkEventTestBuilderResource(
      * @param before before
      * @param first first
      * @param max max
+     * @param employeeWorkShiftId shift id
      * @return list of work events
      */
     fun listWorkEvents(
@@ -64,9 +66,11 @@ class WorkEventTestBuilderResource(
         after: OffsetDateTime? = null,
         before: OffsetDateTime? = null,
         first: Int = 0,
-        max: Int = 10
+        max: Int = 10,
+        employeeWorkShiftId: UUID? = null
     ): Array<WorkEvent> {
         return api.listEmployeeWorkEvents(
+            employeeWorkShiftId = employeeWorkShiftId,
             employeeId = employeeId,
             after = after?.toString(),
             before = before?.toString(),
