@@ -31,7 +31,7 @@ class MessagingController: WithCoroutineScope() {
     /**
      * Processes the DRIVER_WORKING_STATE_CHANGE event
      *
-     * @param event event to be processed
+     * @param event event to process
      * @return A Uni that completes into true if event was processed successfully, false otherwise
      */
     @ConsumeEvent("DRIVER_WORKING_STATE_CHANGE")
