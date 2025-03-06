@@ -92,10 +92,10 @@ class WorkShiftTestBuilderResource(
     }
 
     /**
-     * End workshifts
+     * End unresolved workshifts
      */
-    fun endWorkshifts() {
-        api.endWorkshifts()
+    fun endUnresolvedWorkshifts() {
+        api.endUnresolvedWorkshifts()
     }
 
     /**

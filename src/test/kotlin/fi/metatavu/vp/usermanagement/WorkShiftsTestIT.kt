@@ -460,7 +460,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
             "Work shift should not have ended yet"
         )
 
-        it.setCronKey().workShifts.endWorkshifts()
+        it.setCronKey().workShifts.endUnresolvedWorkshifts()
 
         val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
         assertEquals(1, shifts.size, "There should be one shift")
@@ -496,7 +496,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
             )
         )
 
-        it.setCronKey().workShifts.endWorkshifts()
+        it.setCronKey().workShifts.endUnresolvedWorkshifts()
         val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
         assertEquals(1, shifts.size, "There should be 1 shift")
         assertNotNull(shifts.first().endedAt, "The shift should have ended")
@@ -563,7 +563,7 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
             workEvent = event.copy(time = now.minusHours(5).toString())
         )
 
-        it.setCronKey().workShifts.endWorkshifts()
+        it.setCronKey().workShifts.endUnresolvedWorkshifts()
 
         val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
         assertEquals(1, shifts.size, "There should be one work shift for the employee")

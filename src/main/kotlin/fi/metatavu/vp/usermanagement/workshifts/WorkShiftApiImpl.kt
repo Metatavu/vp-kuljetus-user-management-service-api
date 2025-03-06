@@ -117,12 +117,12 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
     }
 
     @WithTransaction
-    override fun endWorkshifts(): Uni<Response> = withCoroutineScope {
+    override fun endUnresolvedWorkshifts(): Uni<Response> = withCoroutineScope {
         if (requestCronKey != cronKey) {
             return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
         }
 
-        workShiftScheduledJobs.stopWorkShifts()
+        workShiftScheduledJobs.endUnresolvedWorkshifts()
         createOk()
     }
 

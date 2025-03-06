@@ -5,12 +5,8 @@ import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.workevents.WorkEventRepository
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction
-import io.quarkus.scheduler.Scheduled
-import io.smallrye.mutiny.Uni
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import org.eclipse.microprofile.config.inject.ConfigProperty
 import java.time.OffsetDateTime
 import java.util.*
 
@@ -25,7 +21,10 @@ class WorkShiftScheduledJobs: WithCoroutineScope() {
     @Inject
     lateinit var workShiftHoursController: WorkShiftHoursController
 
-    suspend fun stopWorkShifts() {
+    /**
+     * End unresolved workshifts
+     */
+    suspend fun endUnresolvedWorkshifts() {
         val breakEvent = workEventRepository.findLatestShiftEndingBreakEvent()
 
         if (breakEvent != null) {
