@@ -121,11 +121,10 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
         addCondition(sb, "workShift.endedAt is NULL and time < :time");
 
         return queryWithCount(
-            find(
-                sb.toString(),
-                Sort.descending("time"),
-                parameters
-        ), 0, 1).first.firstOrNull()
+            find(sb.toString(), Sort.descending("time"), parameters),
+            0,
+            1
+        ).first.firstOrNull()
     }
 
     /**
