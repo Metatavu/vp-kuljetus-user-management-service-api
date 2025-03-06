@@ -455,7 +455,10 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
             workEvent = event.copy(time = now.minusHours(3).toString())
         )
 
-        assertNull(it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first().endedAt)
+        assertNull(
+            it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first().endedAt,
+            "Work shift should not have ended yet"
+        )
 
         it.setCronKey().workShifts.endWorkshifts()
 
