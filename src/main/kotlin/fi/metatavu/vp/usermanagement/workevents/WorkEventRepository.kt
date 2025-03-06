@@ -111,6 +111,35 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
     }
 
     /**
+     * Finds latest shift ending event
+     *
+     * @return shift ending event
+     */
+    suspend fun findLatestShiftEndingEvent(): WorkEventEntity? {
+        val sb = StringBuilder()
+        val parameters = Parameters.with("time", OffsetDateTime.now().minusHours(5))
+        addCondition(sb, "workShift.endedAt is NULL and time < :time");
+
+        return queryWithCount(
+            find(sb.toString(), Sort.descending("time"), parameters),
+            0,
+            1
+        ).first.firstOrNull()
+    }
+
+    /**
+     * Finds latest shift ending break event
+     *
+     * @return latest shift ending event
+     */
+    suspend fun findLatestShiftEndingBreakEvent(): WorkEventEntity? {
+        return find(
+            "workShift.endedAt is NULL and workEventType = 'BREAK' and time < :time order by time desc limit 1",
+            Parameters.with("time", OffsetDateTime.now().minusHours(3))
+        ).firstResult<WorkEventEntity>().awaitSuspending()
+    }
+
+    /**
      * Updates work event type
      *
      * @param latestWorkEvent latest work event

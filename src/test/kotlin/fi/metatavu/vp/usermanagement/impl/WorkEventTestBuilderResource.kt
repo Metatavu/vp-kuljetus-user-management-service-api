@@ -4,6 +4,7 @@ import fi.metatavu.jaxrs.test.functional.builder.auth.AccessTokenProvider
 import fi.metatavu.vp.test.client.apis.WorkEventsApi
 import fi.metatavu.vp.test.client.infrastructure.ApiClient
 import fi.metatavu.vp.test.client.infrastructure.ClientException
+import fi.metatavu.vp.test.client.models.EmployeeWorkShift
 import fi.metatavu.vp.test.client.models.WorkEvent
 import fi.metatavu.vp.test.client.models.WorkEventType
 import fi.metatavu.vp.usermanagement.TestBuilder
@@ -57,6 +58,7 @@ class WorkEventTestBuilderResource(
      * @param before before
      * @param first first
      * @param max max
+     * @param employeeWorkShiftId shift id
      * @return list of work events
      */
     fun listWorkEvents(
@@ -64,9 +66,11 @@ class WorkEventTestBuilderResource(
         after: OffsetDateTime? = null,
         before: OffsetDateTime? = null,
         first: Int = 0,
-        max: Int = 10
+        max: Int = 10,
+        employeeWorkShiftId: UUID? = null
     ): Array<WorkEvent> {
         return api.listEmployeeWorkEvents(
+            employeeWorkShiftId = employeeWorkShiftId,
             employeeId = employeeId,
             after = after?.toString(),
             before = before?.toString(),
@@ -110,7 +114,7 @@ class WorkEventTestBuilderResource(
      * @return updated work event
      */
     fun updateWorkEvent(employeeId: UUID, id: UUID, workEvent: WorkEvent): WorkEvent {
-        return api.updateEmployeeWorkEvent(employeeId, id, workEvent)
+        return api.updateEmployeeWorkEvent(employeeId, id, UUID.randomUUID(), workEvent)
     }
 
     /**
@@ -139,7 +143,7 @@ class WorkEventTestBuilderResource(
      */
     fun assertUpdateFail(employeeId: UUID, id: UUID, workEvent: WorkEvent, expectedStatus: Int) {
         try {
-            api.updateEmployeeWorkEvent(employeeId, id, workEvent)
+            api.updateEmployeeWorkEvent(employeeId, id, UUID.randomUUID(), workEvent)
             Assert.fail(String.format("Expected update to fail with status %d", expectedStatus))
         } catch (ex: ClientException) {
             assertClientExceptionStatus(expectedStatus, ex)

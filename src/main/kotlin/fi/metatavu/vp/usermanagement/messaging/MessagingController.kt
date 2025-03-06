@@ -10,6 +10,7 @@ import io.smallrye.mutiny.Uni
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
+import java.util.*
 
 /**
  * Controller that listens to events sent by messaging service
