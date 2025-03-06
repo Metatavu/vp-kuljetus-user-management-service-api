@@ -460,10 +460,10 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         it.setCronKey().workShifts.endWorkshifts()
 
         val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
-        assertEquals(1, shifts.size)
-        assertNotNull(shifts.first().endedAt)
+        assertEquals(1, shifts.size, "There should be one shift")
+        assertNotNull(shifts.first().endedAt, "Shift should have ended")
         val events = it.manager.workEvents.listWorkEvents(employeeId = employee.id)
-        assertEquals(3, events.size)
+        assertEquals(3, events.size, "Shift should have 3 events")
         assertEquals(events[2].workEventType, WorkEventType.SHIFT_START, "Last event should be shift start")
         assertEquals(events[1].workEventType, WorkEventType.DRIVE, "Second event should be drive")
         assertEquals(events[0].workEventType, WorkEventType.SHIFT_END, "First event should be shift end")
