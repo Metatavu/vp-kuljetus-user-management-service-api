@@ -43,18 +43,18 @@ class WorkShiftHoursChangeLogTestsIT: AbstractFunctionalTest() {
             workShiftHours = updateData
         )
         val changeSet = it.manager.workShiftChangeSets.list(employeeId = employeeId).first()
-        assertEquals(changeSetId, changeSet.id)
-        assertEquals(2, changeSet.propertyEntries?.size)
+        assertEquals(changeSetId, changeSet.id, "The changeSetId should be $changeSetId")
+        assertEquals(2, changeSet.propertyEntries?.size, "There should be 2 property entries in the change set")
 
         val change = changeSet.propertyEntries!!.find { change -> change.workShiftHourId != null }
-        assertNotNull(change)
-        assertEquals(WorkShiftChangeReason.WORKSHIFTHOURS_UPDATED_ACTUALHOURS.toString(), change!!.reason.toString())
-        assertEquals(workShift.id, change.workShiftId)
-        assertNull(change.workEventId)
-        assertEquals(workShiftHours.id, change.workShiftHourId)
-        assertNotNull(change.newValue)
-        assertEquals(workShiftHours.actualHours.toString(), change.oldValue.toString())
-        assertEquals(5f.toString(), change.newValue)
+        assertNotNull(change, "There should be change with workShiftHourId")
+        assertEquals(WorkShiftChangeReason.WORKSHIFTHOURS_UPDATED_ACTUALHOURS.toString(), change!!.reason.toString(), "The change reason should be WORKSHIFTHOURS_UPDATED_ACTUALHOURS")
+        assertEquals(workShift.id, change.workShiftId, "Change should have workShiftId ${workShift.id}")
+        assertNull(change.workEventId, "Change should not have a workEventId")
+        assertEquals(workShiftHours.id, change.workShiftHourId, "WorkShiftHourId should be ${workShiftHours.id}")
+        assertNotNull(change.newValue, "Change should have a new value")
+        assertEquals(workShiftHours.actualHours.toString(), change.oldValue.toString(), "Change should have old value of ${workShiftHours.actualHours}")
+        assertEquals(5f.toString(), change.newValue, "Change should have new value of '5f'")
 
         val changeSetId2 = UUID.randomUUID()
         it.manager.workShiftHours.updateWorkShiftHours(
@@ -64,7 +64,7 @@ class WorkShiftHoursChangeLogTestsIT: AbstractFunctionalTest() {
         )
 
         val changeSets = it.manager.workShiftChangeSets.list(employeeId = employeeId)
-        assertEquals(2, changeSets.size)
+        assertEquals(2, changeSets.size, "There should be 2 change sets")
     }
 
     @Test

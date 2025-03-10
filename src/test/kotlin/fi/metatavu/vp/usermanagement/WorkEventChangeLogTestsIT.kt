@@ -57,38 +57,38 @@ class WorkEventChangeLogTestsIT: AbstractFunctionalTest() {
         )
 
         val changeSet = it.manager.workShiftChangeSets.list(employeeId = employee.id).find { changeSet -> changeSet.id == changeSetId }
-        assertEquals(3, changeSet!!.propertyEntries!!.size)
+        assertEquals(3, changeSet!!.propertyEntries!!.size, "There should be 3 property entries in the changeset")
 
         val change1 = changeSet.propertyEntries!!.find { change ->
             change.reason == WorkShiftChangeReason.WORKEVENT_UPDATED_COSTCENTER
         }
 
-        assertNotNull(change1)
-        assertEquals(shift.id, change1!!.workShiftId)
-        assertEquals(null, change1.oldValue)
-        assertEquals("centre2", change1.newValue)
+        assertNotNull(change1, "Change of type WORKEVENT_UPDATED_COSTCENTER not found in the changeset")
+        assertEquals(shift.id, change1!!.workShiftId, "Change workShiftId should be ${shift.id}")
+        assertEquals(null, change1.oldValue, "Change oldValue should be null")
+        assertEquals("centre2", change1.newValue, "Change newVaulue should be centre2")
 
         val change2 = changeSet.propertyEntries.find { change ->
             change.reason == WorkShiftChangeReason.WORKEVENT_UPDATED_TIMESTAMP
         }
 
-        assertNotNull(change2)
-        assertEquals(shift.id, change2!!.workShiftId)
-        assertEquals(time1.split("T").first(), change2.oldValue!!.split("T").first())
-        assertEquals(time2.split("T").first(), change2.newValue!!.split("T").first())
+        assertNotNull(change2, "Change of type WORKEVENT_UPDATED_TIMESTAMP not found in the changeset")
+        assertEquals(shift.id, change2!!.workShiftId, "Change workShiftId should be ${shift.id}")
+        assertEquals(time1.split("T").first(), change2.oldValue!!.split("T").first(), "Change oldValue is different from expected")
+        assertEquals(time2.split("T").first(), change2.newValue!!.split("T").first(), "Change newValue is different from expected")
 
         val change3 = changeSet.propertyEntries.find { change ->
             change.reason == WorkShiftChangeReason.WORKEVENT_UPDATED_TYPE
         }
 
-        assertNotNull(change3)
-        assertEquals(shift.id, change3!!.workShiftId)
-        assertEquals(WorkEventType.MEAT_CELLAR.toString(), change3.oldValue)
-        assertEquals(WorkEventType.DRIVE.toString(), change3.newValue)
+        assertNotNull(change3, "Change of type WORKEVENT_UPDATED_TYPE not found in the changeset")
+        assertEquals(shift.id, change3!!.workShiftId, "Change workShiftId should be ${shift.id}")
+        assertEquals(WorkEventType.MEAT_CELLAR.toString(), change3.oldValue, "Change oldValue should be MEAT_CELLAR")
+        assertEquals(WorkEventType.DRIVE.toString(), change3.newValue, "Change newValue should be DRIVE")
 
         val changeSets = it.manager.workShiftChangeSets.list(employeeId = employee.id)
-        assertEquals(2, changeSets.size)
+        assertEquals(2, changeSets.size, "There should be 2 change sets")
         val changeSet2 = changeSets.find { it.id == changeSetId }
-        assertEquals(3, changeSet2!!.propertyEntries!!.size)
+        assertEquals(3, changeSet2!!.propertyEntries!!.size, "There should be 3 property entries in the second change set")
     }
 }
