@@ -26,23 +26,26 @@ class WorkShiftChangeLogTestsIT: AbstractFunctionalTest() {
         val changeSetId = UUID.randomUUID()
         val changeSetId2 = UUID.randomUUID()
         it.manager.workShifts.createEmployeeWorkShift(employeeId = employee.id!!,
-            workShift = EmployeeWorkShift(
-            date = now.toLocalDate().toString(),
-            employeeId = employee.id,
-            approved = false,
-            startedAt = now.toString(),
-            endedAt = now.plusHours(25).toString()
+            workShift =
+                EmployeeWorkShift(
+                    date = now.toLocalDate().toString(),
+                    employeeId = employee.id,
+                    approved = false,
+                    startedAt = now.toString(),
+                    endedAt = now.plusHours(25).toString(),
+                    costCentersFromEvents = emptyArray()
             ),
             changeSetId = changeSetId
         )
 
         it.manager.workShifts.createEmployeeWorkShift(employeeId = employee.id,
             workShift = EmployeeWorkShift(
-                date = now.toLocalDate().toString(),
-                employeeId = employee.id,
-                approved = false,
-                startedAt = now.toString(),
-                endedAt = now.plusHours(25).toString()
+                    date = now.toLocalDate().toString(),
+                    employeeId = employee.id,
+                    approved = false,
+                    startedAt = now.toString(),
+                    endedAt = now.plusHours(25).toString(),
+                    costCentersFromEvents = emptyArray()
             ),
             changeSetId = changeSetId2
         )
@@ -61,7 +64,8 @@ class WorkShiftChangeLogTestsIT: AbstractFunctionalTest() {
                 employeeId = employee.id,
                 approved = false,
                 startedAt = now.toString(),
-                endedAt = now.plusHours(25).toString()
+                endedAt = now.plusHours(25).toString(),
+                costCentersFromEvents = emptyArray()
             ),
             changeSetId = changeSetId
         )
@@ -89,7 +93,8 @@ class WorkShiftChangeLogTestsIT: AbstractFunctionalTest() {
                 employeeId = employee.id,
                 approved = false,
                 startedAt = now.toString(),
-                endedAt = now.plusHours(25).toString()
+                endedAt = now.plusHours(25).toString(),
+                costCentersFromEvents = emptyArray()
             ),
             changeSetId = changeSetId
         )
@@ -101,7 +106,8 @@ class WorkShiftChangeLogTestsIT: AbstractFunctionalTest() {
                 employeeId = employee.id,
                 approved = false,
                 startedAt = now.toString(),
-                endedAt = now.plusHours(25).toString()
+                endedAt = now.plusHours(25).toString(),
+                costCentersFromEvents = emptyArray()
             ),
             changeSetId = changeSetId,
             expectedStatus = 400
@@ -128,7 +134,8 @@ class WorkShiftChangeLogTestsIT: AbstractFunctionalTest() {
                 absence = AbsenceType.COMPENSATORY_LEAVE,
                 perDiemAllowance = PerDiemAllowanceType.FULL,
                 startedAt = now.toString(),
-                endedAt = now.plusHours(25).toString()
+                endedAt = now.plusHours(25).toString(),
+                costCentersFromEvents = emptyArray()
             )
         )
 

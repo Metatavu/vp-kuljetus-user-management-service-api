@@ -26,7 +26,8 @@ class WorkEventChangeLogTestsIT: AbstractFunctionalTest() {
                 employeeId = employee.id,
                 approved = false,
                 startedAt = now.toString(),
-                endedAt = now.plusHours(25).toString()
+                endedAt = now.plusHours(25).toString(),
+                costCentersFromEvents = emptyArray()
             )
         )
         val time1 = now.toString()

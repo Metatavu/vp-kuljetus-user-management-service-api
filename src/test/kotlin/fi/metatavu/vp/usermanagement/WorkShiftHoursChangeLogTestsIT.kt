@@ -28,7 +28,8 @@ class WorkShiftHoursChangeLogTestsIT: AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employeeId,
                 date = LocalDate.now().plusDays(1).toString(),
-                approved = false
+                approved = false,
+                costCentersFromEvents = emptyArray()
             ),
             changeSetId = changeSetId
         )
@@ -75,7 +76,8 @@ class WorkShiftHoursChangeLogTestsIT: AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 date = LocalDate.now().plusDays(1).toString(),
                 employeeId = employee.id,
-                approved = false
+                approved = false,
+                costCentersFromEvents = emptyArray()
             ),
             changeSetId = changeSetId
         )
@@ -86,7 +88,8 @@ class WorkShiftHoursChangeLogTestsIT: AbstractFunctionalTest() {
                 employeeId = employee.id,
                 approved = false,
                 startedAt = now.toString(),
-                endedAt = now.plusHours(25).toString()
+                endedAt = now.plusHours(25).toString(),
+                costCentersFromEvents = emptyArray()
             ),
             changeSetId = changeSetId2
         )

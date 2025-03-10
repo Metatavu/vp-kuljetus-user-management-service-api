@@ -9,6 +9,7 @@ import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import fi.metatavu.vp.usermanagement.workshifts.changelogs.changes.WorkShiftChangeController
 import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.ChangeSetExistsWithOtherWorkShiftException
 import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftChangeSetController
+import fi.metatavu.vp.usermanagement.workshifts.scheduled.WorkShiftScheduledJobs
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -43,6 +44,9 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
 
     @Inject
     lateinit var workShiftChangeSetController: WorkShiftChangeSetController
+
+    @Inject
+    lateinit var workShiftScheduledJobs: WorkShiftScheduledJobs
 
     @Inject
     lateinit var eventBus: EventBus
@@ -144,6 +148,16 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
           ?: return@withCoroutineScope createNotFoundWithMessage(WORK_SHIFT, workShiftId)
         workShiftController.deleteEmployeeWorkShift(employeeWorkShift)
         createNoContent()
+    }
+
+    @WithTransaction
+    override fun endUnresolvedWorkshifts(): Uni<Response> = withCoroutineScope {
+        if (requestCronKey != cronKey) {
+            return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
+        }
+
+        workShiftScheduledJobs.endUnresolvedWorkshifts()
+        createOk()
     }
 
     @RolesAllowed(MANAGER_ROLE)

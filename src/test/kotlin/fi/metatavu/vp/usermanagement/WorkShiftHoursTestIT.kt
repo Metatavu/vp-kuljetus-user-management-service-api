@@ -28,7 +28,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employee1Id,
                 date = LocalDate.now().toString(),
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
 
@@ -53,7 +54,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employee1Id,
                 date = LocalDate.now().plusDays(1).toString(),
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
         val employee1WorkShift2 = tb.manager.workShifts.createEmployeeWorkShift(
@@ -61,7 +63,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employee1Id,
                 date = LocalDate.now().plusDays(2).toString(),
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
         val employee2Id = tb.manager.employees.createEmployee("02").id!!
@@ -70,7 +73,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employee2Id,
                 date = LocalDate.now().plusDays(3).toString(),
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
 
@@ -130,7 +134,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employee1Id,
                 date = LocalDate.now().plusDays(1).toString(),
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
         val workShiftHours = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee1Id)[0]
@@ -155,7 +160,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employee1Id,
                 date = LocalDate.now().plusDays(1).toString(),
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
         val workShiftHours = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee1Id)[0]
@@ -203,7 +209,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employee1Id,
                 date = LocalDate.now().plusDays(1).toString(),
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
         val workShiftHours = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee1Id)
@@ -227,7 +234,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employee1Id,
                 date = now.toLocalDate().toString(),
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
         tb.manager.workEvents.createWorkEvent(employee1Id, now.minusHours(1).toString(), WorkEventType.BREWERY)
@@ -301,7 +309,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
                 employeeId = employee1Id,
                 date = "2025-01-03",
                 approved = false,
-                dayOffWorkAllowance = true
+                dayOffWorkAllowance = true,
+                costCentersFromEvents = arrayOf()
             )
         )
         // Starting at 8.00
@@ -408,7 +417,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employee1Id,
                 date = "2024-01-01",
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
         val shift2 = tb.manager.workShifts.createEmployeeWorkShift(
@@ -416,7 +426,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employee1Id,
                 date = "2024-01-02",
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
         val shift3 = tb.manager.workShifts.createEmployeeWorkShift(
@@ -424,7 +435,8 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
             workShift = EmployeeWorkShift(
                 employeeId = employee1Id,
                 date = "2024-01-03",
-                approved = false
+                approved = false,
+                costCentersFromEvents = arrayOf()
             )
         )
 

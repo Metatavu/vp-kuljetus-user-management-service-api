@@ -104,6 +104,13 @@ class WorkShiftTestBuilderResource(
     }
 
     /**
+     * End unresolved workshifts
+     */
+    fun endUnresolvedWorkshifts() {
+        api.endUnresolvedWorkshifts()
+    }
+
+    /**
      * Asserts work shift creation fails
      *
      * @param employeeId employee id
