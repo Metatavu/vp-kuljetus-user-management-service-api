@@ -413,6 +413,169 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         assertEquals(0, workShifts.size)
     }
 
+    @Test
+    fun testWorkShiftEndSchedulerBreakEvent() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1")
+        val now = OffsetDateTime.now()
+        val shift = it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee.id!!,
+            EmployeeWorkShift(
+                date = now.minusHours(4).toLocalDate().toString(),
+                approved = true,
+                employeeId = employee.id,
+                costCentersFromEvents = emptyArray()
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.DRIVE,
+                time = now.minusHours(4).toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID(),
+                employeeWorkShiftId = shift.id!!
+            )
+        )
+
+        val event = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.BREAK,
+                time = now.minusHours(2).toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID(),
+                employeeWorkShiftId = shift.id
+            )
+        )
+
+        it.manager.workEvents.updateWorkEvent(
+            employeeId = employee.id,
+            id = event.id!!,
+            workEvent = event.copy(time = now.minusHours(3).toString())
+        )
+
+        assertNull(
+            it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first().endedAt,
+            "Work shift should not have ended yet"
+        )
+
+        it.setCronKey().workShifts.endUnresolvedWorkshifts()
+
+        val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
+        assertEquals(1, shifts.size, "There should be one shift")
+        assertNotNull(shifts.first().endedAt, "Shift should have ended")
+        val events = it.manager.workEvents.listWorkEvents(employeeId = employee.id)
+        assertEquals(3, events.size, "Shift should have 3 events")
+        assertEquals(events[2].workEventType, WorkEventType.SHIFT_START, "Last event should be shift start")
+        assertEquals(events[1].workEventType, WorkEventType.DRIVE, "Second event should be drive")
+        assertEquals(events[0].workEventType, WorkEventType.SHIFT_END, "First event should be shift end")
+    }
+
+    @Test
+    fun testWorkShiftEndSchedulerStartEvent() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1")
+        val now = OffsetDateTime.now()
+        val shift = it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee.id!!,
+            EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                approved = true,
+                employeeId = employee.id,
+                costCentersFromEvents = emptyArray()
+            )
+        )
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.SHIFT_START,
+                time = now.minusHours(5).toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID(),
+                employeeWorkShiftId = shift.id
+            )
+        )
+
+        it.setCronKey().workShifts.endUnresolvedWorkshifts()
+        val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
+        assertEquals(1, shifts.size, "There should be 1 shift")
+        assertNotNull(shifts.first().endedAt, "The shift should have ended")
+        val events = it.manager.workEvents.listWorkEvents(employeeId = employee.id)
+        assertEquals(3, events.size, "The shift should have 3 events")
+        assertNotNull(
+            events.find { foundEvent -> foundEvent.workEventType == WorkEventType.SHIFT_START },
+            "Events should contain SHIFT_START"
+        )
+        assertNotNull(
+            events.find { foundEvent -> foundEvent.workEventType == WorkEventType.UNKNOWN },
+            "Events should contain UNKNOWN"
+        )
+        assertNotNull(
+            events.find { foundEvent -> foundEvent.workEventType == WorkEventType.SHIFT_END },
+            "Events should contain SHIFT_END"
+        )
+    }
+
+    @Test
+    fun testWorkShiftEndSchedulerDriveEvent() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1")
+        val now = OffsetDateTime.now()
+        val shift = it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee.id!!,
+            EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                approved = true,
+                employeeId = employee.id,
+                costCentersFromEvents = emptyArray()
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.OTHER_WORK,
+                time = now.minusHours(6).toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID(),
+                employeeWorkShiftId = shift.id!!
+            )
+        )
+
+        val event = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.DRIVE,
+                time = now.minusHours(2).toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID(),
+                employeeWorkShiftId = shift.id
+            )
+        )
+
+        assertNull(
+            it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first().endedAt,
+            "Work shift should not have ended yet"
+        )
+
+        it.manager.workEvents.updateWorkEvent(
+            employeeId = employee.id,
+            id = event.id!!,
+            workEvent = event.copy(time = now.minusHours(5).toString())
+        )
+
+        it.setCronKey().workShifts.endUnresolvedWorkshifts()
+
+        val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
+        assertEquals(1, shifts.size, "There should be one work shift for the employee")
+        assertNotNull(shifts.first().endedAt, "The work shift should be finished")
+        val events = it.manager.workEvents.listWorkEvents(employeeId = employee.id)
+        assertEquals(4, events.size, "Shift should have 4 events")
+        assertEquals(events[3].workEventType, WorkEventType.SHIFT_START, "Last and final event should be SHIFT_END")
+        assertEquals(events[2].workEventType, WorkEventType.OTHER_WORK, "Third event should be OTHER_WORK")
+        assertEquals(events[1].workEventType, WorkEventType.DRIVE, "Second event should be DRIVE")
+        assertEquals(events[0].workEventType, WorkEventType.SHIFT_END, "First event should be SHIFT_START")
+    }
+
     /**
      * Translates offset date time string of work event to string of local date
      *

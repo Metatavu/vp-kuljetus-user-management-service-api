@@ -81,7 +81,7 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
 
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
-    override fun updateWorkShiftHours(workShiftHoursId: UUID, workShiftHours: WorkShiftHours): Uni<Response> = withCoroutineScope {
+    override fun updateWorkShiftHours(workShiftHoursId: UUID, workShiftChangeSetId: UUID, workShiftHours: WorkShiftHours): Uni<Response> = withCoroutineScope {
         val existingWorkShiftHours = workShiftHoursController.findWorkShiftHours(workShiftHoursId)
           ?: return@withCoroutineScope createNotFoundWithMessage(WORK_SHIFT_HOURS, workShiftHoursId)
 

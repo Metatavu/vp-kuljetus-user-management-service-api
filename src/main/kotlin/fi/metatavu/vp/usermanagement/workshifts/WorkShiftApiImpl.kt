@@ -5,6 +5,7 @@ import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.EmployeeWorkShiftsApi
 import fi.metatavu.vp.usermanagement.users.UserController
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
+import fi.metatavu.vp.usermanagement.workshifts.scheduled.WorkShiftScheduledJobs
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -36,6 +37,9 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
 
     @Inject
     lateinit var employeeController: UserController
+
+    @Inject
+    lateinit var workShiftScheduledJobs: WorkShiftScheduledJobs
 
     @Inject
     lateinit var eventBus: EventBus
@@ -78,7 +82,7 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
 
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
-    override fun createEmployeeWorkShift(employeeId: UUID, employeeWorkShift: EmployeeWorkShift): Uni<Response> {
+    override fun createEmployeeWorkShift(employeeId: UUID, workShiftChangeSetId: UUID, employeeWorkShift: EmployeeWorkShift): Uni<Response> {
         return withCoroutineScope {
             if (employeeId != employeeWorkShift.employeeId) {
                 return@withCoroutineScope createBadRequest("employeeId in path and body do not match")
@@ -112,6 +116,16 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
         createNoContent()
     }
 
+    @WithTransaction
+    override fun endUnresolvedWorkshifts(): Uni<Response> = withCoroutineScope {
+        if (requestCronKey != cronKey) {
+            return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
+        }
+
+        workShiftScheduledJobs.endUnresolvedWorkshifts()
+        createOk()
+    }
+
     @RolesAllowed(MANAGER_ROLE)
     override fun findEmployeeWorkShift(employeeId: UUID, workShiftId: UUID): Uni<Response> = withCoroutineScope{
         val employeeWorkShift = workShiftController.findEmployeeWorkShift(employeeId, workShiftId)
@@ -125,6 +139,7 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
     override fun updateEmployeeWorkShift(
         employeeId: UUID,
         workShiftId: UUID,
+        workShiftChangeSetId: UUID,
         employeeWorkShift: EmployeeWorkShift
     ): Uni<Response> = withCoroutineScope{
         val existingWorkShift = workShiftController.findEmployeeWorkShift(employeeId, workShiftId)
