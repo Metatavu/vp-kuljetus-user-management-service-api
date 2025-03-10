@@ -83,6 +83,18 @@ class WorkShiftTestBuilderResource(
     }
 
     /**
+     * Creates work shift
+     *
+     * @param employeeId employee id
+     * @param changeSetId change set id
+     * @return created work shift
+     */
+    fun createEmployeeWorkShift(employeeId: UUID, changeSetId: UUID, workShift: EmployeeWorkShift): EmployeeWorkShift {
+        return addClosable(api.createEmployeeWorkShift(employeeId, changeSetId, workShift))
+    }
+
+
+    /**
      * Starts the task of recalculating n finished work shifts with null calculated hours
      *
      * @param number uncalculated work shifts to recalculate
@@ -103,15 +115,27 @@ class WorkShiftTestBuilderResource(
      *
      * @param employeeId employee id
      * @param workShift work shift
+     * @param changeSetId change set id
      * @param expectedStatus expected status
      */
-    fun assertCreateFail(employeeId: UUID, workShift: EmployeeWorkShift, expectedStatus: Int) {
+    fun assertCreateFail(employeeId: UUID, workShift: EmployeeWorkShift, changeSetId: UUID, expectedStatus: Int) {
         try {
-            api.createEmployeeWorkShift(employeeId, UUID.randomUUID(), workShift)
+            api.createEmployeeWorkShift(employeeId, changeSetId, workShift)
             Assert.fail(String.format("Expected create to fail with status %d", expectedStatus))
         } catch (ex: ClientException) {
             assertClientExceptionStatus(expectedStatus, ex)
         }
+    }
+
+    /**
+     * Asserts work shift creation fails
+     *
+     * @param employeeId employee id
+     * @param workShift work shift
+     * @param expectedStatus expected status
+     */
+    fun assertCreateFail(employeeId: UUID, workShift: EmployeeWorkShift, expectedStatus: Int) {
+        assertCreateFail(employeeId, workShift, UUID.randomUUID(), expectedStatus)
     }
 
     /**
@@ -133,7 +157,20 @@ class WorkShiftTestBuilderResource(
      * @return updated work shift
      */
     fun updateEmployeeWorkShift(employeeId: UUID, id: UUID, workShift: EmployeeWorkShift): EmployeeWorkShift {
-        return api.updateEmployeeWorkShift(employeeId, id, UUID.randomUUID(), workShift)
+        return updateEmployeeWorkShift(employeeId, id, UUID.randomUUID(), workShift)
+    }
+
+    /**
+     * Updates work shift
+     *
+     * @param employeeId employee id
+     * @param id work shift id
+     * @param changeSetId change set id
+     * @param workShift work shift
+     * @return updated work shift
+     */
+    fun updateEmployeeWorkShift(employeeId: UUID, id: UUID, changeSetId: UUID, workShift: EmployeeWorkShift): EmployeeWorkShift {
+        return api.updateEmployeeWorkShift(employeeId, id, changeSetId, workShift)
     }
 
     /**
@@ -159,7 +196,7 @@ class WorkShiftTestBuilderResource(
      */
     fun assertUpdateFail(employeeId: UUID, id: UUID, workShift: EmployeeWorkShift, expectedStatus: Int) {
         try {
-            api.updateEmployeeWorkShift(employeeId, id, UUID.randomUUID(),workShift)
+            api.updateEmployeeWorkShift(employeeId, id, UUID.randomUUID(), workShift)
             Assert.fail(String.format("Expected update to fail with status %d", expectedStatus))
         } catch (ex: ClientException) {
             assertClientExceptionStatus(expectedStatus, ex)

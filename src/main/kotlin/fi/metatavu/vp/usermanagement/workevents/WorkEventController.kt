@@ -8,6 +8,7 @@ import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftRepository
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changes.WorkShiftChangeRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import java.time.Duration
@@ -20,6 +21,8 @@ import kotlin.math.absoluteValue
  */
 @ApplicationScoped
 class WorkEventController {
+    @Inject
+    lateinit var workShiftChangeRepository: WorkShiftChangeRepository
 
     @Inject
     lateinit var workEventRepository: WorkEventRepository
@@ -161,6 +164,10 @@ class WorkEventController {
      * @param foundWorkEvent found work event
      */
     suspend fun delete(foundWorkEvent: WorkEventEntity) {
+        workShiftChangeRepository.listByWorkEvent(foundWorkEvent).forEach {
+            workShiftChangeRepository.deleteSuspending(it)
+        }
+
         workEventRepository.deleteSuspending(foundWorkEvent)
 
         if (workEventRepository.list(employeeWorkShift = foundWorkEvent.workShift).first.isEmpty()) {
