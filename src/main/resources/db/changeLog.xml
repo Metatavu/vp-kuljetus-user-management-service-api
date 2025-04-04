@@ -270,4 +270,53 @@
     <changeSet id="delete_shift_default_truck_id" author="Simeon Platonov">
         <dropColumn tableName="workshift" columnName="defaulttruckid"/>
     </changeSet>
+    <changeSet id="changelogs" author="Simeon Platonov">
+        <createTable tableName="workshiftchangeset">
+            <column name="id" type="binary(16)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="createdat" type="datetime(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="creatorid" type="binary(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="workshift_id" type="binary(16)">
+                <constraints nullable="false" foreignKeyName="FK_WORKSHIFTCHANGESET_WORKSHIFT_ID" referencedColumnNames="id"
+                             referencedTableName="workshift"/>
+            </column>
+        </createTable>
+        <createTable tableName="workshiftchange">
+            <column name="id" type="binary(16)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="reason" type="varchar(191)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="oldvalue" type="varchar(191)"/>
+            <column name="newvalue" type="varchar(191)"/>
+            <column name="createdat" type="datetime(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="creatorid" type="binary(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="workshiftchangeset_id" type="binary(16)">
+                <constraints nullable="false" foreignKeyName="FK_WORKSHIFTCHANGE_WORKSHIFTCHANGESET_ID" referencedColumnNames="id"
+                             referencedTableName="workshiftchangeset"/>
+            </column>
+            <column name="workshift_id" type="binary(16)">
+                <constraints nullable="false" foreignKeyName="FK_WORKSHIFTCHANGE_WORKSHIFT_ID" referencedColumnNames="id"
+                             referencedTableName="workshift"/>
+            </column>
+            <column name="workshifthour_id" type="binary(16)">
+                <constraints nullable="true" foreignKeyName="FK_WORKSHIFTCHANGE_WORKSHIFTHOUR_ID" referencedColumnNames="id"
+                             referencedTableName="workshifthours"/>
+            </column>
+            <column name="workevent_id" type="binary(16)">
+                <constraints nullable="true" foreignKeyName="FK_WORKSHIFTCHANGE_WORKEVENT_ID" referencedColumnNames="id"
+                             referencedTableName="workevent"/>
+            </column>
+        </createTable>
+    </changeSet>
 </databaseChangeLog>

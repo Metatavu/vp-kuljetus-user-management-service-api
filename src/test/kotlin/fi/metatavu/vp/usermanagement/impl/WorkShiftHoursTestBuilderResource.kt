@@ -61,9 +61,11 @@ class WorkShiftHoursTestBuilderResource(
             employeeWorkShiftStartedBefore = employeeWorkShiftStartedBefore,
             employeeWorkShiftStartedAfter = employeeWorkShiftStartedAfter
         )
+
         all.forEach {
             addClosable(it)
         }
+
         return all
     }
 
@@ -82,8 +84,21 @@ class WorkShiftHoursTestBuilderResource(
      * @return updated work shift hours
      */
     fun updateWorkShiftHours(id: UUID, workShiftHours: WorkShiftHours): WorkShiftHours {
-        return api.updateWorkShiftHours(id, UUID.randomUUID(), workShiftHours)
+        return updateWorkShiftHours(id, UUID.randomUUID(), workShiftHours)
     }
+
+    /**
+     * Updates work shift hours
+     *
+     * @param id work shift hours id
+     * @param workShiftChangeSetId work shift change set id
+     * @param workEvent work event
+     * @return updated work shift hours
+     */
+    fun updateWorkShiftHours(id: UUID, workShiftChangeSetId: UUID, workShiftHours: WorkShiftHours): WorkShiftHours {
+        return api.updateWorkShiftHours(id, workShiftChangeSetId, workShiftHours)
+    }
+
 
     /**
      * Deletes work shift hours
@@ -102,8 +117,20 @@ class WorkShiftHoursTestBuilderResource(
      * @param expectedStatus expected status
      */
     fun assertUpdateFail(id: UUID, workEvent: WorkShiftHours, expectedStatus: Int) {
+        assertUpdateFail(id, UUID.randomUUID(), workEvent, expectedStatus)
+    }
+
+    /**
+     * Asserts that update fails with expected status
+     *
+     * @param id work shift hours id
+     * @param changeSetId change set id
+     * @param workEvent work event
+     * @param expectedStatus expected status
+     */
+    fun assertUpdateFail(id: UUID, changeSetId: UUID, workEvent: WorkShiftHours, expectedStatus: Int) {
         try {
-            api.updateWorkShiftHours(id, UUID.randomUUID(), workEvent)
+            api.updateWorkShiftHours(id, changeSetId, workEvent)
             Assert.fail(String.format("Expected update to fail with status %d", expectedStatus))
         } catch (ex: ClientException) {
             assertClientExceptionStatus(expectedStatus, ex)

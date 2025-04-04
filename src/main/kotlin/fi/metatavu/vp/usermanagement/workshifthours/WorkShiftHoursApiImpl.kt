@@ -1,10 +1,14 @@
 package fi.metatavu.vp.usermanagement.workshifthours
 
+import fi.metatavu.vp.usermanagement.model.WorkShiftChangeReason
 import fi.metatavu.vp.usermanagement.model.WorkShiftHours
 import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.WorkShiftHoursApi
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changes.WorkShiftChangeController
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.ChangeSetExistsWithOtherWorkShiftException
+import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftChangeSetController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
@@ -33,6 +37,12 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
 
     @Inject
     lateinit var workShiftHoursTranslator: WorkShiftHoursTranslator
+
+    @Inject
+    lateinit var workShiftChangeSetController: WorkShiftChangeSetController
+
+    @Inject
+    lateinit var workShiftChangeController: WorkShiftChangeController
 
     @ConfigProperty(name = "env")
     lateinit var env: Optional<String>
@@ -96,7 +106,24 @@ class WorkShiftHoursApiImpl: WorkShiftHoursApi, AbstractApi() {
             return@withCoroutineScope createBadRequest("Work shift hours cannot be updated if the related work shift is approved")
         }
 
+        try {
+            val changeSet = workShiftChangeSetController.createOrReturnExisting(workShiftChangeSetId, existingWorkShiftHours.workShift, loggedUserId!!)
+            workShiftChangeController.create(
+                reason = WorkShiftChangeReason.WORKSHIFTHOURS_UPDATED_ACTUALHOURS.toString(),
+                creatorId = loggedUserId!!,
+                workShift = existingWorkShiftHours.workShift,
+                workShiftHours = existingWorkShiftHours,
+                workEvent = null,
+                oldValue = existingWorkShiftHours.actualHours?.toString(),
+                newValue = workShiftHours.actualHours?.toString(),
+                workShiftChangeSet = changeSet
+            )
+        } catch (exception: ChangeSetExistsWithOtherWorkShiftException) {
+            return@withCoroutineScope createBadRequest(CHANGESET_ID_RESERVED_BY_OTHER_WORKSHIFT)
+        }
+
         val updatedWorkShiftHours = workShiftHoursController.updateWorkShiftHours(existingWorkShiftHours, workShiftHours.actualHours)
+
         createOk(workShiftHoursTranslator.translate(updatedWorkShiftHours))
     }
 }
