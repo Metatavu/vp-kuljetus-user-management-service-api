@@ -90,8 +90,16 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
             parameters.and("workShift", employeeWorkShift)
         }
 
+        sb.append(" ORDER by time DESC, CASE workEventType WHEN 'SHIFT_START' THEN 1 ")
+        sb.append("WHEN 'DRIVER_CARD_INSERTED' THEN 2 ")
+        sb.append("WHEN 'LOGIN' THEN 3 ")
+        sb.append("WHEN 'LOGOUT' THEN 5 ")
+        sb.append("WHEN 'DRIVER_CARD_REMOVED' THEN 6 ")
+        sb.append("WHEN 'SHIFT_END' THEN 7 ")
+        sb.append("ELSE 4 END")
+
         return queryWithCount(
-            find(sb.toString(), Sort.descending("time"), parameters),
+            find(sb.toString(), parameters),
             first,
             max
         )
