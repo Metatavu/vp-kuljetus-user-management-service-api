@@ -319,4 +319,28 @@
             </column>
         </createTable>
     </changeSet>
+    <changeSet id="payrollexports" author="Simeon Platonov">
+        <createTable tableName="payrollexport">
+            <column name="id" type="binary(16)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="employeeId" type="binary(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fileName" type="varchar(191)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="creatorid" type="binary(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exportedat" type="datetime(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addColumn tableName="workshift">
+            <column name="payrollexport_id" type="binary(16)">
+                <constraints foreignKeyName="FK_WORKSHIFT_PAYROLLEXPORT_ID" referencedColumnNames="id" referencedTableName="payrollexport"/>
+            </column>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

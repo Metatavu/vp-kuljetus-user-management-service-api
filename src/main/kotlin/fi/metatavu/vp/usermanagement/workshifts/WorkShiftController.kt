@@ -3,6 +3,8 @@ package fi.metatavu.vp.usermanagement.workshifts
 import fi.metatavu.vp.usermanagement.model.AbsenceType
 import fi.metatavu.vp.usermanagement.model.EmployeeWorkShift
 import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
+import fi.metatavu.vp.usermanagement.payrollexports.PayrollExportController
+import fi.metatavu.vp.usermanagement.payrollexports.PayrollExportEntity
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftChangeSetController
@@ -104,7 +106,8 @@ class WorkShiftController {
         dateAfter: LocalDate?,
         dateBefore: LocalDate?,
         first: Int? = null,
-        max: Int? = null
+        max: Int? = null,
+        payrollExport: PayrollExportEntity? = null
     ): Pair<List<WorkShiftEntity>, Long> {
         return workShiftRepository.listEmployeeWorkShifts(
             employeeId,
@@ -113,7 +116,8 @@ class WorkShiftController {
             dateAfter,
             dateBefore,
             first,
-            max
+            max,
+            payrollExport
         )
     }
 
@@ -169,4 +173,27 @@ class WorkShiftController {
         workShiftRepository.deleteSuspending(employeeWorkShift)
     }
 
+    /**
+     * Sets a payroll export for work shift.
+     * Work shift can be part only of one payroll export at a time.
+     *
+     * @param workShift
+     * @param payrollExport
+      */
+    suspend fun setPayrollExport(
+        workShift: WorkShiftEntity,
+        payrollExport: PayrollExportEntity?
+    ) {
+        if (workShift.payrollExport == null) {
+            workShiftRepository.setPayrollExport(
+                workShiftEntity = workShift,
+                payrollExportEntity = payrollExport
+            )
+        } else if (payrollExport == null) {
+            workShiftRepository.setPayrollExport(
+                workShiftEntity = workShift,
+                payrollExportEntity = null
+            )
+        }
+    }
 }
