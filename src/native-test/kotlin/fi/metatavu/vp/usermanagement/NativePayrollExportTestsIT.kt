@@ -6,4 +6,4 @@ import io.quarkus.test.junit.TestProfile
 
 @QuarkusIntegrationTest
 @TestProfile(DefaultTestProfile::class)
-class NativePayrollExportTestsIT: PayrollExportTestsIT() {}
+class NativePayrollExportTestsIT: PayrollExportTestsIT()

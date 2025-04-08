@@ -85,24 +85,6 @@ abstract class AbstractFunctionalTest {
     }
 
     /**
-     * Verifies that file contains the expected text content
-     *
-     * @param expected
-     * @param fileName
-     */
-    fun verifyFileTextContent(
-        expected: String,
-        fileName: String
-    ) {
-        val fileContent = File(fileName).readText()
-
-        assertEquals(
-            expected,
-            fileContent
-        )
-    }
-
-    /**
      * Returns test config from dev services
      *
      * @return test config from dev services

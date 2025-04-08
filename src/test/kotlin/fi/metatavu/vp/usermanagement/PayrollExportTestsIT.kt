@@ -10,6 +10,7 @@ import io.quarkus.test.junit.TestProfile
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import java.io.File
 import java.time.OffsetDateTime
 import java.util.*
 
@@ -100,7 +101,12 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
         val row1 = "08.04.2025;1;Test Employee;1;8;6;7;8;9;10\n"
         val row2 = "08.04.2025;1;Test Employee;1;8;6;7;8;9;10\n"
 
-        verifyFileTextContent(row1 + row2, "src/test/resources/payrollexports/" + payrollExport.csvFileName!!)
+        val fileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+
+        assertEquals(
+            row1 + row2,
+            fileContent
+        )
 
         it.manager.payrollExports.assertCreateFail(
             payrollExport = PayrollExport(
