@@ -2,7 +2,9 @@ package fi.metatavu.vp.usermanagement
 
 import fi.metatavu.vp.test.client.models.EmployeeWorkShift
 import fi.metatavu.vp.test.client.models.PayrollExport
+import fi.metatavu.vp.usermanagement.resources.FtpServerTestResource
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
+import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -12,6 +14,9 @@ import java.time.OffsetDateTime
 import java.util.*
 
 @QuarkusTest
+@QuarkusTestResource.List(
+    QuarkusTestResource(FtpServerTestResource::class)
+)
 @TestProfile(DefaultTestProfile::class)
 class PayrollExportTestsIT: AbstractFunctionalTest() {
 
@@ -89,8 +94,13 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
         assertNotNull(payrollExport.exportedAt, "Exported at should not be null")
         assertNotNull(payrollExport.creatorId, "Creator ID should not be null")
 
-        assertNotNull(payrollExport.workShiftIds.find { shiftId -> shiftId == workShift.id }, "Work shift ID should be in the export")
-        assertNotNull(payrollExport.workShiftIds.find { shiftId -> shiftId == workShift2.id }, "Work shift ID should be in the export")
+        assertNotNull(payrollExport.workShiftIds.find { shiftId -> shiftId == workShift.id }, "Work shift ID ${workShift.id} should be in the export")
+        assertNotNull(payrollExport.workShiftIds.find { shiftId -> shiftId == workShift2.id }, "Work shift ID ${workShift2.id} should be in the export")
+
+        val row1 = "08.04.2025;1;Test Employee;1;8;6;7;8;9;10\n"
+        val row2 = "08.04.2025;1;Test Employee;1;8;6;7;8;9;10\n"
+
+        verifyFileTextContent(row1 + row2, "src/test/resources/payrollexports/" + payrollExport.csvFileName!!)
 
         it.manager.payrollExports.assertCreateFail(
             payrollExport = PayrollExport(

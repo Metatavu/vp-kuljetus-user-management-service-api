@@ -15,11 +15,13 @@ class PayrollExportRepository: AbstractRepository<PayrollExportEntity, UUID>() {
      *
      * @param employeeId employee id
      * @param fileName file name
+     * @param exportedAt exported at
      * @param creatorId creator id
      */
     suspend fun create(
         employeeId: UUID,
         fileName: String,
+        exportedAt: OffsetDateTime,
         creatorId: UUID
     ): PayrollExportEntity {
         val payrollExport = PayrollExportEntity()
@@ -27,7 +29,7 @@ class PayrollExportRepository: AbstractRepository<PayrollExportEntity, UUID>() {
         payrollExport.employeeId = employeeId
         payrollExport.fileName = fileName
         payrollExport.creatorId = creatorId
-        payrollExport.exportedAt = OffsetDateTime.now()
+        payrollExport.exportedAt = exportedAt
         return persistSuspending(payrollExport)
     }
 

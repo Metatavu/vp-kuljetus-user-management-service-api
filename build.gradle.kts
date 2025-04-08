@@ -43,6 +43,8 @@ dependencies {
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("org.apache.camel.quarkus:camel-quarkus-ftp:3.20.0")
+
 
     configurations.all {
         exclude(group = "commons-logging", module = "commons-logging")

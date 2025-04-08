@@ -3,6 +3,7 @@ package fi.metatavu.vp.usermanagement.payrollexports
 import fi.metatavu.vp.usermanagement.model.PayrollExport
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.PayrollExportsApi
+import fi.metatavu.vp.usermanagement.users.UserController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
@@ -26,10 +27,17 @@ class PayrollExportsApiImpl: PayrollExportsApi, AbstractApi() {
     @Inject
     lateinit var workShiftController: WorkShiftController
 
+    @Inject
+    lateinit var userController: UserController
+
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
     override fun createPayrollExport(payrollExport: PayrollExport): Uni<Response> = withCoroutineScope {
         loggedUserId ?: return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
+
+        val employee = userController.find(
+            id = payrollExport.employeeId
+        ) ?: return@withCoroutineScope createBadRequest("Employee ${payrollExport.employeeId} does not exist")
 
         val workShifts = payrollExport.workShiftIds.map {
             workShiftController.findEmployeeWorkShift(employeeId = payrollExport.employeeId, shiftId = it)
@@ -50,10 +58,24 @@ class PayrollExportsApiImpl: PayrollExportsApi, AbstractApi() {
             }
         }
 
+        val exportTime = OffsetDateTime.now()
+        val fileName = "${employee.firstName}_${employee.lastName}_$exportTime.csv"
+
+        try {
+            payrollExportController.exportPayrollFile(
+                workShifts = workShifts,
+                employee = employee,
+                fileName = fileName
+            )
+        } catch (e: Exception) {
+            return@withCoroutineScope createInternalServerError("Payroll file export failed: ${e.message}")
+        }
+
         createOk(payrollExportTranslator.translate(payrollExportController.save(
             employeeId = payrollExport.employeeId,
-            fileName = "test",
+            fileName = fileName,
             creatorId = loggedUserId!!,
+            exportedAt = exportTime,
             workShifts = workShifts
         )))
     }

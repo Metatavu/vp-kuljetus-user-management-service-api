@@ -19,5 +19,9 @@ class ApiTestSettings {
         const val DRIVER_APP_API_KEY = "driver-app-api-key"
         const val KEYCLOAK_API_KEY = "keycloak-api-key"
         const val CRON_API_KEY = "cron-api-key"
+
+        const val FTP_USER_NAME = "test"
+        const val FTP_USER_PASSWORD = "test"
+        const val FTP_FOLDER = "payrollexports"
     }
 }

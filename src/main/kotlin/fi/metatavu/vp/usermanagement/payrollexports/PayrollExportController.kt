@@ -1,11 +1,17 @@
 package fi.metatavu.vp.usermanagement.payrollexports
 
+import fi.metatavu.keycloak.adminclient.models.UserRepresentation
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
+import org.apache.camel.Exchange
 import java.time.OffsetDateTime
 import java.util.*
+import org.apache.camel.ProducerTemplate
+import org.eclipse.microprofile.config.inject.ConfigProperty
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @ApplicationScoped
 class PayrollExportController {
@@ -15,6 +21,18 @@ class PayrollExportController {
 
     @Inject
     lateinit var employeeWorkShiftController: WorkShiftController
+
+    @Inject
+    lateinit var producerTemplate: ProducerTemplate
+
+    @ConfigProperty(name = "vp.usermanagement.payrollexports.ftp.address")
+    lateinit var ftpAddress: String
+
+    @ConfigProperty(name = "vp.usermanagement.payrollexports.ftp.username")
+    lateinit var ftpUserName: String
+
+    @ConfigProperty(name = "vp.usermanagement.payrollexports.ftp.password")
+    lateinit var ftpUserPassword: String
 
     /**
      * Saves a reference about a payroll export to the database, so that exports can be listed from the UI.
@@ -29,11 +47,13 @@ class PayrollExportController {
         employeeId: UUID,
         fileName: String,
         workShifts: List<WorkShiftEntity>,
-        creatorId: UUID
+        exportedAt: OffsetDateTime,
+        creatorId: UUID,
     ): PayrollExportEntity {
         val export = payrollExportRepository.create(
             employeeId = employeeId,
             fileName = fileName,
+            exportedAt = exportedAt,
             creatorId = creatorId
         )
 
@@ -61,7 +81,7 @@ class PayrollExportController {
         exportedAfter: OffsetDateTime?,
         exportedBefore: OffsetDateTime?,
         first: Int?,
-        max: Int?
+        max: Int?,
     ): List<PayrollExportEntity> {
         return payrollExportRepository.list(
             employeeId = employeeId,
@@ -87,7 +107,7 @@ class PayrollExportController {
      * @param payrollExport
      */
     suspend fun delete(payrollExport: PayrollExportEntity) {
-        val workShifts = employeeWorkShiftController.listEmployeeWorkShifts(
+        employeeWorkShiftController.listEmployeeWorkShifts(
             employeeId = payrollExport.employeeId,
             payrollExport = payrollExport,
             startedAfter = null,
@@ -103,5 +123,60 @@ class PayrollExportController {
             )
         }
         payrollExportRepository.deleteSuspending(payrollExport)
+    }
+
+    /**
+     * Builds a payroll file and sends it through FTP to a server defined by environment variables.
+     *
+     * @param workShifts
+     * @param employee
+     * @param fileName
+     */
+    suspend fun exportPayrollFile(
+        workShifts: List<WorkShiftEntity>,
+        employee: UserRepresentation,
+        fileName: String
+    ) {
+        val employeeNumber = employee.attributes!!["employeeNumber"]!!.first()
+
+        // TODO: Write actual export logic, next variable is temporary for testing
+        val testContent = workShifts.joinToString(separator = "") { workShift ->
+            buildPayrollExportRow(
+                date = workShift.date,
+                employeeNumber = employeeNumber,
+                employeeName = "${employee.firstName} ${employee.lastName}",
+                salaryTypeNumber = 1,
+                hoursWorked = 8
+            )
+        }
+
+        producerTemplate.sendBodyAndHeader(
+            "sftp://$ftpUserName@$ftpAddress?password=$ftpUserPassword",
+            testContent,
+            Exchange.FILE_NAME,
+            fileName
+        )
+    }
+
+    /**
+     * Builds a single row for an exported payroll.
+     * Work is split into salary types.
+     * Each row represents work done for a specific salary type on a given day.
+     *
+     * @param date
+     * @param employeeNumber
+     * @param employeeName
+     * @param salaryTypeNumber
+     * @param hoursWorked
+     */
+    private fun buildPayrollExportRow(
+        date: LocalDate,
+        employeeNumber: String,
+        employeeName: String,
+        salaryTypeNumber: Int,
+        hoursWorked: Int
+    ): String {
+        val formattedDate = date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")).toString()
+        return "$formattedDate;$employeeNumber;$employeeName;$salaryTypeNumber;$hoursWorked;6;7;8;9;10\n"
     }
 }

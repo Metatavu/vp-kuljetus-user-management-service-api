@@ -7,10 +7,12 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.quarkus.test.common.DevServicesContext
 import org.eclipse.microprofile.config.ConfigProvider
 import org.json.JSONException
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.skyscreamer.jsonassert.JSONCompare
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.skyscreamer.jsonassert.JSONCompareResult
 import org.skyscreamer.jsonassert.comparator.CustomComparator
+import java.io.File
 import java.util.*
 
 /**
@@ -80,6 +82,24 @@ abstract class AbstractFunctionalTest {
      */
     fun getConfig(): Map<String, String> {
         return getDevServiceConfig() ?: getQuarkusConfig()
+    }
+
+    /**
+     * Verifies that file contains the expected text content
+     *
+     * @param expected
+     * @param fileName
+     */
+    fun verifyFileTextContent(
+        expected: String,
+        fileName: String
+    ) {
+        val fileContent = File(fileName).readText()
+
+        assertEquals(
+            expected,
+            fileContent
+        )
     }
 
     /**
