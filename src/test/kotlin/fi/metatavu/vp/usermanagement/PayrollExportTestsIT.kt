@@ -2,7 +2,7 @@ package fi.metatavu.vp.usermanagement
 
 import fi.metatavu.vp.test.client.models.EmployeeWorkShift
 import fi.metatavu.vp.test.client.models.PayrollExport
-import fi.metatavu.vp.usermanagement.resources.FtpServerTestResource
+import fi.metatavu.vp.usermanagement.resources.SftpServerTestResource
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.junit.QuarkusTest
@@ -16,7 +16,7 @@ import java.util.*
 
 @QuarkusTest
 @QuarkusTestResource.List(
-    QuarkusTestResource(FtpServerTestResource::class)
+    QuarkusTestResource(SftpServerTestResource::class)
 )
 @TestProfile(DefaultTestProfile::class)
 class PayrollExportTestsIT: AbstractFunctionalTest() {
@@ -98,8 +98,8 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
         assertNotNull(payrollExport.workShiftIds.find { shiftId -> shiftId == workShift.id }, "Work shift ID ${workShift.id} should be in the export")
         assertNotNull(payrollExport.workShiftIds.find { shiftId -> shiftId == workShift2.id }, "Work shift ID ${workShift2.id} should be in the export")
 
-        val row1 = "08.04.2025;1;Test Employee;1;8;6;7;8;9;10\n"
-        val row2 = "08.04.2025;1;Test Employee;1;8;6;7;8;9;10\n"
+        val row1 = "09.04.2025;1;Test Employee;1;8;6;7;8;9;10\n"
+        val row2 = "09.04.2025;1;Test Employee;1;8;6;7;8;9;10\n"
 
         val fileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
 
@@ -130,6 +130,16 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
                 workShiftIds = arrayOf(UUID.randomUUID())
             ),
             expectedStatus = 400
+        )
+
+        it.manager.payrollExports.assertFindFail(
+            id = UUID.randomUUID(),
+            expectedStatus = 404
+        )
+
+        it.driver1.payrollExports.assertFindFail(
+            id = exportId,
+            expectedStatus = 403
         )
     }
 

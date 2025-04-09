@@ -7,14 +7,18 @@ import org.testcontainers.containers.GenericContainer
 import org.testcontainers.utility.DockerImageName
 import java.io.File
 
-class FtpServerTestResource: QuarkusTestResourceLifecycleManager {
+class SftpServerTestResource: QuarkusTestResourceLifecycleManager {
     private lateinit var ftpContainer: GenericContainer<*>
 
     override fun start(): MutableMap<String, String> {
-        ftpContainer = GenericContainer(DockerImageName.parse("atmoz/sftp"))
+        ftpContainer = GenericContainer(DockerImageName.parse("atmoz/sftp:alpine-3.7"))
             .withEnv("SFTP_USERS", "${ApiTestSettings.FTP_USER_NAME}:${ApiTestSettings.FTP_USER_PASSWORD}:1001")
             .withExposedPorts(22)
-            .withFileSystemBind("src/test/resources/${ApiTestSettings.FTP_FOLDER}", "/home/${ApiTestSettings.FTP_USER_NAME}/${ApiTestSettings.FTP_FOLDER}", BindMode.READ_WRITE)
+            .withFileSystemBind(
+                "src/test/resources/${ApiTestSettings.FTP_FOLDER}",
+                "/home/${ApiTestSettings.FTP_USER_NAME}/${ApiTestSettings.FTP_FOLDER}",
+                BindMode.READ_WRITE
+            )
 
         ftpContainer.start()
 
