@@ -266,24 +266,26 @@ class PayrollExportController {
         var totalHours = 0f
 
         workShifts.forEach {
-            totalHours += extractWorkTypeHoursForSingleShift(
+            val activeWorkHours = extractWorkTypeHoursForSingleShift(
                 workShift = it,
                 workType = WorkType.PAID_WORK
             )
+
+            totalHours += activeWorkHours
 
             totalHours += extractWorkTypeHoursForSingleShift(
                 workShift = it,
                 workType = WorkType.SICK_LEAVE
             )
 
-            val breakIsPaid = Duration.between(it.startedAt!!, it.endedAt!!).toHours() >= 8
+            val breakHours = extractWorkTypeHoursForSingleShift(
+                workShift = it,
+                workType = WorkType.BREAK
+            )
+
+            val breakIsPaid = activeWorkHours + breakHours >= 8
 
             if (breakIsPaid) {
-                val breakHours = extractWorkTypeHoursForSingleShift(
-                    workShift = it,
-                    workType = WorkType.BREAK
-                )
-
                 totalHours += if (breakHours < 0.5f) {
                     breakHours
                 } else {
