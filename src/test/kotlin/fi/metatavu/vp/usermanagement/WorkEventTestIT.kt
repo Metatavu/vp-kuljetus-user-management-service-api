@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement
 
+import fi.metatavu.vp.test.client.models.EmployeeWorkShift
 import fi.metatavu.vp.test.client.models.WorkEvent
 import fi.metatavu.vp.test.client.models.WorkEventType
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
@@ -139,6 +140,128 @@ class WorkEventTestIT : AbstractFunctionalTest() {
         )
 
         it.manager.workEvents.addEmployeeShiftStartToCloseables(employeeId = employee1.id)
+    }
+
+    @Test
+    fun testWorkEventListSecondarySorting() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1")
+
+        val now = OffsetDateTime.now()
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id!!,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.DRIVE,
+                time = now.toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID()
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id!!,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.LOGOUT,
+                time = now.toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID()
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.DRIVER_CARD_REMOVED,
+                time = now.toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID()
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.DRIVER_CARD_INSERTED,
+                time = now.toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID()
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id!!,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.LOGIN,
+                time = now.toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID()
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.SHIFT_END,
+                time = now.toString(),
+                employeeId = employee.id,
+                id = UUID.randomUUID()
+            )
+        )
+
+        assertEquals(
+            1,
+            it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).size,
+            "There should be only one work shift"
+        )
+
+        val workEvents = it.manager.workEvents.listWorkEvents(employeeId = employee.id)
+        val eventTime = workEvents[1].time
+
+        workEvents.forEach { event ->
+            if (event.workEventType != WorkEventType.SHIFT_START) {
+                assertEquals(
+                    eventTime,
+                    event.time,
+                    "All events except SHIFT_START should have the same time"
+                )
+            }
+        }
+
+        assertEquals(
+            WorkEventType.DRIVER_CARD_INSERTED,
+            workEvents[0].workEventType,
+            "First event should be DRIVER_CARD_INSERTED"
+        )
+
+        assertEquals(
+            WorkEventType.LOGIN,
+            workEvents[1].workEventType,
+            "Second event should be LOGIN"
+        )
+
+        assertEquals(
+            WorkEventType.DRIVE,
+            workEvents[2].workEventType,
+            "Third event should be DRIVE"
+        )
+
+        assertEquals(
+            WorkEventType.LOGOUT,
+            workEvents[3].workEventType,
+            "Fourth event should be LOGOUT"
+        )
+
+        assertEquals(
+            WorkEventType.DRIVER_CARD_REMOVED,
+            workEvents[4].workEventType,
+            "Fifth event should be DRIVER_CARD_REMOVED"
+        )
+
+        assertEquals(
+            WorkEventType.SHIFT_END,
+            workEvents[5].workEventType,
+            "Sixth event should be SHIFT_END"
+        )
     }
 
     @Test
