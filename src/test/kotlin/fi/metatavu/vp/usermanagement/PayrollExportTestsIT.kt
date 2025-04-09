@@ -209,14 +209,27 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
         val paidWorkHours3 = workShiftHours3.first { hours -> hours.workType == WorkType.PAID_WORK }
         val paidWorkHours4 = workShiftHours4.first { hours -> hours.workType == WorkType.PAID_WORK }
 
+        val sickLeaveHours = workShiftHours1.first { hours -> hours.workType == WorkType.SICK_LEAVE }
+
+        val currentDayNightAllowance1 = workShiftHours1.first { hours -> hours.workType == WorkType.NIGHT_ALLOWANCE }
+        val currentDayNightAllowance2 = workShiftHours3.first { hours -> hours.workType == WorkType.NIGHT_ALLOWANCE }
+        val currentDayHolidayAllowance = workShiftHours1.first { hours -> hours.workType == WorkType.HOLIDAY_ALLOWANCE }
+
         val breakHours1 = workShiftHours1.first { hours -> hours.workType == WorkType.BREAK }
         val breakHours2 = workShiftHours2.first { hours -> hours.workType == WorkType.BREAK }
         val breakHours3 = workShiftHours3.first { hours -> hours.workType == WorkType.BREAK }
         val breakHours4 = workShiftHours4.first { hours -> hours.workType == WorkType.BREAK }
 
-        val previousDayEveningAllowances1 = workShiftHours2.first { hours -> hours.workType == WorkType.EVENING_ALLOWANCE }
-        val previousDayEveningAllowances2 = workShiftHours4.first { hours -> hours.workType == WorkType.EVENING_ALLOWANCE }
+        val previousDayEveningAllowance1 = workShiftHours2.first { hours -> hours.workType == WorkType.EVENING_ALLOWANCE }
+        val previousDayEveningAllowance2 = workShiftHours4.first { hours -> hours.workType == WorkType.EVENING_ALLOWANCE }
 
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = sickLeaveHours.id!!,
+            workShiftHours = sickLeaveHours.copy(
+                actualHours = 1f
+            )
+        )
 
         it.manager.workShiftHours.updateWorkShiftHours(
             id = paidWorkHours1.id!!,
@@ -275,15 +288,36 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
         )
 
         it.manager.workShiftHours.updateWorkShiftHours(
-            id = previousDayEveningAllowances1.id!!,
-            workShiftHours = previousDayEveningAllowances1.copy(
+            id = previousDayEveningAllowance1.id!!,
+            workShiftHours = previousDayEveningAllowance1.copy(
                 actualHours = 1f
             )
         )
         it.manager.workShiftHours.updateWorkShiftHours(
-            id = previousDayEveningAllowances2.id!!,
-            workShiftHours = previousDayEveningAllowances2.copy(
+            id = previousDayEveningAllowance2.id!!,
+            workShiftHours = previousDayEveningAllowance2.copy(
                 actualHours = 2f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = currentDayNightAllowance1.id!!,
+            workShiftHours = currentDayNightAllowance1.copy(
+                actualHours = 4f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = currentDayNightAllowance2.id!!,
+            workShiftHours = currentDayNightAllowance2.copy(
+                actualHours = 3f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = currentDayHolidayAllowance.id!!,
+            workShiftHours = currentDayHolidayAllowance.copy(
+                actualHours = 5f
             )
         )
 
@@ -322,7 +356,7 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
         val payrollExport = it.manager.payrollExports.createPayrollExport(
             PayrollExport(
                 employeeId = employee.id,
-                workShiftIds = arrayOf(workShift2.id, workShift1.id, workShift3.id, workShift4.id)
+                workShiftIds = arrayOf(workShift1.id, workShift2.id, workShift3.id, workShift4.id)
             )
         )
 
@@ -331,13 +365,16 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
 
         val row1 = "$date2;1212;Test Employee;11000;20.17;;;;;\n"
         val row2 = "$date2;1212;Test Employee;30000;3.00;;;;;\n"
-        val row3 = "$date1;1212;Test Employee;11000;10.50;;;;;\n"
+        val row3 = "$date1;1212;Test Employee;11000;11.50;;;;;\n"
+        val row4 = "$date1;1212;Test Employee;30010;7.00;;;;;\n"
+        val row5 = "$date1;1212;Test Employee;20121;5.00;;;;;\n"
 
         val fileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
 
         assertEquals(
-            row1 + row2 + row3,
-            fileContent
+            row1 + row2 + row3 + row4 + row5,
+            fileContent,
+            "Payroll export file content should match the expected content"
         )
     }
 

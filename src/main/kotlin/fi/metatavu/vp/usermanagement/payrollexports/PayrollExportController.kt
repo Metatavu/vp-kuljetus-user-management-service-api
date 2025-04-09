@@ -12,7 +12,6 @@ import java.time.OffsetDateTime
 import java.util.*
 import org.apache.camel.ProducerTemplate
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import java.time.Duration
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -42,7 +41,7 @@ class PayrollExportController {
 
     /**
      * Saves a reference about a payroll export to the database, so that exports can be listed from the UI.
-     * Reference is also linked to work shifts that are contained in the payroll expor.
+     * Reference is also linked to work shifts that are contained in the payroll export.
      * This is done after exporting.
      *
      * @param employeeId employee id
@@ -145,7 +144,7 @@ class PayrollExportController {
     ) {
         val employeeNumber = employee.attributes!!["employeeNumber"]!!.first()
 
-        val workShiftsGroupedByDate = workShifts.groupBy { it.date }
+        val workShiftsGroupedByDate = workShifts.sortedBy { it.date }.groupBy { it.date }
         val fileContent = workShiftsGroupedByDate.map {
             buildPayrollExportRowsForSingleDate(
                 workShifts = it,
@@ -249,6 +248,10 @@ class PayrollExportController {
                 hoursWorked = holidayAllowanceHours
             )
         }
+
+        /**
+         * TODO: Implement exporting for the remaining salary types
+         */
 
         return rows
     }
@@ -363,6 +366,7 @@ class PayrollExportController {
         hoursWorked: Float
     ): String {
         val formattedDate = date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")).toString()
-        return "$formattedDate;$employeeNumber;$employeeName;$salaryTypeNumber;%.2f;;;;;\n".format(hoursWorked)
+        val formattedWorkHours = "%.2f".format(hoursWorked)
+        return "$formattedDate;$employeeNumber;$employeeName;$salaryTypeNumber;$formattedWorkHours;;;;;\n"
     }
 }
