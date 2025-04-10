@@ -12,6 +12,9 @@ import java.time.OffsetDateTime
 import java.util.*
 import org.apache.camel.ProducerTemplate
 import org.eclipse.microprofile.config.inject.ConfigProperty
+import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -39,16 +42,30 @@ class PayrollExportController {
     @ConfigProperty(name = "vp.usermanagement.payrollexports.ftp.password")
     lateinit var ftpUserPassword: String
 
+    @ConfigProperty(name= "vp.usermanagement.payrollexports.ftp.enabled")
+    lateinit var ftpEnabled: String
+
+    @ConfigProperty(name = "vp.usermanagement.payrollexports.s3.bucket")
+    lateinit var s3Bucket: String
+
+    @ConfigProperty(name = "vp.usermanagement.payrollexports.s3.folderpath")
+    lateinit var s3FolderPath: String
+
+    @Inject
+    lateinit var s3Client: S3Client
+
     /**
      * Saves a reference about a payroll export to the database, so that exports can be listed from the UI.
      * Reference is also linked to work shifts that are contained in the payroll export.
      * This is done after exporting.
      *
+     * @param exportId export id
      * @param employeeId employee id
      * @param fileName file name
      * @param creatorId creator id
      */
     suspend fun save(
+        exportId: UUID,
         employeeId: UUID,
         fileName: String,
         workShifts: List<WorkShiftEntity>,
@@ -59,7 +76,8 @@ class PayrollExportController {
             employeeId = employeeId,
             fileName = fileName,
             exportedAt = exportedAt,
-            creatorId = creatorId
+            creatorId = creatorId,
+            exportId = exportId
         )
 
         workShifts.forEach {
@@ -131,7 +149,10 @@ class PayrollExportController {
     }
 
     /**
-     * Builds a payroll file and sends it through FTP to a server defined by environment variables.
+     * Builds and exports a payroll file.
+     * It is sent to:
+     * - S3 bucket (always)
+     * - FTP server (if FTP export is enabled through environment variables)
      *
      * @param workShifts
      * @param employee
@@ -153,12 +174,38 @@ class PayrollExportController {
             )
         }.joinToString(separator = "")
 
-        producerTemplate.sendBodyAndHeader(
-            "sftp://$ftpUserName@$ftpAddress?password=$ftpUserPassword",
-            fileContent,
-            Exchange.FILE_NAME,
-            fileName
+        sendFileToS3(
+            fileName = fileName,
+            fileContent = fileContent
         )
+
+        if (ftpEnabled == "TRUE") {
+            producerTemplate.sendBodyAndHeader(
+                "sftp://$ftpUserName@$ftpAddress?password=$ftpUserPassword",
+                fileContent,
+                Exchange.FILE_NAME,
+                fileName
+            )
+        }
+    }
+
+    /**
+     * Sends a file to S3 bucket
+     *
+     * @param fileName
+     * @param fileContent
+     */
+    private fun sendFileToS3(
+        fileName: String,
+        fileContent: String
+    ) {
+        val putObjectRequest = PutObjectRequest.builder()
+            .bucket(s3Bucket)
+            .key(s3FolderPath + fileName)
+            .contentType("text/plain")
+            .build()
+
+        s3Client.putObject(putObjectRequest, RequestBody.fromString(fileContent))
     }
 
     /**

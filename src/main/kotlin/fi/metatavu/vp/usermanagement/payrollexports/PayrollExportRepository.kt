@@ -13,19 +13,21 @@ class PayrollExportRepository: AbstractRepository<PayrollExportEntity, UUID>() {
     /**
      * Save a payroll export to the database
      *
+     * @param exportId export id
      * @param employeeId employee id
      * @param fileName file name
      * @param exportedAt exported at
      * @param creatorId creator id
      */
     suspend fun create(
+        exportId: UUID,
         employeeId: UUID,
         fileName: String,
         exportedAt: OffsetDateTime,
         creatorId: UUID
     ): PayrollExportEntity {
         val payrollExport = PayrollExportEntity()
-        payrollExport.id = UUID.randomUUID()
+        payrollExport.id = exportId
         payrollExport.employeeId = employeeId
         payrollExport.fileName = fileName
         payrollExport.creatorId = creatorId

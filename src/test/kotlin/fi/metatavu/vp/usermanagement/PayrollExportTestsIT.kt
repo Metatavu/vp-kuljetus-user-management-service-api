@@ -3,7 +3,10 @@ package fi.metatavu.vp.usermanagement
 import fi.metatavu.vp.test.client.models.EmployeeWorkShift
 import fi.metatavu.vp.test.client.models.PayrollExport
 import fi.metatavu.vp.test.client.models.WorkType
+import fi.metatavu.vp.usermanagement.resources.S3FileDownload
+import fi.metatavu.vp.usermanagement.resources.S3TestResource
 import fi.metatavu.vp.usermanagement.resources.SftpServerTestResource
+import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.junit.QuarkusTest
@@ -18,7 +21,8 @@ import java.util.*
 
 @QuarkusTest
 @QuarkusTestResource.List(
-    QuarkusTestResource(SftpServerTestResource::class)
+    QuarkusTestResource(SftpServerTestResource::class),
+    QuarkusTestResource(S3TestResource::class)
 )
 @TestProfile(DefaultTestProfile::class)
 class PayrollExportTestsIT: AbstractFunctionalTest() {
@@ -369,12 +373,22 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
         val row4 = "$date1;1212;Test Employee;30010;7.00;;;;;\n"
         val row5 = "$date1;1212;Test Employee;20121;5.00;;;;;\n"
 
-        val fileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val expectedFileContent = row1 + row2 + row3 + row4 + row5
+
+        val s3FileContent = S3FileDownload().downloadFile(ApiTestSettings.S3_FOLDER_PATH + payrollExport.csvFileName)
 
         assertEquals(
-            row1 + row2 + row3 + row4 + row5,
-            fileContent,
-            "Payroll export file content should match the expected content"
+            expectedFileContent,
+            s3FileContent,
+            "Payroll S3 export file content should match the expected content"
+        )
+
+        val ftpFileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+
+        assertEquals(
+            expectedFileContent,
+            ftpFileContent,
+            "Payroll FTP export file content should match the expected content"
         )
     }
 

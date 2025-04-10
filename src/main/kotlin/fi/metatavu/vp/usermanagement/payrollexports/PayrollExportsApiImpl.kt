@@ -59,7 +59,8 @@ class PayrollExportsApiImpl: PayrollExportsApi, AbstractApi() {
         }
 
         val exportTime = OffsetDateTime.now()
-        val fileName = "${employee.firstName}_${employee.lastName}_$exportTime.csv"
+        val exportId = UUID.randomUUID()
+        val fileName = "${exportId}.csv"
 
         try {
             payrollExportController.exportPayrollFile(
@@ -72,6 +73,7 @@ class PayrollExportsApiImpl: PayrollExportsApi, AbstractApi() {
         }
 
         createOk(payrollExportTranslator.translate(payrollExportController.save(
+            exportId = exportId,
             employeeId = payrollExport.employeeId,
             fileName = fileName,
             creatorId = loggedUserId!!,

@@ -26,6 +26,7 @@ class SftpServerTestResource: QuarkusTestResourceLifecycleManager {
         config["vp.usermanagement.payrollexports.ftp.address"] = "${ftpContainer.host}:${ftpContainer.getMappedPort(22)}/${ApiTestSettings.FTP_FOLDER}"
         config["vp.usermanagement.payrollexports.ftp.username"] = ApiTestSettings.FTP_USER_NAME
         config["vp.usermanagement.payrollexports.ftp.password"] = ApiTestSettings.FTP_USER_PASSWORD
+        config["vp.usermanagement.payrollexports.ftp.enabled"] = "TRUE"
 
         return config
     }
