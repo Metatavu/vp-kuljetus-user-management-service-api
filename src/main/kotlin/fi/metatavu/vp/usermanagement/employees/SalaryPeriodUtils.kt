@@ -1,6 +1,7 @@
 package fi.metatavu.vp.usermanagement.employees
 
 import fi.metatavu.vp.usermanagement.model.AbsenceType
+import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
 import fi.metatavu.vp.usermanagement.model.SalaryPeriodTotalWorkHours
 import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
@@ -138,6 +139,22 @@ class SalaryPeriodUtils {
             workType = WorkType.OFFICIAL_DUTIES
         )
 
+        val fillingHours = if (workingTime != BigDecimal.valueOf(0) ) { calculateFillingHours(
+            regularWorkingHours = workingTime,
+            workingHours = workingHours,
+            sickHours = sickHours,
+            vacationHours = vacationHours,
+            compensatoryLeaveHours = compensatoryLeaveHours
+        ) } else BigDecimal.valueOf(0)
+
+        val partialDailyAllowance = workShifts.filter { shift ->
+            shift.perDiemAllowance == PerDiemAllowanceType.PARTIAL
+        }.size
+
+        val fullDailyAllowance = workShifts.filter { shift ->
+            shift.perDiemAllowance == PerDiemAllowanceType.FULL
+        }.size
+
         return SalaryPeriodTotalWorkHours(
             workingHours = workingHours,
             workingTime = workingTime,
@@ -154,10 +171,48 @@ class SalaryPeriodUtils {
             sickHours = sickHours,
             responsibilities = officialDutyHours,
             trainingDuringWorkTime = trainingHours,
-            
+            fillingHours = fillingHours,
+            partialDailyAllowance = partialDailyAllowance.toBigDecimal(),
+            fullDailyAllowance = fullDailyAllowance.toBigDecimal()
         )
     }
 
+    /**
+     * Calculate filling hours.
+     * This is used by salary period working hours aggregation.
+     *
+     * @param regularWorkingHours
+     * @param workingHours
+     * @param sickHours
+     * @param vacationHours
+     * @param compensatoryLeaveHours
+     */
+    private suspend fun calculateFillingHours(
+        regularWorkingHours: BigDecimal,
+        workingHours: BigDecimal,
+        sickHours: BigDecimal,
+        vacationHours: BigDecimal,
+        compensatoryLeaveHours: BigDecimal
+    ): BigDecimal {
+        val totalPaidHours = workingHours + sickHours
+
+        if (totalPaidHours >= regularWorkingHours) return BigDecimal.valueOf(0)
+
+        val totalAbsenceHours = vacationHours + compensatoryLeaveHours
+
+        val fillingHours = regularWorkingHours - totalPaidHours - totalAbsenceHours
+
+        if (fillingHours < BigDecimal.valueOf(0)) return BigDecimal.valueOf(0)
+
+        return fillingHours
+    }
+
+    /**
+     * Calculate the day off bonus hours for a list of work shifts.
+     * This is used by salary period working hours aggregation.
+     *
+     * @param workShifts
+     */
     private suspend fun calculateDayOffBonus(
         workShifts: List<WorkShiftEntity>
     ): BigDecimal {
