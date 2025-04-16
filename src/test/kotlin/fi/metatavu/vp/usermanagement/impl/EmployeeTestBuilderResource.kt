@@ -5,10 +5,7 @@ import fi.metatavu.vp.test.client.apis.EmployeesApi
 import fi.metatavu.vp.test.client.infrastructure.ApiClient
 import fi.metatavu.vp.test.client.infrastructure.ClientException
 import fi.metatavu.vp.test.client.infrastructure.ServerException
-import fi.metatavu.vp.test.client.models.Employee
-import fi.metatavu.vp.test.client.models.EmployeeType
-import fi.metatavu.vp.test.client.models.Office
-import fi.metatavu.vp.test.client.models.SalaryGroup
+import fi.metatavu.vp.test.client.models.*
 import fi.metatavu.vp.usermanagement.TestBuilder
 import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import org.junit.Assert
@@ -167,5 +164,15 @@ class EmployeeTestBuilderResource(
         } catch (ex: ClientException) {
             assertClientExceptionStatus(expectedStatus, ex)
         }
+    }
+
+    /**
+     * Calculates total values for a salary period for a given employee.
+     *
+     * @param employeeId
+     * @param dateInSalaryPeriod a date that is within the salary period being requested
+     */
+    fun getSalaryPeriodTotalWorkHours(employeeId: UUID, dateInSalaryPeriod: OffsetDateTime): SalaryPeriodTotalWorkHours {
+        return api.getSalaryPeriodTotalWorkHours(employeeId, dateInSalaryPeriod.toString())
     }
 }

@@ -8,6 +8,8 @@ import fi.metatavu.vp.usermanagement.spec.EmployeesApi
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.users.UserController
+import fi.metatavu.vp.usermanagement.users.UserController.Companion.REGULAR_WORKING_HOURS_ATTRIBUTE
+import fi.metatavu.vp.usermanagement.users.UserController.Companion.SALARY_GROUP_ATTRIBUTE
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
 import jakarta.annotation.security.RolesAllowed
@@ -31,6 +33,9 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
 
     @Inject
     lateinit var workEventController: WorkEventController
+
+    @Inject
+    lateinit var salaryPeriodUtils: SalaryPeriodUtils
 
     @ConfigProperty(name = "env")
     lateinit var env: Optional<String>
@@ -65,8 +70,19 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
 
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
-    override fun getSalaryPeriodTotalWorkHours(employeeId: UUID, dateInSalaryPeriod: OffsetDateTime?): Uni<Response> = withCoroutineScope {
-        TODO("Not yet implemented")
+    override fun getSalaryPeriodTotalWorkHours(employeeId: UUID, dateInSalaryPeriod: OffsetDateTime): Uni<Response> = withCoroutineScope {
+        val employee = usersController.find(employeeId, EMPLOYEE_ROLE) ?: return@withCoroutineScope createNotFound("Employee not found")
+        val salaryGroup = SalaryGroup.valueOf(employee.attributes!![SALARY_GROUP_ATTRIBUTE]!!.first())
+        val isDriver = salaryGroup == SalaryGroup.DRIVER || salaryGroup == SalaryGroup.VPLOGISTICS
+        val regularWorkingHours = employee.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat()
+
+        createOk(salaryPeriodUtils.aggregateSalaryPeriodTotalWorkHours(
+            employeeId = employeeId,
+            dateInSalaryPeriod = dateInSalaryPeriod,
+            isDriver = isDriver,
+            regularWorkingHours = regularWorkingHours
+        ))
+
     }
 
     @RolesAllowed(MANAGER_ROLE)

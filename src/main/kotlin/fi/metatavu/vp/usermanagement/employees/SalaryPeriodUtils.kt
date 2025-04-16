@@ -25,6 +25,15 @@ class SalaryPeriodUtils {
     @Inject
     lateinit var workShiftHoursController: WorkShiftHoursController
 
+    /**
+     * Calculates total values for a salary period for a given employee.
+     * This is used by the UI views that show the salary period summary.
+     *
+     * @param employeeId
+     * @param regularWorkingHours
+     * @param isDriver
+     * @param dateInSalaryPeriod a date that is within the salary period being requested
+     */
     suspend fun aggregateSalaryPeriodTotalWorkHours(
         employeeId: UUID,
         regularWorkingHours: Float?,
@@ -60,13 +69,24 @@ class SalaryPeriodUtils {
             regularWorkingHours = regularWorkingHours
         ) else BigDecimal.valueOf(0)
 
+        val vacationHours = calculateTotalWorkHoursByAbsenceType(
+            workShifts = workShifts,
+            absenceType = AbsenceType.VACATION
+        )
+
+        val compensatoryLeaveHours = calculateTotalWorkHoursByAbsenceType(
+            workShifts = workShifts,
+            absenceType = AbsenceType.COMPENSATORY_LEAVE
+        )
+
         val overTimeHalf = if (isDriver) {
             if (regularWorkingHours != null) calculateDriverOverTime(
-                workShifts = workShifts,
                 regularWorkingHours = workingTime,
                 full = false,
                 workingHours = workingHours,
-                trainingHours = trainingHours
+                trainingHours = trainingHours,
+                vacationHours = vacationHours,
+                compensatoryLeaveHours = compensatoryLeaveHours
             ) else BigDecimal.valueOf(0)
         } else {
             calculateOfficeAndTerminalWorkerOverTime(
@@ -77,11 +97,12 @@ class SalaryPeriodUtils {
 
         val overTimeFull = if (isDriver) {
             if (regularWorkingHours != null) calculateDriverOverTime(
-                workShifts = workShifts,
                 regularWorkingHours = workingTime,
                 full = true,
                 workingHours = workingHours,
-                trainingHours = trainingHours
+                trainingHours = trainingHours,
+                vacationHours = vacationHours,
+                compensatoryLeaveHours = compensatoryLeaveHours
             ) else BigDecimal.valueOf(0)
         } else {
             calculateOfficeAndTerminalWorkerOverTime(
@@ -114,19 +135,9 @@ class SalaryPeriodUtils {
             workShifts = workShifts
         )
 
-        val vacationHours = calculateTotalWorkHoursByAbsenceType(
-            workShifts = workShifts,
-            absenceType = AbsenceType.VACATION
-        )
-
         val unpaidHours = calculateWorkingHoursByWorkType(
             workShifts = workShifts,
             workType = WorkType.UNPAID
-        )
-
-        val compensatoryLeaveHours = calculateTotalWorkHoursByAbsenceType(
-            workShifts = workShifts,
-            absenceType = AbsenceType.COMPENSATORY_LEAVE
         )
 
         val sickHours = calculateWorkingHoursByWorkType(
@@ -286,32 +297,24 @@ class SalaryPeriodUtils {
      * This is used by salary period working hours aggregation.
      * Other working hour parameters must be calculated from the same list.
      *
-     * @param workShifts
      * @param regularWorkingHours
      * @param full if true returns full compensation overtime, otherwise half compensation
      * @param workingHours
      * @param trainingHours
+     * @param vacationHours
+     * @param compensatoryLeaveHours
      */
     private suspend fun calculateDriverOverTime(
-        workShifts: List<WorkShiftEntity>,
         regularWorkingHours: BigDecimal,
         full: Boolean,
         workingHours: BigDecimal,
-        trainingHours: BigDecimal
+        trainingHours: BigDecimal,
+        vacationHours: BigDecimal,
+        compensatoryLeaveHours: BigDecimal
     ): BigDecimal {
-        val vacationHours = calculateTotalWorkHoursByAbsenceType(
-            workShifts = workShifts,
-            absenceType = AbsenceType.VACATION
-        )
-
-        val compensatoryHours = calculateTotalWorkHoursByAbsenceType(
-            workShifts = workShifts,
-            absenceType = AbsenceType.COMPENSATORY_LEAVE
-        )
-
         val overtimeFullLimit = if (vacationHours > BigDecimal.valueOf(40)) BigDecimal.valueOf(10) else BigDecimal.valueOf(12)
         val paidWorkHoursFromWorkTypes = workingHours - trainingHours
-        val paidVacationAndCompensatoryHours = vacationHours + compensatoryHours
+        val paidVacationAndCompensatoryHours = vacationHours + compensatoryLeaveHours
         val paidWorkHours = paidWorkHoursFromWorkTypes + paidVacationAndCompensatoryHours
 
         if (paidWorkHours <= regularWorkingHours) {

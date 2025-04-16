@@ -1,9 +1,6 @@
 package fi.metatavu.vp.usermanagement
 
-import fi.metatavu.vp.test.client.models.Employee
-import fi.metatavu.vp.test.client.models.EmployeeType
-import fi.metatavu.vp.test.client.models.Office
-import fi.metatavu.vp.test.client.models.SalaryGroup
+import fi.metatavu.vp.test.client.models.*
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
@@ -196,6 +193,84 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         val anotherCreatedUser = it.manager.employees.createEmployee(created.copy(employeeNumber = "006"))
         it.manager.employees.assertUpdateFail(anotherCreatedUser.id!!, anotherCreatedUser.copy(employeeNumber = "003"),400)
 
+    }
+
+    @Test
+    fun testSalaryPeriodWorkHoursAggregationForOfficeWorkers() = createTestBuilder().use {
+        val now = OffsetDateTime.now()
+        val time2 = if (now.dayOfMonth == 16 || now.dayOfMonth == 1) {
+            now.plusDays(1)
+        } else {
+            now.minusDays(1)
+        }
+
+        val employee = it.manager.employees.createEmployee(Employee(
+            firstName = "Test",
+            lastName = "Employee",
+            type = EmployeeType.AH,
+            office = Office.KOTKA,
+            salaryGroup = SalaryGroup.OFFICE,
+            driverCardLastReadOut = OffsetDateTime.now().toString(),
+            driverCardId = "001",
+            regularWorkingHours = 8.0f,
+            employeeNumber = "001"
+        ))
+
+        val workShift1 = it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee.id!!,
+            workShift = EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                employeeId = employee.id,
+                approved = false,
+                startedAt = now.toString(),
+                costCentersFromEvents = arrayOf()
+            )
+        )
+
+        val workShift2 = it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee.id,
+            workShift = EmployeeWorkShift(
+                date = time2.toLocalDate().toString(),
+                employeeId = employee.id,
+                approved = false,
+                startedAt = now.toString(),
+                costCentersFromEvents = arrayOf()
+            )
+        )
+
+        val workShiftHours1 = it.manager.workShiftHours.listWorkShiftHours(
+            employeeId = employee.id,
+            employeeWorkShiftId = workShift1.id!!,
+        )
+
+        val workShiftHours2 = it.manager.workShiftHours.listWorkShiftHours(
+            employeeId = employee.id,
+            employeeWorkShiftId = workShift2.id!!,
+        )
+
+        val paidHours1 = workShiftHours1.first { hours -> hours.workType == WorkType.PAID_WORK }
+        val paidHours2 = workShiftHours2.first { hours -> hours.workType == WorkType.PAID_WORK }
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = paidHours1.id!!,
+            workShiftHours = paidHours1.copy(
+                actualHours = 8f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = paidHours2.id!!,
+            workShiftHours = paidHours2.copy(
+                actualHours = 8f
+            )
+        )
+
+        val salaryPeriodTotalWorkHours = it.manager.employees.getSalaryPeriodTotalWorkHours(
+            employeeId = employee.id,
+            dateInSalaryPeriod = now
+        )
+
+        assertEquals(16.toBigDecimal(), salaryPeriodTotalWorkHours.workingHours)
     }
 
 }
