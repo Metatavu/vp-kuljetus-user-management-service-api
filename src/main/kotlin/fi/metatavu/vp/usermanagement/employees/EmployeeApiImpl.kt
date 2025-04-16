@@ -15,6 +15,7 @@ import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.config.inject.ConfigProperty
+import java.time.OffsetDateTime
 import java.util.*
 import kotlin.jvm.optionals.getOrNull
 
@@ -60,6 +61,12 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
     override fun findEmployee(employeeId: UUID): Uni<Response> = withCoroutineScope {
         val employee = usersController.find(employeeId, EMPLOYEE_ROLE) ?: return@withCoroutineScope createNotFound("Employee not found")
         createOk(employeeTranslator.translate(employee))
+    }
+
+    @RolesAllowed(MANAGER_ROLE)
+    @WithTransaction
+    override fun getSalaryPeriodTotalWorkHours(employeeId: UUID, dateInSalaryPeriod: OffsetDateTime?): Uni<Response> = withCoroutineScope {
+        TODO("Not yet implemented")
     }
 
     @RolesAllowed(MANAGER_ROLE)
