@@ -8,7 +8,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import java.time.OffsetDateTime
-import java.util.*
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 /**
  * Tests for Employee API
@@ -212,7 +213,7 @@ class EmployeeTestIT : AbstractFunctionalTest() {
             salaryGroup = SalaryGroup.OFFICE,
             driverCardLastReadOut = OffsetDateTime.now().toString(),
             driverCardId = "001",
-            regularWorkingHours = 8.0f,
+            regularWorkingHours = 10.0f,
             employeeNumber = "001"
         ))
 
@@ -223,7 +224,9 @@ class EmployeeTestIT : AbstractFunctionalTest() {
                 employeeId = employee.id,
                 approved = false,
                 startedAt = now.toString(),
-                costCentersFromEvents = arrayOf()
+                costCentersFromEvents = arrayOf(),
+                absence = AbsenceType.VACATION,
+                perDiemAllowance = PerDiemAllowanceType.FULL
             )
         )
 
@@ -233,8 +236,12 @@ class EmployeeTestIT : AbstractFunctionalTest() {
                 date = time2.toLocalDate().toString(),
                 employeeId = employee.id,
                 approved = false,
-                startedAt = now.toString(),
-                costCentersFromEvents = arrayOf()
+                startedAt = time2.toString(),
+                costCentersFromEvents = arrayOf(),
+                dayOffWorkAllowance = true,
+                endedAt = time2.withHour(23).withMinute(59).withSecond(59).withNano(999999).toString(),
+                absence = AbsenceType.VACATION,
+                perDiemAllowance = PerDiemAllowanceType.FULL
             )
         )
 
@@ -251,17 +258,76 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         val paidHours1 = workShiftHours1.first { hours -> hours.workType == WorkType.PAID_WORK }
         val paidHours2 = workShiftHours2.first { hours -> hours.workType == WorkType.PAID_WORK }
 
+        val unpaidHours = workShiftHours1.first { hours -> hours.workType == WorkType.UNPAID }
+
+        val standbyHours = workShiftHours1.first { hours -> hours.workType == WorkType.STANDBY }
+
+        val eveningHours = workShiftHours1.first { hours -> hours.workType == WorkType.EVENING_ALLOWANCE }
+        val nightHours = workShiftHours1.first { hours -> hours.workType == WorkType.NIGHT_ALLOWANCE }
+        val holidayHours = workShiftHours1.first { hours -> hours.workType == WorkType.HOLIDAY_ALLOWANCE }
+        val sickHours = workShiftHours1.first { hours -> hours.workType == WorkType.SICK_LEAVE }
+        val trainingHours = workShiftHours1.first { hours -> hours.workType == WorkType.TRAINING }
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = sickHours.id!!,
+            workShiftHours = sickHours.copy(
+                actualHours = 8f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = trainingHours.id!!,
+            workShiftHours = trainingHours.copy(
+                actualHours = 8f
+            )
+        )
+
         it.manager.workShiftHours.updateWorkShiftHours(
             id = paidHours1.id!!,
             workShiftHours = paidHours1.copy(
-                actualHours = 8f
+                actualHours = 11f
             )
         )
 
         it.manager.workShiftHours.updateWorkShiftHours(
             id = paidHours2.id!!,
             workShiftHours = paidHours2.copy(
-                actualHours = 8f
+                actualHours = 9f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = unpaidHours.id!!,
+            workShiftHours = unpaidHours.copy(
+                actualHours = 2f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = standbyHours.id!!,
+            workShiftHours = standbyHours.copy(
+                actualHours = 1f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = eveningHours.id!!,
+            workShiftHours = eveningHours.copy(
+                actualHours = 6f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = nightHours.id!!,
+            workShiftHours = nightHours.copy(
+                actualHours = 6f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = holidayHours.id!!,
+            workShiftHours = holidayHours.copy(
+                actualHours = 6f
             )
         )
 
@@ -270,7 +336,60 @@ class EmployeeTestIT : AbstractFunctionalTest() {
             dateInSalaryPeriod = now
         )
 
-        assertEquals(16.toBigDecimal(), salaryPeriodTotalWorkHours.workingHours)
+        assertEquals(20f.toBigDecimal(), salaryPeriodTotalWorkHours.workingHours, "Working hours should be 20")
+        assertEquals(8f.toBigDecimal(), salaryPeriodTotalWorkHours.workingTime, "Working time should be 8")
+        assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.overTimeFull, "Overtime full should be 1")
+        assertEquals(3f.toBigDecimal(), salaryPeriodTotalWorkHours.overTimeHalf, "Overtime half should be 3")
+        assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.waitingTime, "Waiting time should be 1")
+        assertEquals(6f.toBigDecimal(), salaryPeriodTotalWorkHours.eveningWork, "Evening work should be 6")
+        assertEquals(6f.toBigDecimal(), salaryPeriodTotalWorkHours.nightWork, "Night work should be 6")
+        assertEquals(6f.toBigDecimal(), salaryPeriodTotalWorkHours.holiday, "Holiday work should be 6")
+        assertEquals(9f.toBigDecimal(), salaryPeriodTotalWorkHours.dayOffBonus, "Day off bonus should be 9")
+        assertEquals(2f.toBigDecimal(), salaryPeriodTotalWorkHours.unpaid, "Unpaid hours should be 2")
+        assertEquals(8f.toBigDecimal(), salaryPeriodTotalWorkHours.sickHours, "Sick leave should be 8")
+        assertEquals(8f.toBigDecimal(), salaryPeriodTotalWorkHours.trainingDuringWorkTime, "Training should be 8")
+
+        it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee.id,
+            workShift = EmployeeWorkShift(
+                date = time2.toLocalDate().toString(),
+                employeeId = employee.id,
+                approved = false,
+                startedAt = time2.toString(),
+                costCentersFromEvents = arrayOf(),
+                endedAt = now.toString(),
+                dayOffWorkAllowance = true,
+                absence = AbsenceType.COMPENSATORY_LEAVE,
+                perDiemAllowance = PerDiemAllowanceType.PARTIAL
+            )
+        )
+
+        val salaryPeriodTotalWorkHours2 = it.manager.employees.getSalaryPeriodTotalWorkHours(
+            employeeId = employee.id,
+            dateInSalaryPeriod = now
+        )
+        val newDayOffBonus = 9f + (24-(time2.atZoneSameInstant(ZoneOffset.UTC).hour + 1))
+
+        assertEquals(newDayOffBonus.toBigDecimal(), salaryPeriodTotalWorkHours2.dayOffBonus, "Day off bonus should be $newDayOffBonus")
+        assertEquals(8f.toBigDecimal(), salaryPeriodTotalWorkHours2.compensatoryLeave, "Compensatory leave should be 8")
+        assertEquals(13.34.toBigDecimal(), salaryPeriodTotalWorkHours2.vacation, "Vacation should be 13.34")
+        assertEquals(2.toBigDecimal(), salaryPeriodTotalWorkHours2.fullDailyAllowance, "Full daily allowance should be 2")
+        assertEquals(1.toBigDecimal(), salaryPeriodTotalWorkHours2.partialDailyAllowance, "Partial daily allowance should be 1")
+
+        it.manager.employees.updateEmployee(
+            employeeId = employee.id,
+            employee = employee.copy(
+                regularWorkingHours = 60.0f,
+            )
+        )
+
+        assertEquals(0.toBigDecimal(), salaryPeriodTotalWorkHours2.fillingHours, "Filling hours should be 10.66")
+
+        val salaryPeriodTotalWorkHours3 = it.manager.employees.getSalaryPeriodTotalWorkHours(
+            employeeId = employee.id,
+            dateInSalaryPeriod = now
+        )
+        assertEquals(8.66.toBigDecimal(), salaryPeriodTotalWorkHours3.fillingHours, "Filling hours should be 8.66")
     }
 
 }

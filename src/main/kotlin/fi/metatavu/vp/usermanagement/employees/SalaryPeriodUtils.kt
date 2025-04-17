@@ -61,7 +61,7 @@ class SalaryPeriodUtils {
 
         val trainingHours = calculateWorkingHoursByWorkType(
             workShifts = workShifts,
-            workType = WorkType.PAID_WORK
+            workType = WorkType.TRAINING
         )
 
         val workingTime = if (regularWorkingHours != null) getRegularWorkingTime(
@@ -243,7 +243,7 @@ class SalaryPeriodUtils {
                         totalHours += it.actualHours ?: it.calculatedHours ?: 0f
                     }
                 } else {
-                    val hoursOnFirstDay = 24 - startedAtOffsetDateTime.hour
+                    val hoursOnFirstDay = 24 - (startedAtOffsetDateTime.hour + 1)
                     totalHours += hoursOnFirstDay
                 }
             }
