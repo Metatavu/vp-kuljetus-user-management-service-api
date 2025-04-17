@@ -7,8 +7,8 @@ import io.quarkus.test.junit.TestProfile
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import java.time.DayOfWeek
 import java.time.OffsetDateTime
-import java.time.ZoneId
 import java.time.ZoneOffset
 
 /**
@@ -197,6 +197,102 @@ class EmployeeTestIT : AbstractFunctionalTest() {
     }
 
     @Test
+    fun testDriverSalaryPeriodWorkHoursAggregation() = createTestBuilder().use {
+        val now = OffsetDateTime.now()
+        val time2 = if (now.dayOfWeek == DayOfWeek.SUNDAY) {
+            now.plusDays(1)
+        } else {
+            now.minusDays(1)
+        }
+
+        val employee = it.manager.employees.createEmployee(Employee(
+            firstName = "Test",
+            lastName = "Employee",
+            type = EmployeeType.AH,
+            office = Office.KOTKA,
+            salaryGroup = SalaryGroup.DRIVER,
+            driverCardLastReadOut = OffsetDateTime.now().toString(),
+            driverCardId = "001",
+            regularWorkingHours = 12.0f,
+            employeeNumber = "001"
+        ))
+
+        val workShift1 = it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee.id!!,
+            workShift = EmployeeWorkShift(
+                date = now.toLocalDate().toString(),
+                employeeId = employee.id,
+                approved = false,
+                startedAt = now.toString(),
+                costCentersFromEvents = arrayOf()
+            )
+        )
+
+        val workShift2 = it.manager.workShifts.createEmployeeWorkShift(
+            employeeId = employee.id,
+            workShift = EmployeeWorkShift(
+                date = time2.toLocalDate().toString(),
+                employeeId = employee.id,
+                approved = false,
+                startedAt = time2.toString(),
+                costCentersFromEvents = arrayOf(),
+                dayOffWorkAllowance = true,
+                endedAt = time2.withHour(23).withMinute(59).withSecond(59).withNano(999999).toString()
+            )
+        )
+
+        val workShiftHours1 = it.manager.workShiftHours.listWorkShiftHours(
+            employeeId = employee.id,
+            employeeWorkShiftId = workShift1.id!!,
+        )
+
+        val workShiftHours2 = it.manager.workShiftHours.listWorkShiftHours(
+            employeeId = employee.id,
+            employeeWorkShiftId = workShift2.id!!,
+        )
+
+        val paidHours1 = workShiftHours1.first { hours -> hours.workType == WorkType.PAID_WORK }
+        val paidHours2 = workShiftHours2.first { hours -> hours.workType == WorkType.PAID_WORK }
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = paidHours1.id!!,
+            workShiftHours = paidHours1.copy(
+                actualHours = 12f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = paidHours2.id!!,
+            workShiftHours = paidHours2.copy(
+                actualHours = 9f
+            )
+        )
+
+        val salaryPeriodTotalWorkHours = it.manager.employees.getSalaryPeriodTotalWorkHours(
+            employeeId = employee.id,
+            dateInSalaryPeriod = now
+        )
+        assertEquals(21f.toBigDecimal(), salaryPeriodTotalWorkHours.workingHours, "Working hours should be 21")
+        assertEquals(0.toBigDecimal(), salaryPeriodTotalWorkHours.overTimeFull, "Overtime full should be 0")
+        assertEquals(9f.toBigDecimal(), salaryPeriodTotalWorkHours.overTimeHalf, "Overtime half should be 9")
+
+        it.manager.employees.updateEmployee(
+            employeeId = employee.id,
+            employee = employee.copy(
+                regularWorkingHours = 5.0f,
+            )
+        )
+
+        val salaryPeriodTotalWorkHours2 = it.manager.employees.getSalaryPeriodTotalWorkHours(
+            employeeId = employee.id,
+            dateInSalaryPeriod = now
+        )
+
+        assertEquals(4f.toBigDecimal(), salaryPeriodTotalWorkHours2.overTimeFull, "Overtime full should be 4")
+        assertEquals(12.toBigDecimal(), salaryPeriodTotalWorkHours2.overTimeHalf, "Overtime half should be 12")
+
+    }
+
+    @Test
     fun testSalaryPeriodWorkHoursAggregationForOfficeWorkers() = createTestBuilder().use {
         val now = OffsetDateTime.now()
         val time2 = if (now.dayOfMonth == 16 || now.dayOfMonth == 1) {
@@ -352,12 +448,12 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         it.manager.workShifts.createEmployeeWorkShift(
             employeeId = employee.id,
             workShift = EmployeeWorkShift(
-                date = time2.toLocalDate().toString(),
+                date = if (time2.isBefore(now)) time2.toLocalDate().toString() else now.toLocalDate().toString(),
                 employeeId = employee.id,
                 approved = false,
-                startedAt = time2.toString(),
+                startedAt = if (time2.isBefore(now)) time2.toString() else now.toString(),
                 costCentersFromEvents = arrayOf(),
-                endedAt = now.toString(),
+                endedAt = if (time2.isBefore(now)) now.toString() else time2.toString(),
                 dayOffWorkAllowance = true,
                 absence = AbsenceType.COMPENSATORY_LEAVE,
                 perDiemAllowance = PerDiemAllowanceType.PARTIAL

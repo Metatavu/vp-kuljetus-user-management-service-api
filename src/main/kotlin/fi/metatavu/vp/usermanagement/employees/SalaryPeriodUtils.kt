@@ -440,10 +440,9 @@ class SalaryPeriodUtils {
         )
 
         val fullWeeks = (Duration.between(
-            workingTimePeriodStartDate,
-            dateInSalaryPeriod
+            workingTimePeriodStartDate.atStartOfDay(),
+            dateInSalaryPeriod.atStartOfDay()
         ).toDays() / 7)
-
 
         val isStartingWeek = fullWeeks % 2 == 0L
 
