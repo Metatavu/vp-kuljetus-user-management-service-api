@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import java.time.DayOfWeek
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 
 /**
@@ -294,7 +295,7 @@ class EmployeeTestIT : AbstractFunctionalTest() {
 
     @Test
     fun testSalaryPeriodWorkHoursAggregationForOfficeWorkers() = createTestBuilder().use {
-        val now = OffsetDateTime.now()
+        val now = OffsetDateTime.now().atZoneSameInstant(ZoneId.of("Europe/Helsinki")).toOffsetDateTime()
         val time2 = if (now.dayOfMonth == 16 || now.dayOfMonth == 1) {
             now.plusDays(1)
         } else {
