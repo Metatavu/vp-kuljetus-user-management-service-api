@@ -464,7 +464,11 @@ class EmployeeTestIT : AbstractFunctionalTest() {
             employeeId = employee.id,
             dateInSalaryPeriod = now
         )
-        val newDayOffBonus = 9f + (24-(time2.atZoneSameInstant(ZoneOffset.UTC).hour + 1))
+
+        val time2AsDecimalHour = time2.hour +
+                (time2.minute / 60.0) +
+                (time2.second / 3600.0)
+        val newDayOffBonus = 9f + (24-(time2AsDecimalHour + 1))
 
         assertEquals(newDayOffBonus.toBigDecimal(), salaryPeriodTotalWorkHours2.dayOffBonus, "Day off bonus should be $newDayOffBonus")
         assertEquals(8f.toBigDecimal(), salaryPeriodTotalWorkHours2.compensatoryLeave, "Compensatory leave should be 8")

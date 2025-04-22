@@ -10,10 +10,7 @@ import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import java.math.BigDecimal
-import java.time.DayOfWeek
-import java.time.Duration
-import java.time.LocalDate
-import java.time.OffsetDateTime
+import java.time.*
 import java.time.temporal.TemporalAdjusters
 import java.util.*
 
@@ -227,7 +224,7 @@ class SalaryPeriodUtils {
     private suspend fun calculateDayOffBonus(
         workShifts: List<WorkShiftEntity>
     ): BigDecimal {
-        var totalHours = 0f
+        var totalHours = 0.0
         workShifts
             .filter { shift -> shift.dayOffWorkAllowance == true }
             .forEach { shift ->
@@ -243,7 +240,17 @@ class SalaryPeriodUtils {
                         totalHours += it.actualHours ?: it.calculatedHours ?: 0f
                     }
                 } else {
-                    val hoursOnFirstDay = 24 - (startedAtOffsetDateTime.hour + 1)
+                    val finlandZone = ZoneId.of("Europe/Helsinki")
+                    val startedAtZoned = startedAtOffsetDateTime.atZoneSameInstant(finlandZone)
+                    val hour = startedAtZoned.hour
+                    val minute = startedAtZoned.minute
+                    val second = startedAtZoned.second
+
+                    val timeAsDecimalHour = hour +
+                            (minute / 60.0) +
+                            (second / 3600.0)
+
+                    val hoursOnFirstDay = 24 - (timeAsDecimalHour + 1)
                     totalHours += hoursOnFirstDay
                 }
             }
