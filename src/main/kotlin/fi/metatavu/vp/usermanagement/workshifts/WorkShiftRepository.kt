@@ -30,6 +30,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
      * @param startedAt started at
      * @param endedAt ended at
      * @param dayOffWorkAllowance day off work allowance
+     * @param defaultCostCenter default cost center
      * @return created employee work shift
      */
     suspend fun create(
@@ -41,7 +42,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         perDiemAllowance: PerDiemAllowanceType?,
         startedAt: OffsetDateTime?,
         endedAt: OffsetDateTime?,
-        dayOffWorkAllowance: Boolean? = null
+        dayOffWorkAllowance: Boolean? = null,
+        defaultCostCenter: String?
     ): WorkShiftEntity {
         val employeeWorkShift = WorkShiftEntity()
         employeeWorkShift.id = id
@@ -53,6 +55,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         employeeWorkShift.startedAt = startedAt
         employeeWorkShift.endedAt = endedAt
         employeeWorkShift.dayOffWorkAllowance = dayOffWorkAllowance
+        employeeWorkShift.defaultCostCenter = defaultCostCenter
         return persistSuspending(employeeWorkShift)
     }
 
@@ -191,13 +194,15 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         dayOffWorkAllowance: Boolean?,
         perDiemAllowance: PerDiemAllowanceType?,
         notes: String?,
-        approved: Boolean
+        approved: Boolean,
+        defaultCostCenter: String?
     ): WorkShiftEntity {
         workShiftEntity.absence = absence
         workShiftEntity.dayOffWorkAllowance = dayOffWorkAllowance
         workShiftEntity.perDiemAllowance = perDiemAllowance
         workShiftEntity.notes = notes
         workShiftEntity.approved = approved
+        workShiftEntity.defaultCostCenter = defaultCostCenter
 
         return persistSuspending(workShiftEntity)
     }

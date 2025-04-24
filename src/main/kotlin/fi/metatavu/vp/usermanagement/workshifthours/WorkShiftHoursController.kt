@@ -275,7 +275,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
      * @param workEventTime work event time
      * @param nextWorkEventTime next work event time
      */
-    private fun getEveningAllowanceHours(workEventTime: OffsetDateTime, nextWorkEventTime: OffsetDateTime): Float {
+    fun getEveningAllowanceHours(workEventTime: OffsetDateTime, nextWorkEventTime: OffsetDateTime): Float {
         var minutes = 0f
 
         var iteratedStartOfDay = workEventTime.withHour(0).withMinute(0).withSecond(0)
@@ -303,7 +303,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
      * @param workEventTime work event time
      * @param nextWorkEventTime next work event time
      */
-    private fun getNightAllowanceHours(workEventTime: OffsetDateTime, nextWorkEventTime: OffsetDateTime): Float {
+    fun getNightAllowanceHours(workEventTime: OffsetDateTime, nextWorkEventTime: OffsetDateTime): Float {
         var totalMinutes = 0f
 
         var iteratedStartOfDay = workEventTime.withHour(0).withMinute(0).withSecond(0)

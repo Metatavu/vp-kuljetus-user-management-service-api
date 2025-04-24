@@ -343,4 +343,9 @@
             </column>
         </addColumn>
     </changeSet>
+    <changeSet id="defaultcostcenter" author="Simeon Platonov">
+        <addColumn tableName="workshift">
+            <column name="defaultcostcenter" type="varchar(191)"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

@@ -47,4 +47,7 @@ class WorkShiftEntity {
 
     @ManyToOne(optional = true)
     var payrollExport: PayrollExportEntity? = null
+
+    @Column
+    var defaultCostCenter: String? = null
 }

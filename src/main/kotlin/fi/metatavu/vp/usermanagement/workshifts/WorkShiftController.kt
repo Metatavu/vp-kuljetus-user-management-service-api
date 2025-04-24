@@ -52,7 +52,8 @@ class WorkShiftController {
         perDiemAllowanceType: PerDiemAllowanceType? = null,
         startedAt: OffsetDateTime? = null,
         endedAt: OffsetDateTime? = null,
-        dayOffWorkAllowance: Boolean? = null
+        dayOffWorkAllowance: Boolean? = null,
+        defaultCostCenter: String? = null
     ): WorkShiftEntity {
         val shift = workShiftRepository.create(
             id = UUID.randomUUID(),
@@ -63,7 +64,8 @@ class WorkShiftController {
             perDiemAllowance = perDiemAllowanceType,
             startedAt = startedAt,
             endedAt = endedAt,
-            dayOffWorkAllowance = dayOffWorkAllowance
+            dayOffWorkAllowance = dayOffWorkAllowance,
+            defaultCostCenter = defaultCostCenter
         )
 
         workShiftHoursController.createWorkShiftHours(
@@ -148,7 +150,8 @@ class WorkShiftController {
             dayOffWorkAllowance = updatedWorkShift.dayOffWorkAllowance,
             perDiemAllowance = updatedWorkShift.perDiemAllowance,
             notes = updatedWorkShift.notes,
-            approved = updatedWorkShift.approved
+            approved = updatedWorkShift.approved,
+            defaultCostCenter = updatedWorkShift.defaultCostCenter
         )
     }
 
