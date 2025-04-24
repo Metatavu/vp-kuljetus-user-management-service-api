@@ -1,11 +1,10 @@
 package fi.metatavu.vp.usermanagement.payrollexports
 
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
-import fi.metatavu.vp.usermanagement.model.WorkEventType
+import fi.metatavu.vp.usermanagement.model.SalaryGroup
 import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.payrollexports.utilities.PayrollExportCalculations
-import fi.metatavu.vp.usermanagement.workevents.WorkEventController
-import fi.metatavu.vp.usermanagement.workevents.WorkEventEntity
+import fi.metatavu.vp.usermanagement.users.UserController.Companion.SALARY_GROUP_ATTRIBUTE
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
@@ -21,7 +20,6 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 
 @ApplicationScoped
 class PayrollExportController {
@@ -31,6 +29,9 @@ class PayrollExportController {
 
     @Inject
     lateinit var employeeWorkShiftController: WorkShiftController
+
+    @Inject
+    lateinit var workShiftHoursController: WorkShiftHoursController
 
     @Inject
     lateinit var payrollExportCalculations: PayrollExportCalculations
@@ -169,13 +170,15 @@ class PayrollExportController {
         fileName: String
     ) {
         val employeeNumber = employee.attributes!!["employeeNumber"]!!.first()
-
+        val salaryGroup = SalaryGroup.valueOf(employee.attributes[SALARY_GROUP_ATTRIBUTE]!!.first())
+        val isDriver = salaryGroup == SalaryGroup.DRIVER || salaryGroup == SalaryGroup.VPLOGISTICS
         val workShiftsGroupedByDate = workShifts.sortedBy { it.date }.groupBy { it.date }
         val fileContent = workShiftsGroupedByDate.map {
             buildPayrollExportRowsForSingleDate(
                 workShifts = it,
                 employeeNumber = employeeNumber,
-                employeeName = "${employee.firstName} ${employee.lastName}"
+                employeeName = "${employee.firstName} ${employee.lastName}",
+                isDriver = isDriver
             )
         }.joinToString(separator = "")
 
@@ -195,144 +198,172 @@ class PayrollExportController {
     }
 
     /**
-     * Builds payroll export rows for a single date.
-     *
-     * @param workShifts
-     * @param employeeNumber
-     * @param employeeName
-     */
-    private suspend fun buildPayrollExportRowsForSingleDate(
-        workShifts: Map.Entry<LocalDate, List<WorkShiftEntity>>,
-        employeeNumber: String,
-        employeeName: String
-    ): String {
-        val paidWorkRows = buildPaidWorkRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName
-        )
-
-        val eveningAllowanceRows = buildEveningAllowanceRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName
-        )
-
-        val nightAllowanceRows = buildNightAllowanceRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName
-        )
-
-        val rows = arrayOf(
-            paidWorkRows,
-            eveningAllowanceRows,
-            nightAllowanceRows
-        ).joinToString("")
-
-        return rows
-    }
-
-    /**
      * Salary type numbers used by Talenom
      */
     private object SalaryTypes {
         const val PAID_WORK = 11000
         const val EVENING_ALLOWANCE = 30000
-        const val NIGHT_ALLOWANCE = 30010
+        const val DRIVER_NIGHT_ALLOWANCE = 30010
+        const val TERMINAL_NIGHT_ALLOWANCE = 30011
         const val HOLIDAY_ALLOWANCE = 20121
-        const val TRAINING = 0
-        const val JOB_SPECIFIC_ALLOWANCE = 0
-        const val FROZEN_ALLOWANCE = 0
-        const val STANDBY = 0
-        const val OFFICIAL_DUTIES = 0
+        const val WORKING_CONDITIONS_ALLOWANCE = 30300
+        const val ADR_ALLOWANCE = 30058
+        const val FROZEN_ALLOWANCE = 30059
+        const val STANDBY = 11500
     }
 
-    private suspend fun buildEveningAllowanceRows(
-        date: LocalDate,
-        workShifts: List<WorkShiftEntity>,
+    /**
+     * Builds payroll export rows for a single date.
+     *
+     * @param workShifts
+     * @param employeeNumber
+     * @param employeeName
+     * @param isDriver
+     */
+    private suspend fun buildPayrollExportRowsForSingleDate(
+        workShifts: Map.Entry<LocalDate, List<WorkShiftEntity>>,
         employeeNumber: String,
-        employeeName: String
+        employeeName: String,
+        isDriver: Boolean
     ): String {
-        val eveningAllowanceHours = mutableMapOf<String, Float>()
-        workShifts.forEach {
-            val calculatedHours = payrollExportCalculations.calculateEveningAllowanceForWorkShift(it)
-            calculatedHours.forEach { (costCenter, hours) ->
-                eveningAllowanceHours[costCenter] = (eveningAllowanceHours[costCenter] ?: 0f) + hours
-            }
-        }
+        val paidWorkRows = buildRows(
+            date = workShifts.key,
+            workShifts = workShifts.value,
+            employeeNumber = employeeNumber,
+            employeeName = employeeName,
+            workType = WorkType.PAID_WORK,
+            salaryTypeNumber = SalaryTypes.PAID_WORK
+        )
 
-        val eveningAllowanceRows = eveningAllowanceHours.filterNot { it.value <= 0f }.map {
-            buildPayrollExportRow(
-                date = date,
-                employeeNumber = employeeNumber,
-                employeeName = employeeName,
-                salaryTypeNumber = SalaryTypes.EVENING_ALLOWANCE,
-                hoursWorked = it.value,
-                costCenter = it.key
-            )
-        }.joinToString(separator = "")
+        val eveningAllowanceRows = buildRows(
+            date = workShifts.key,
+            workShifts = workShifts.value,
+            employeeNumber = employeeNumber,
+            employeeName = employeeName,
+            workType = WorkType.EVENING_ALLOWANCE,
+            salaryTypeNumber = SalaryTypes.EVENING_ALLOWANCE
+        )
 
-        return eveningAllowanceRows
+        val nightAllowanceRows = buildRows(
+            date = workShifts.key,
+            workShifts = workShifts.value,
+            employeeNumber = employeeNumber,
+            employeeName = employeeName,
+            workType = WorkType.NIGHT_ALLOWANCE,
+            salaryTypeNumber =
+                if (isDriver) SalaryTypes.DRIVER_NIGHT_ALLOWANCE else SalaryTypes.TERMINAL_NIGHT_ALLOWANCE
+        )
+
+        val jobSpecificAllowanceRows = buildRows(
+            date = workShifts.key,
+            workShifts = workShifts.value,
+            employeeNumber = employeeNumber,
+            employeeName = employeeName,
+            workType = WorkType.JOB_SPECIFIC_ALLOWANCE,
+            salaryTypeNumber =
+                if (isDriver) SalaryTypes.ADR_ALLOWANCE else SalaryTypes.WORKING_CONDITIONS_ALLOWANCE
+        )
+
+        val frozenAllowanceRows = buildRows(
+            date = workShifts.key,
+            workShifts = workShifts.value,
+            employeeNumber = employeeNumber,
+            employeeName = employeeName,
+            workType = WorkType.FROZEN_ALLOWANCE,
+            salaryTypeNumber = SalaryTypes.FROZEN_ALLOWANCE
+        )
+
+        val holidayAllowanceRows = buildRows(
+            date = workShifts.key,
+            workShifts = workShifts.value,
+            employeeNumber = employeeNumber,
+            employeeName = employeeName,
+            workType = WorkType.HOLIDAY_ALLOWANCE,
+            salaryTypeNumber = SalaryTypes.HOLIDAY_ALLOWANCE
+        )
+
+        val standbyRows = buildRows(
+            date = workShifts.key,
+            workShifts = workShifts.value,
+            employeeNumber = employeeNumber,
+            employeeName = employeeName,
+            workType = WorkType.STANDBY,
+            salaryTypeNumber = SalaryTypes.STANDBY
+        )
+
+        val rows = arrayOf(
+            paidWorkRows,
+            eveningAllowanceRows,
+            nightAllowanceRows,
+            frozenAllowanceRows,
+            holidayAllowanceRows,
+            standbyRows,
+            jobSpecificAllowanceRows
+        ).joinToString("")
+
+        return rows
     }
 
-    private suspend fun buildNightAllowanceRows(
+    private suspend fun buildRows(
         date: LocalDate,
         workShifts: List<WorkShiftEntity>,
         employeeNumber: String,
-        employeeName: String
-    ): String {
-        val nightAllowanceHours = mutableMapOf<String, Float>()
-        workShifts.forEach {
-            val calculatedHours = payrollExportCalculations.calculateNightAllowanceForWorkShift(it)
-            calculatedHours.forEach { (costCenter, hours) ->
-                nightAllowanceHours[costCenter] = (nightAllowanceHours[costCenter] ?: 0f) + hours
-            }
-        }
-
-        val nightAllowanceRows = nightAllowanceHours.filterNot { it.value <= 0f }.map {
-            buildPayrollExportRow(
-                date = date,
-                employeeNumber = employeeNumber,
-                employeeName = employeeName,
-                salaryTypeNumber = SalaryTypes.NIGHT_ALLOWANCE,
-                hoursWorked = it.value,
-                costCenter = it.key
-            )
-        }.joinToString(separator = "")
-
-        return nightAllowanceRows
-    }
-
-    private suspend fun buildPaidWorkRows(
-        date: LocalDate,
-        workShifts: List<WorkShiftEntity>,
-        employeeNumber: String,
-        employeeName: String
+        employeeName: String,
+        workType: WorkType,
+        salaryTypeNumber: Int
     ): String {
         val costCenterHours = mutableMapOf<String, Float>()
         workShifts.forEach {
-            val calculatedHours = payrollExportCalculations.calculatePaidWorkForWorkShift(it)
+            val calculatedHours = when(workType) {
+                WorkType.PAID_WORK -> payrollExportCalculations.calculatePaidWorkForWorkShift(
+                    workShift = it
+                )
+
+                WorkType.STANDBY -> {
+                    val standbyMap = mutableMapOf<String, Float>()
+                    val hours = workShiftHoursController.listWorkShiftHours(
+                        workShiftFilter = it,
+                        workType = WorkType.STANDBY
+                    ).first.first().actualHours ?: 0f
+                    standbyMap[it.defaultCostCenter ?: ""] = hours
+
+                    standbyMap
+                }
+
+                WorkType.JOB_SPECIFIC_ALLOWANCE -> {
+                    val jobSpecificMap = mutableMapOf<String, Float>()
+                    val hours = workShiftHoursController.listWorkShiftHours(
+                        workShiftFilter = it,
+                        workType = WorkType.JOB_SPECIFIC_ALLOWANCE
+                    ).first.first().actualHours ?: 0f
+                    jobSpecificMap[it.defaultCostCenter ?: ""] = hours
+
+                    jobSpecificMap
+                }
+
+                else -> payrollExportCalculations.calculateAllowanceForWorkShift(
+                    workShift = it,
+                    workType = workType
+                )
+            }
+
             calculatedHours.forEach { (costCenter, hours) ->
                 costCenterHours[costCenter] = (costCenterHours[costCenter] ?: 0f) + hours
             }
         }
 
-        val paidWorkRows = costCenterHours.filterNot { it.value <= 0f }.map {
+        val costCenterRows = costCenterHours.filterNot { it.value <= 0f }.map {
             buildPayrollExportRow(
                 date = date,
                 employeeNumber = employeeNumber,
                 employeeName = employeeName,
-                salaryTypeNumber = SalaryTypes.PAID_WORK,
+                salaryTypeNumber = salaryTypeNumber,
                 hoursWorked = it.value,
                 costCenter = it.key
             )
         }.joinToString(separator = "")
 
-        return paidWorkRows
+        return costCenterRows
     }
 
 

@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.payrollexports.utilities
 
+import fi.metatavu.vp.usermanagement.holidays.HolidayController
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
@@ -18,49 +19,30 @@ class PayrollExportCalculations {
     @Inject
     lateinit var workShiftHoursController: WorkShiftHoursController
 
+    @Inject
+    lateinit var holidayController: HolidayController
 
-    suspend fun calculateEveningAllowanceForWorkShift(
-        workShift: WorkShiftEntity
+    suspend fun calculateAllowanceForWorkShift(
+        workShift: WorkShiftEntity,
+        workType: WorkType
     ): Map<String, Float> {
         val workEvents = workEventController.list(
             employeeWorkShift = workShift
         ).first
 
-        val (calculatedEveningAllowanceHoursSum, calculatedEveningAllowanceHours) = calculatePaidWorkFromEvents(
+        val (calculatedAllowanceHoursSum, calculatedAllowanceHours) = calculatePaidWorkFromEvents(
             workEvents = workEvents,
-            workType = WorkType.EVENING_ALLOWANCE
+            workType = workType
         )
 
-        val modifiedEveningAllowanceHours = modifyCalculatedHoursWithManuallyEnteredHours(
-            calculatedHours = calculatedEveningAllowanceHours,
-            calculatedHoursSum = calculatedEveningAllowanceHoursSum,
+        val modifiedAllowanceHours = modifyCalculatedHoursWithManuallyEnteredHours(
+            calculatedHours = calculatedAllowanceHours,
+            calculatedHoursSum = calculatedAllowanceHoursSum,
             workShift = workShift,
-            workType = WorkType.EVENING_ALLOWANCE
+            workType = workType
         )
 
-        return modifiedEveningAllowanceHours
-    }
-
-    suspend fun calculateNightAllowanceForWorkShift(
-        workShift: WorkShiftEntity
-    ): Map<String, Float> {
-        val workEvents = workEventController.list(
-            employeeWorkShift = workShift
-        ).first
-
-        val (calculatedNightAllowanceHoursSum, calculatedNightAllowanceHours) = calculatePaidWorkFromEvents(
-            workEvents = workEvents,
-            workType = WorkType.NIGHT_ALLOWANCE
-        )
-
-        val modifiedNightAllowanceHours = modifyCalculatedHoursWithManuallyEnteredHours(
-            calculatedHours = calculatedNightAllowanceHours,
-            calculatedHoursSum = calculatedNightAllowanceHoursSum,
-            workShift = workShift,
-            workType = WorkType.NIGHT_ALLOWANCE
-        )
-
-        return modifiedNightAllowanceHours
+        return modifiedAllowanceHours
     }
 
     suspend fun calculatePaidWorkForWorkShift(
@@ -113,7 +95,21 @@ class PayrollExportCalculations {
             workType = WorkType.SICK_LEAVE
         ).first.firstOrNull()?.actualHours ?: 0f
 
-        totalPaidWork[workShift.defaultCostCenter ?: ""] = (totalPaidWork[workShift.defaultCostCenter ?: ""] ?: 0f) + sickHours
+        val officialDutyHours = workShiftHoursController.listWorkShiftHours(
+            workShiftFilter = workShift,
+            workType = WorkType.OFFICIAL_DUTIES
+        ).first.firstOrNull()?.actualHours ?: 0f
+
+        val trainingHours = workShiftHoursController.listWorkShiftHours(
+            workShiftFilter = workShift,
+            workType = WorkType.TRAINING
+        ).first.firstOrNull()?.actualHours ?: 0f
+
+        val defaultCostCenter = workShift.defaultCostCenter ?: ""
+
+        totalPaidWork[defaultCostCenter] = (totalPaidWork[defaultCostCenter] ?: 0f) + sickHours
+        totalPaidWork[defaultCostCenter] = (totalPaidWork[defaultCostCenter] ?: 0f) + officialDutyHours
+        totalPaidWork[defaultCostCenter] = (totalPaidWork[defaultCostCenter] ?: 0f) + trainingHours
 
         return totalPaidWork
     }
@@ -165,7 +161,7 @@ class PayrollExportCalculations {
     }
 
 
-    private fun calculatePaidWorkFromEvents(
+    private suspend fun calculatePaidWorkFromEvents(
         workEvents: List<WorkEventEntity>,
         workType: WorkType
     ): Pair<Float, MutableMap<String, Float>> {
@@ -218,6 +214,29 @@ class PayrollExportCalculations {
                         )
                         calculatedHours[costCenter] = currentAmountForCostCenter + nightAllowanceHours
                         calculatedHoursSum += nightAllowanceHours
+                    }
+
+                    if (workType == WorkType.HOLIDAY_ALLOWANCE) {
+                        val publicHolidays = holidayController.list().first
+
+                        val daysOffDuringWorkShift = workEvents
+                            .distinctBy { it.time.toLocalDate() }
+                            .filter { workShiftHoursController.isDayOffWork(it.time, it.workShift.employeeId) }
+                            .map { it.time.toLocalDate() }
+
+                        val holidayAllowanceHours = workShiftHoursController.getHolidayAllowanceHours(
+                            workEventTime = it.time,
+                            nextWorkEventTime = nextEventTime,
+                            publicHolidays = publicHolidays,
+                            daysOff = daysOffDuringWorkShift
+                        )
+                        calculatedHours[costCenter] = currentAmountForCostCenter + holidayAllowanceHours
+                        calculatedHoursSum += holidayAllowanceHours
+                    }
+
+                    if(workType == WorkType.FROZEN_ALLOWANCE && it.workEventType == WorkEventType.FROZEN) {
+                        calculatedHours[costCenter] = currentAmountForCostCenter + hoursToNextEvent
+                        calculatedHoursSum += hoursToNextEvent
                     }
                 }
 

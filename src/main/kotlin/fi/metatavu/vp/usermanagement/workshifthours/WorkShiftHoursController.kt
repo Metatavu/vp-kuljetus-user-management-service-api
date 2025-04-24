@@ -256,7 +256,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
      * @param employeeId employee id
      * @return true if the work event is a day off work
      */
-    private suspend fun isDayOffWork(date: OffsetDateTime, employeeId: UUID): Boolean {
+    suspend fun isDayOffWork(date: OffsetDateTime, employeeId: UUID): Boolean {
         val shiftsDuringThisDay = workShiftController.listEmployeeWorkShifts(
             employeeId = employeeId,
             startedAfter = date.withHour(0).withMinute(0).withSecond(0),
@@ -344,7 +344,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
      * @param publicHolidays list of public holidays
      * @param daysOff list of days off work
      */
-    private fun getHolidayAllowanceHours(
+    fun getHolidayAllowanceHours(
         workEventTime: OffsetDateTime,
         nextWorkEventTime: OffsetDateTime,
         publicHolidays: List<HolidayEntity>,
