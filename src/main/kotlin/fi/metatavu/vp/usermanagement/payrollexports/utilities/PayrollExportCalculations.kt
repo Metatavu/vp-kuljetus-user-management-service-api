@@ -1,6 +1,7 @@
 package fi.metatavu.vp.usermanagement.payrollexports.utilities
 
 import fi.metatavu.vp.usermanagement.holidays.HolidayController
+import fi.metatavu.vp.usermanagement.model.AbsenceType
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
@@ -9,6 +10,7 @@ import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
+import java.time.DayOfWeek
 import java.time.temporal.ChronoUnit
 
 @ApplicationScoped
@@ -30,7 +32,7 @@ class PayrollExportCalculations {
             employeeWorkShift = workShift
         ).first
 
-        val (calculatedAllowanceHoursSum, calculatedAllowanceHours) = calculatePaidWorkFromEvents(
+        val (calculatedAllowanceHoursSum, calculatedAllowanceHours) = calculateWorkHoursFromEvents(
             workEvents = workEvents,
             workType = workType
         )
@@ -45,21 +47,36 @@ class PayrollExportCalculations {
         return modifiedAllowanceHours
     }
 
+    enum class WorkTimeType {
+        REGULAR,
+        OVER_TIME_HALF,
+        OVER_TIME_FULL
+    }
+
     suspend fun calculatePaidWorkForWorkShift(
-        workShift: WorkShiftEntity
-    ): Map<String, Float> {
+        workShift: WorkShiftEntity,
+        workTimeType: WorkTimeType,
+        isDriver: Boolean,
+        driverRegularHoursSum: Float?,
+        driverOverTimeHalfHoursSum: Float?,
+        regularWorkingTime: Float?,
+        vacationHours: Float
+    ): Pair<Map<String, Float>, Pair<Float, Float>> {
         val totalPaidWork = mutableMapOf<String, Float>()
+
+        var regularHoursSumCurrent = if (isDriver) driverRegularHoursSum!! else 0f
+        var overTimeHalfHoursSumCurrent = if (isDriver) driverOverTimeHalfHoursSum!! else 0f
 
         val workEvents = workEventController.list(
             employeeWorkShift = workShift
         ).first
 
-        val (calculatedPaidHoursSum, calculatedPaidHours) = calculatePaidWorkFromEvents(
+        val (calculatedPaidHoursSum, calculatedPaidHours) = calculateWorkHoursFromEvents(
             workEvents = workEvents,
             workType = WorkType.PAID_WORK
         )
 
-        val (calculatedBreakHoursSum, calculatedBreakHours) = calculatePaidWorkFromEvents(
+        val (calculatedBreakHoursSum, calculatedBreakHours) = calculateWorkHoursFromEvents(
             workEvents = workEvents,
             workType = WorkType.BREAK
         )
@@ -78,15 +95,39 @@ class PayrollExportCalculations {
             workType = WorkType.BREAK
         )
 
-        modifiedPaidHours.forEach { (costCenter, hours) ->
-            totalPaidWork[costCenter] = (totalPaidWork[costCenter] ?: 0f) + hours
+        modifiedPaidHours.forEach {
+            val result = calculateHoursForWorkTimeType(
+                totalPaidWork = totalPaidWork,
+                costCenterHours = it,
+                workTimeType = workTimeType,
+                regularHoursSum = regularHoursSumCurrent,
+                overTimeHalfHoursSum = overTimeHalfHoursSumCurrent,
+                isDriver = isDriver,
+                regularWorkingTime = regularWorkingTime,
+                vacationHours = vacationHours
+            )
+
+            regularHoursSumCurrent = result.first
+            overTimeHalfHoursSumCurrent = result.second
         }
 
         val breakIsPaid = 8 <= ChronoUnit.HOURS.between(workShift.startedAt!!, workShift.endedAt!!)
 
         if (breakIsPaid) {
-            modifiedBreakHours.forEach { (costCenter, hours) ->
-                totalPaidWork[costCenter] = (totalPaidWork[costCenter] ?: 0f) + hours
+            modifiedBreakHours.forEach {
+                val result = calculateHoursForWorkTimeType(
+                    totalPaidWork = totalPaidWork,
+                    costCenterHours = it,
+                    workTimeType = workTimeType,
+                    regularHoursSum = regularHoursSumCurrent,
+                    overTimeHalfHoursSum = overTimeHalfHoursSumCurrent,
+                    isDriver = isDriver,
+                    regularWorkingTime = regularWorkingTime,
+                    vacationHours = vacationHours
+                )
+
+                regularHoursSumCurrent = result.first
+                overTimeHalfHoursSumCurrent = result.second
             }
         }
 
@@ -107,11 +148,118 @@ class PayrollExportCalculations {
 
         val defaultCostCenter = workShift.defaultCostCenter ?: ""
 
-        totalPaidWork[defaultCostCenter] = (totalPaidWork[defaultCostCenter] ?: 0f) + sickHours
-        totalPaidWork[defaultCostCenter] = (totalPaidWork[defaultCostCenter] ?: 0f) + officialDutyHours
-        totalPaidWork[defaultCostCenter] = (totalPaidWork[defaultCostCenter] ?: 0f) + trainingHours
+        val isHoliday = workShift.startedAt?.dayOfWeek == DayOfWeek.SUNDAY || holidayController.list().first.find { it.date == workShift.startedAt?.toLocalDate() } != null
 
-        return totalPaidWork
+        if (workShift.absence == AbsenceType.COMPENSATORY_LEAVE) {
+            val hours = mapOf(Pair(defaultCostCenter, 8f))
+            val result = calculateHoursForWorkTimeType(
+                totalPaidWork = totalPaidWork,
+                costCenterHours = hours.entries.first(),
+                workTimeType = workTimeType,
+                regularHoursSum = regularHoursSumCurrent,
+                overTimeHalfHoursSum = overTimeHalfHoursSumCurrent,
+                isDriver = isDriver,
+                regularWorkingTime = regularWorkingTime,
+                vacationHours = vacationHours
+            )
+
+            regularHoursSumCurrent = result.first
+            overTimeHalfHoursSumCurrent = result.second
+        } else if (workShift.absence == AbsenceType.VACATION && !isHoliday) {
+            val hours = mapOf(Pair(defaultCostCenter, 6.67f))
+
+            val result = calculateHoursForWorkTimeType(
+                totalPaidWork = totalPaidWork,
+                costCenterHours = hours.entries.first(),
+                workTimeType = workTimeType,
+                regularHoursSum = regularHoursSumCurrent,
+                overTimeHalfHoursSum = overTimeHalfHoursSumCurrent,
+                isDriver = isDriver,
+                regularWorkingTime = regularWorkingTime,
+                vacationHours = vacationHours
+            )
+
+            regularHoursSumCurrent = result.first
+            overTimeHalfHoursSumCurrent = result.second
+        }
+
+        val sickHoursMap = mapOf(Pair(defaultCostCenter, sickHours))
+        val officialDutyHoursMap = mapOf(Pair(defaultCostCenter, officialDutyHours))
+
+        calculateHoursForWorkTimeType(
+            totalPaidWork = totalPaidWork,
+            costCenterHours = sickHoursMap.entries.first(),
+            workTimeType = workTimeType,
+            regularHoursSum = regularHoursSumCurrent,
+            overTimeHalfHoursSum = overTimeHalfHoursSumCurrent,
+            isDriver = isDriver,
+            regularWorkingTime = regularWorkingTime,
+            vacationHours = vacationHours
+        )
+
+        calculateHoursForWorkTimeType(
+            totalPaidWork = totalPaidWork,
+            costCenterHours = officialDutyHoursMap.entries.first(),
+            workTimeType = workTimeType,
+            regularHoursSum = regularHoursSumCurrent,
+            overTimeHalfHoursSum = overTimeHalfHoursSumCurrent,
+            isDriver = isDriver,
+            regularWorkingTime = regularWorkingTime,
+            vacationHours = vacationHours
+        )
+
+
+        if (workTimeType == WorkTimeType.REGULAR) {
+            totalPaidWork[defaultCostCenter] = (totalPaidWork[defaultCostCenter] ?: 0f) + trainingHours
+        }
+
+        return Pair(totalPaidWork, Pair(regularHoursSumCurrent, overTimeHalfHoursSumCurrent))
+    }
+
+    private suspend fun calculateHoursForWorkTimeType(
+        totalPaidWork: MutableMap<String, Float>,
+        costCenterHours: Map.Entry<String, Float>,
+        workTimeType: WorkTimeType,
+        regularHoursSum: Float,
+        overTimeHalfHoursSum: Float,
+        isDriver: Boolean,
+        regularWorkingTime: Float?,
+        vacationHours: Float
+    ): Pair<Float, Float> {
+        val costCenter = costCenterHours.key
+        val hours = costCenterHours.value
+
+        var regularHoursSumCurrent = regularHoursSum
+        var overTimeHalfHoursSumCurrent = overTimeHalfHoursSum
+
+        val overTimeFullLimit = if (isDriver) { if (vacationHours > 40) 10f else 12f } else 10f
+        val overTimeHalfLimit = if (isDriver) regularWorkingTime else 8f
+
+        val currentAmount = (totalPaidWork[costCenter] ?: 0f)
+        if (workTimeType == WorkTimeType.REGULAR && (overTimeHalfLimit == null || regularHoursSumCurrent <= overTimeHalfLimit)) {
+            if (overTimeHalfLimit == null || currentAmount + hours < overTimeHalfLimit) {
+                totalPaidWork[costCenter] = currentAmount + hours
+                regularHoursSumCurrent += hours
+            } else {
+                val difference = overTimeHalfLimit - currentAmount
+                totalPaidWork[costCenter] = currentAmount + difference
+                regularHoursSumCurrent += difference
+            }
+
+        } else if (overTimeHalfLimit != null && workTimeType == WorkTimeType.OVER_TIME_HALF  && overTimeHalfHoursSumCurrent > overTimeHalfLimit && overTimeHalfHoursSumCurrent <= overTimeFullLimit) {
+            if (currentAmount + hours < overTimeFullLimit) {
+                totalPaidWork[costCenter] = currentAmount + hours
+                overTimeHalfHoursSumCurrent += hours
+            } else {
+                val difference = overTimeFullLimit - currentAmount
+                totalPaidWork[costCenter] = currentAmount + difference
+                overTimeHalfHoursSumCurrent += difference
+            }
+        } else if (overTimeHalfLimit != null && workTimeType == WorkTimeType.OVER_TIME_FULL) {
+            totalPaidWork[costCenter] = currentAmount + hours
+        }
+
+        return Pair(regularHoursSumCurrent, overTimeHalfHoursSumCurrent)
     }
 
     private suspend fun modifyCalculatedHoursWithManuallyEnteredHours(
@@ -161,7 +309,7 @@ class PayrollExportCalculations {
     }
 
 
-    private suspend fun calculatePaidWorkFromEvents(
+    private suspend fun calculateWorkHoursFromEvents(
         workEvents: List<WorkEventEntity>,
         workType: WorkType
     ): Pair<Float, MutableMap<String, Float>> {

@@ -354,7 +354,7 @@ class SalaryPeriodUtils {
      * @param workShifts
      * @param absenceType
      */
-    private suspend fun calculateTotalWorkHoursByAbsenceType(
+    suspend fun calculateTotalWorkHoursByAbsenceType(
         workShifts: List<WorkShiftEntity>,
         absenceType: AbsenceType
     ): BigDecimal {
