@@ -1,4 +1,4 @@
-package fi.metatavu.vp.usermanagement.employees
+package fi.metatavu.vp.usermanagement.employees.utilities
 
 import fi.metatavu.vp.usermanagement.model.AbsenceType
 import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
@@ -152,7 +152,8 @@ class SalaryPeriodUtils {
             workingHours = workingHours,
             sickHours = sickHours,
             vacationHours = vacationHours,
-            compensatoryLeaveHours = compensatoryLeaveHours
+            compensatoryLeaveHours = compensatoryLeaveHours,
+            officialDutyHours = officialDutyHours
         ) } else BigDecimal.valueOf(0)
 
         val partialDailyAllowance = workShifts.filter { shift ->
@@ -194,15 +195,17 @@ class SalaryPeriodUtils {
      * @param sickHours
      * @param vacationHours
      * @param compensatoryLeaveHours
+     * @param officialDutyHours
      */
-    private suspend fun calculateFillingHours(
+     suspend fun calculateFillingHours(
         regularWorkingHours: BigDecimal,
         workingHours: BigDecimal,
         sickHours: BigDecimal,
         vacationHours: BigDecimal,
-        compensatoryLeaveHours: BigDecimal
+        compensatoryLeaveHours: BigDecimal,
+        officialDutyHours: BigDecimal
     ): BigDecimal {
-        val totalPaidHours = workingHours + sickHours
+        val totalPaidHours = workingHours + sickHours + officialDutyHours
 
         if (totalPaidHours >= regularWorkingHours) return BigDecimal.valueOf(0)
 
@@ -412,7 +415,7 @@ class SalaryPeriodUtils {
      * @param workShifts
      * @param workType
      */
-    private suspend fun calculateWorkingHoursByWorkType(workShifts: List<WorkShiftEntity>, workType: WorkType): BigDecimal {
+    suspend fun calculateWorkingHoursByWorkType(workShifts: List<WorkShiftEntity>, workType: WorkType): BigDecimal {
         var totalHours = 0f
 
         for (workShift in workShifts) {

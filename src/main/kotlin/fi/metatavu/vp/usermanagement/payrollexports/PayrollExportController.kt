@@ -1,8 +1,9 @@
 package fi.metatavu.vp.usermanagement.payrollexports
 
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
-import fi.metatavu.vp.usermanagement.employees.SalaryPeriodUtils
+import fi.metatavu.vp.usermanagement.employees.utilities.SalaryPeriodUtils
 import fi.metatavu.vp.usermanagement.model.AbsenceType
+import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
 import fi.metatavu.vp.usermanagement.model.SalaryGroup
 import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.payrollexports.utilities.PayrollExportCalculations
@@ -21,6 +22,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -237,6 +239,9 @@ class PayrollExportController {
         const val STANDBY = 11500
         const val OVER_TIME_HALF = 20050
         const val OVER_TIME_FULL = 20060
+        const val PARTIAL_DAILY_ALLOWANCE = 80112
+        const val FULL_DAILY_ALLOWANCE = 80102
+        const val FILLING_HOURS = 11010
     }
 
     /**
@@ -246,6 +251,10 @@ class PayrollExportController {
      * @param employeeNumber
      * @param employeeName
      * @param isDriver
+     * @param regularWorkingTime
+     * @param vacationHours
+     * @param driverRegularHoursSum
+     * @param driverOverTimeHalfHoursSum
      */
     private suspend fun buildPayrollExportRowsForSingleDate(
         workShifts: Map.Entry<LocalDate, List<WorkShiftEntity>>,
@@ -410,8 +419,71 @@ class PayrollExportController {
         driverRegularHoursSumCurrent = overTimeFullRowsResult.second.first
         driverOverTimeHalfSumCurrent = overTimeFullRowsResult.second.second
 
+        val partialDailyAllowance = workShifts.value.filter {
+            it.perDiemAllowance == PerDiemAllowanceType.PARTIAL
+        }.size
+
+        val fullDailyAllowance = workShifts.value.filter {
+            it.perDiemAllowance == PerDiemAllowanceType.FULL
+        }.size
+
+        var dailyAllowanceRows = ""
+        if (partialDailyAllowance != 0) {
+            dailyAllowanceRows += buildPayrollExportRow(
+                date = workShifts.key,
+                employeeNumber = employeeNumber,
+                employeeName = employeeName,
+                salaryTypeNumber = SalaryTypes.PARTIAL_DAILY_ALLOWANCE,
+                hoursWorked = partialDailyAllowance.toFloat(),
+                costCenter = ""
+            )
+        }
+
+        if (fullDailyAllowance != 0) {
+            dailyAllowanceRows += buildPayrollExportRow(
+                date = workShifts.key,
+                employeeNumber = employeeNumber,
+                employeeName = employeeName,
+                salaryTypeNumber = SalaryTypes.FULL_DAILY_ALLOWANCE,
+                hoursWorked = fullDailyAllowance.toFloat(),
+                costCenter = ""
+            )
+        }
+
+        val fillingHours = if (regularWorkingTime != null) salaryPeriodUtils.calculateFillingHours(
+            regularWorkingHours = regularWorkingTime.toBigDecimal(),
+            workingHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
+                workShifts = workShifts.value,
+                workType = WorkType.PAID_WORK
+            ),
+            vacationHours = vacationHours.toBigDecimal(),
+            sickHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
+                workShifts = workShifts.value,
+                workType = WorkType.SICK_LEAVE
+            ),
+            officialDutyHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
+                workShifts = workShifts.value,
+                workType = WorkType.OFFICIAL_DUTIES
+            ),
+            compensatoryLeaveHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(
+                workShifts = workShifts.value,
+                absenceType = AbsenceType.COMPENSATORY_LEAVE
+            )
+        ) else BigDecimal.valueOf(0)
+
+        val fillingHoursRows = if (fillingHours.toFloat() != 0f) {
+            buildPayrollExportRow(
+                date = workShifts.key,
+                employeeNumber = employeeNumber,
+                employeeName = employeeName,
+                salaryTypeNumber = SalaryTypes.FILLING_HOURS,
+                hoursWorked = fillingHours.toFloat(),
+                costCenter = ""
+            )
+        } else ""
+
         // TODO: Missing
-        // partial daily allowance, full daily allowance, day off bonus, filling hours?
+        // day off bonus
 
         val rows = arrayOf(
             paidWorkRows,
@@ -422,7 +494,9 @@ class PayrollExportController {
             standbyRows,
             jobSpecificAllowanceRows,
             overTimeHalfRows,
-            overTimeFullRows
+            overTimeFullRows,
+            dailyAllowanceRows,
+            fillingHoursRows
         ).joinToString("")
 
         return Pair(rows, Pair(driverRegularHoursSumCurrent, driverOverTimeHalfSumCurrent))
