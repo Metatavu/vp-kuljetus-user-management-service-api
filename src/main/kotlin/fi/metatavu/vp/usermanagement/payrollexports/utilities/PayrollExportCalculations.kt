@@ -24,6 +24,12 @@ class PayrollExportCalculations {
     @Inject
     lateinit var holidayController: HolidayController
 
+    /**
+     * Calculates the allowance for a work shift for a given allowance type.
+     *
+     * @param workShift
+     * @param workType
+     */
     suspend fun calculateAllowanceForWorkShift(
         workShift: WorkShiftEntity,
         workType: WorkType
@@ -53,6 +59,27 @@ class PayrollExportCalculations {
         OVER_TIME_FULL
     }
 
+    /**
+     * Calculates the regular paid work or some type of overtime for a work shift depending on the workTimeType parameter.
+     * Total paid work is calculated from events and/or manually entered hours for work types that are paid with the regular rate.
+     * All these work types except TRAINING accumulate overtime.
+     * Work types that are paid with the regular rate:
+     * - PAID_WORK
+     * - BREAK (up to 30 minutes for each shift that lasts at least 8 hours)
+     * - SICK_LEAVE
+     * - OFFICIAL_DUTIES
+     * - TRAINING (training does not accumulate overtime)
+     * - COMPENSATORY_LEAVE
+     * - VACATION
+     *
+     * @param workShift
+     * @param workTimeType
+     * @param isDriver
+     * @param driverRegularHoursSum
+     * @param driverOverTimeHalfHoursSum
+     * @param regularWorkingTime
+     * @param vacationHours
+     */
     suspend fun calculatePaidWorkForWorkShift(
         workShift: WorkShiftEntity,
         workTimeType: WorkTimeType,
@@ -186,7 +213,7 @@ class PayrollExportCalculations {
         val sickHoursMap = mapOf(Pair(defaultCostCenter, sickHours))
         val officialDutyHoursMap = mapOf(Pair(defaultCostCenter, officialDutyHours))
 
-        calculateHoursForWorkTimeType(
+        val sickHoursResult = calculateHoursForWorkTimeType(
             totalPaidWork = totalPaidWork,
             costCenterHours = sickHoursMap.entries.first(),
             workTimeType = workTimeType,
@@ -196,6 +223,9 @@ class PayrollExportCalculations {
             regularWorkingTime = regularWorkingTime,
             vacationHours = vacationHours
         )
+
+        regularHoursSumCurrent = sickHoursResult.first
+        overTimeHalfHoursSumCurrent = sickHoursResult.second
 
         calculateHoursForWorkTimeType(
             totalPaidWork = totalPaidWork,
@@ -216,6 +246,20 @@ class PayrollExportCalculations {
         return Pair(totalPaidWork, Pair(regularHoursSumCurrent, overTimeHalfHoursSumCurrent))
     }
 
+    /**
+     * This function filters the cost center hours that are within the workTimeType range, and adds the hours to totalPaidWork map.
+     * Also the updated sum sfor regular hours and half overtime is returned.
+     * These sums will be inputted when this function is called the next time so that the filtering works correctly at every stage.
+     *
+     * @param totalPaidWork already calculated paid work
+     * @param costCenterHours hours to filter and add
+     * @param workTimeType
+     * @param regularHoursSum
+     * @param overTimeHalfHoursSum
+     * @param isDriver
+     * @param regularWorkingTime
+     * @param vacationHours
+     */
     private suspend fun calculateHoursForWorkTimeType(
         totalPaidWork: MutableMap<String, Float>,
         costCenterHours: Map.Entry<String, Float>,
@@ -262,6 +306,15 @@ class PayrollExportCalculations {
         return Pair(regularHoursSumCurrent, overTimeHalfHoursSumCurrent)
     }
 
+    /**
+     * Applies manually modified hours to calculated hours. If manually entered hours are greater than calculated hours, then the excess will be added to default or empty cost center.
+     * If the modified hours are less than the manually entered hours, then the difference will be removed starting from the last cost center in the map.
+     *
+     * @param calculatedHours
+     * @param calculatedHoursSum
+     * @param workShift
+     * @param workType
+     */
     private suspend fun modifyCalculatedHoursWithManuallyEnteredHours(
         calculatedHours: MutableMap<String, Float>,
         calculatedHoursSum: Float,
@@ -309,6 +362,12 @@ class PayrollExportCalculations {
     }
 
 
+    /**
+     * Calculates the work hours from work events for a given work type.
+     *
+     * @param workEvents
+     * @param workType
+     */
     private suspend fun calculateWorkHoursFromEvents(
         workEvents: List<WorkEventEntity>,
         workType: WorkType

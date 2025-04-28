@@ -242,6 +242,7 @@ class PayrollExportController {
         const val PARTIAL_DAILY_ALLOWANCE = 80112
         const val FULL_DAILY_ALLOWANCE = 80102
         const val FILLING_HOURS = 11010
+        const val DAY_OFF_BONUS = 20121
     }
 
     /**
@@ -471,7 +472,7 @@ class PayrollExportController {
             )
         ) else BigDecimal.valueOf(0)
 
-        val fillingHoursRows = if (fillingHours.toFloat() != 0f) {
+        val fillingHoursRow = if (fillingHours.toFloat() != 0f) {
             buildPayrollExportRow(
                 date = workShifts.key,
                 employeeNumber = employeeNumber,
@@ -482,8 +483,17 @@ class PayrollExportController {
             )
         } else ""
 
-        // TODO: Missing
-        // day off bonus
+        val dayOffBonus = salaryPeriodUtils.calculateDayOffBonus(workShifts = workShifts.value)
+        val dayOffBonusRow = if (dayOffBonus.toFloat() != 0f) {
+            buildPayrollExportRow(
+                date = workShifts.key,
+                employeeNumber = employeeNumber,
+                employeeName = employeeName,
+                salaryTypeNumber = SalaryTypes.DAY_OFF_BONUS,
+                hoursWorked = dayOffBonus.toFloat(),
+                costCenter = ""
+            )
+        } else ""
 
         val rows = arrayOf(
             paidWorkRows,
@@ -496,12 +506,40 @@ class PayrollExportController {
             overTimeHalfRows,
             overTimeFullRows,
             dailyAllowanceRows,
-            fillingHoursRows
+            fillingHoursRow,
+            dayOffBonusRow
         ).joinToString("")
 
         return Pair(rows, Pair(driverRegularHoursSumCurrent, driverOverTimeHalfSumCurrent))
     }
 
+    /**
+     * Builds rows for a single work type.
+     * The returned item is a pair of:
+     * 1. String value which contains the rows.
+     * 2. Pair of floats, which contains the sum of regular working hours and the sum of overtime hours that get the half overtime rate.
+     *
+     * These sums in the second item of the returned pair are only when the work type is PAID_WORK.
+     * These values will be inputted to this same function in the next iteration of the loop which builds the rows.
+     * This accumulation is needed to calculate the overtime hours.
+     *
+     * Also, the workTimeType is only relevant when the work type is PAID_WORK.
+     * It is used to determine if the current iteration should return regular time or some type of overtime.
+     *
+     * @param date
+     * @param workShifts
+     * @param employeeNumber
+     * @param employeeName
+     * @param workType
+     * @param salaryTypeNumber
+     * @param isDriver
+     * @param regularWorkingTime
+     * @param vacationHours
+     * @param workTimeType
+     * @param driverRegularHoursSum
+     * @param driverOverTimeHalfHoursSum
+     *
+     */
     private suspend fun buildWorkTypeRows(
         date: LocalDate,
         workShifts: List<WorkShiftEntity>,

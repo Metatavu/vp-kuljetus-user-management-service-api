@@ -224,7 +224,7 @@ class SalaryPeriodUtils {
      *
      * @param workShifts
      */
-    private suspend fun calculateDayOffBonus(
+    suspend fun calculateDayOffBonus(
         workShifts: List<WorkShiftEntity>
     ): BigDecimal {
         var totalHours = 0.0
