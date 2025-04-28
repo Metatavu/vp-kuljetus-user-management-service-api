@@ -98,8 +98,6 @@ class PayrollExportCalculations {
             employeeWorkShift = workShift
         ).first.reversed()
 
-        println("Amount of events: ${workEvents.size}")
-
         val (calculatedPaidHoursSum, calculatedPaidHours) = calculateWorkHoursFromEvents(
             workEvents = workEvents,
             workType = WorkType.PAID_WORK
@@ -245,7 +243,6 @@ class PayrollExportCalculations {
             totalPaidWork[defaultCostCenter] = (totalPaidWork[defaultCostCenter] ?: 0f) + trainingHours
         }
 
-        println("SUM: $regularHoursSumCurrent")
         return Pair(totalPaidWork, Pair(regularHoursSumCurrent, overTimeHalfHoursSumCurrent))
     }
 
@@ -279,9 +276,9 @@ class PayrollExportCalculations {
         var regularHoursSumCurrent = regularHoursSum
         var overTimeHalfHoursSumCurrent = overTimeHalfHoursSum
 
-        val overTimeFullLimit = if (isDriver) { if (vacationHours > 40) 10f else 12f } else 12f
-        val overTimeHalfLimit = if (isDriver) regularWorkingTime else 8f
 
+        val overTimeHalfLimit = if (isDriver) regularWorkingTime else 8f
+        val overTimeFullLimit = if (isDriver) { (if (vacationHours > 40) 10f else 12f) + (overTimeHalfLimit ?: 0f) } else 10f
         val currentCostCenterAmount = (totalPaidWork[costCenter] ?: 0f)
 
         val total = regularHoursSumCurrent + overTimeHalfHoursSumCurrent

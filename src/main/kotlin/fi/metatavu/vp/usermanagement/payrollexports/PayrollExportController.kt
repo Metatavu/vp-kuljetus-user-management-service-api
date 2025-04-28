@@ -560,8 +560,6 @@ class PayrollExportController {
         var driverRegularHoursSumCurrent = driverRegularHoursSum
         var driverOverTimeHalfSumCurrent = driverOverTimeHalfHoursSum
 
-        println("******************************")
-        println("SUM before iteration: $driverRegularHoursSumCurrent")
         workShifts.forEach {
             val calculatedHours = when(workType) {
                 WorkType.PAID_WORK -> {
@@ -612,7 +610,6 @@ class PayrollExportController {
                 )
             }
 
-            println("Calculated hours: $calculatedHours")
             calculatedHours.forEach { (costCenter, hours) ->
                 costCenterHours[costCenter] = (costCenterHours[costCenter] ?: 0f) + hours
             }
@@ -629,10 +626,6 @@ class PayrollExportController {
             )
         }.joinToString(separator = "")
 
-
-        println("SUM after iteration: $driverRegularHoursSumCurrent")
-        println(costCenterHours)
-        println("******************************")
         return Pair(costCenterRows, Pair(driverRegularHoursSumCurrent, driverOverTimeHalfSumCurrent))
     }
 
