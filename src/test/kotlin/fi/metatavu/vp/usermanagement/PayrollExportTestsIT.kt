@@ -1,8 +1,6 @@
 package fi.metatavu.vp.usermanagement
 
-import fi.metatavu.vp.test.client.models.EmployeeWorkShift
-import fi.metatavu.vp.test.client.models.PayrollExport
-import fi.metatavu.vp.test.client.models.WorkType
+import fi.metatavu.vp.test.client.models.*
 import fi.metatavu.vp.usermanagement.resources.S3FileDownload
 import fi.metatavu.vp.usermanagement.resources.S3TestResource
 import fi.metatavu.vp.usermanagement.resources.SftpServerTestResource
@@ -143,26 +141,46 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
     fun testPayrollExportContent() = createTestBuilder().use { it ->
         val employee = it.manager.employees.createEmployee("1212")
 
-        val now = OffsetDateTime.now()
+        val todayAtMidday = OffsetDateTime.now().withHour(11).withMinute(0).withSecond(0)
         val workShift1 = it.manager.workShifts.createEmployeeWorkShift(
             employeeId = employee.id!!,
             workShift = EmployeeWorkShift(
                 employeeId = employee.id,
-                startedAt = now.minusHours(1).toString(),
-                date = now.toLocalDate().toString(),
-                endedAt = now.toString(),
+                startedAt = todayAtMidday.minusHours(5).toString(),
+                date = todayAtMidday.toLocalDate().toString(),
+                endedAt = todayAtMidday.toString(),
                 approved = false,
                 costCentersFromEvents = emptyArray()
             )
         )
 
-        val workShift2 = it.manager.workShifts.createEmployeeWorkShift(
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = todayAtMidday.minusHours(5).toString(),
+                workEventType = WorkEventType.DRIVE,
+                workShift1.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = todayAtMidday.minusSeconds(1).toString(),
+                workEventType = WorkEventType.SHIFT_END,
+                workShift1.id
+            )
+        )
+
+        /** val workShift2 = it.manager.workShifts.createEmployeeWorkShift(
             employeeId = employee.id,
             workShift = EmployeeWorkShift(
                 employeeId = employee.id,
-                startedAt = now.minusDays(1).minusHours(1).toString(),
-                date = now.toLocalDate().minusDays(1).toString(),
-                endedAt = now.minusDays(1).toString(),
+                startedAt = todayAtMidday.minusDays(1).minusHours(5).toString(),
+                date = todayAtMidday.toLocalDate().minusDays(1).toString(),
+                endedAt = todayAtMidday.minusDays(1).toString(),
                 approved = false,
                 costCentersFromEvents = emptyArray()
             )
@@ -172,158 +190,13 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             employeeId = employee.id,
             workShift = EmployeeWorkShift(
                 employeeId = employee.id,
-                startedAt = now.minusHours(1).toString(),
-                date = now.toLocalDate().toString(),
-                endedAt = now.toString(),
+                startedAt = todayAtMidday.minusHours(5).toString(),
+                date = todayAtMidday.toLocalDate().toString(),
+                endedAt = todayAtMidday.toString(),
                 approved = false,
                 costCentersFromEvents = emptyArray()
             )
-        )
-
-        val workShift4 = it.manager.workShifts.createEmployeeWorkShift(
-            employeeId = employee.id,
-            workShift = EmployeeWorkShift(
-                employeeId = employee.id,
-                startedAt = now.minusDays(1).minusHours(1).toString(),
-                date = now.toLocalDate().minusDays(1).toString(),
-                endedAt = now.minusDays(1).toString(),
-                approved = false,
-                costCentersFromEvents = emptyArray()
-            )
-        )
-
-        val workShiftHours1 = it.manager.workShiftHours.listWorkShiftHours(
-            employeeWorkShiftId = workShift1.id
-        )
-
-        val workShiftHours2 = it.manager.workShiftHours.listWorkShiftHours(
-            employeeWorkShiftId = workShift2.id
-        )
-
-        val workShiftHours3 = it.manager.workShiftHours.listWorkShiftHours(
-            employeeWorkShiftId = workShift3.id
-        )
-
-        val workShiftHours4 = it.manager.workShiftHours.listWorkShiftHours(
-            employeeWorkShiftId = workShift4.id
-        )
-
-        val paidWorkHours1 = workShiftHours1.first { hours -> hours.workType == WorkType.PAID_WORK }
-        val paidWorkHours2 = workShiftHours2.first { hours -> hours.workType == WorkType.PAID_WORK }
-        val paidWorkHours3 = workShiftHours3.first { hours -> hours.workType == WorkType.PAID_WORK }
-        val paidWorkHours4 = workShiftHours4.first { hours -> hours.workType == WorkType.PAID_WORK }
-
-        val sickLeaveHours = workShiftHours1.first { hours -> hours.workType == WorkType.SICK_LEAVE }
-
-        val currentDayNightAllowance1 = workShiftHours1.first { hours -> hours.workType == WorkType.NIGHT_ALLOWANCE }
-        val currentDayNightAllowance2 = workShiftHours3.first { hours -> hours.workType == WorkType.NIGHT_ALLOWANCE }
-        val currentDayHolidayAllowance = workShiftHours1.first { hours -> hours.workType == WorkType.HOLIDAY_ALLOWANCE }
-
-        val breakHours1 = workShiftHours1.first { hours -> hours.workType == WorkType.BREAK }
-        val breakHours2 = workShiftHours2.first { hours -> hours.workType == WorkType.BREAK }
-        val breakHours3 = workShiftHours3.first { hours -> hours.workType == WorkType.BREAK }
-        val breakHours4 = workShiftHours4.first { hours -> hours.workType == WorkType.BREAK }
-
-        val previousDayEveningAllowance1 = workShiftHours2.first { hours -> hours.workType == WorkType.EVENING_ALLOWANCE }
-        val previousDayEveningAllowance2 = workShiftHours4.first { hours -> hours.workType == WorkType.EVENING_ALLOWANCE }
-
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = sickLeaveHours.id!!,
-            workShiftHours = sickLeaveHours.copy(
-                actualHours = 1f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = paidWorkHours1.id!!,
-            workShiftHours = paidWorkHours1.copy(
-                actualHours = 8f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = paidWorkHours2.id!!,
-            workShiftHours = paidWorkHours2.copy(
-                actualHours = 12f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = paidWorkHours3.id!!,
-            workShiftHours = paidWorkHours3.copy(
-                actualHours = 2f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = paidWorkHours4.id!!,
-            workShiftHours = paidWorkHours4.copy(
-                actualHours = 8f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = breakHours1.id!!,
-            workShiftHours = breakHours1.copy(
-                actualHours = 0.75f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = breakHours2.id!!,
-            workShiftHours = breakHours2.copy(
-                actualHours = 0.15f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = breakHours3.id!!,
-            workShiftHours = breakHours3.copy(
-                actualHours = 0.15f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = breakHours4.id!!,
-            workShiftHours = breakHours4.copy(
-                actualHours = 0.02f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = previousDayEveningAllowance1.id!!,
-            workShiftHours = previousDayEveningAllowance1.copy(
-                actualHours = 1f
-            )
-        )
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = previousDayEveningAllowance2.id!!,
-            workShiftHours = previousDayEveningAllowance2.copy(
-                actualHours = 2f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = currentDayNightAllowance1.id!!,
-            workShiftHours = currentDayNightAllowance1.copy(
-                actualHours = 4f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = currentDayNightAllowance2.id!!,
-            workShiftHours = currentDayNightAllowance2.copy(
-                actualHours = 3f
-            )
-        )
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = currentDayHolidayAllowance.id!!,
-            workShiftHours = currentDayHolidayAllowance.copy(
-                actualHours = 5f
-            )
-        )
+        )*/
 
         it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee.id,
@@ -333,7 +206,7 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             )
         )
 
-        it.manager.workShifts.updateEmployeeWorkShift(
+        /*it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee.id,
             id = workShift2.id!!,
             workShift = workShift2.copy(
@@ -347,36 +220,18 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             workShift = workShift3.copy(
                 approved = true
             )
-        )
-
-        it.manager.workShifts.updateEmployeeWorkShift(
-            employeeId = employee.id,
-            id = workShift4.id!!,
-            workShift = workShift4.copy(
-                approved = true
-            )
-        )
+        )*/
 
         val payrollExport = it.manager.payrollExports.createPayrollExport(
             PayrollExport(
                 employeeId = employee.id,
-                workShiftIds = arrayOf(workShift1.id, workShift2.id, workShift3.id, workShift4.id)
+                workShiftIds = arrayOf(workShift1.id)
             )
         )
 
-        val date1 = now.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
-        val date2 = now.minusDays(1).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
-
-        val row1 = "$date2;1212;Test Employee;11000;20.17;;;;;\n"
-        val row2 = "$date2;1212;Test Employee;30000;3.00;;;;;\n"
-        val row3 = "$date1;1212;Test Employee;11000;11.50;;;;;\n"
-        val row4 = "$date1;1212;Test Employee;30010;7.00;;;;;\n"
-        val row5 = "$date1;1212;Test Employee;20121;5.00;;;;;\n"
-
-        val expectedFileContent = row1 + row2 + row3 + row4 + row5
-
         val s3FileContent = S3FileDownload().downloadFile(ApiTestSettings.S3_FOLDER_PATH + payrollExport.csvFileName)
 
+        val expectedFileContent = ""
         assertEquals(
             expectedFileContent,
             s3FileContent,

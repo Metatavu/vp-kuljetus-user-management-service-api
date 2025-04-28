@@ -36,7 +36,7 @@ class PayrollExportCalculations {
     ): Map<String, Float> {
         val workEvents = workEventController.list(
             employeeWorkShift = workShift
-        ).first
+        ).first.reversed()
 
         val (calculatedAllowanceHoursSum, calculatedAllowanceHours) = calculateWorkHoursFromEvents(
             workEvents = workEvents,
@@ -96,7 +96,7 @@ class PayrollExportCalculations {
 
         val workEvents = workEventController.list(
             employeeWorkShift = workShift
-        ).first
+        ).first.reversed()
 
         val (calculatedPaidHoursSum, calculatedPaidHours) = calculateWorkHoursFromEvents(
             workEvents = workEvents,
@@ -248,7 +248,7 @@ class PayrollExportCalculations {
 
     /**
      * This function filters the cost center hours that are within the workTimeType range, and adds the hours to totalPaidWork map.
-     * Also the updated sum sfor regular hours and half overtime is returned.
+     * Also the updated sums for regular hours and half overtime are returned.
      * These sums will be inputted when this function is called the next time so that the filtering works correctly at every stage.
      *
      * @param totalPaidWork already calculated paid work
@@ -276,31 +276,33 @@ class PayrollExportCalculations {
         var regularHoursSumCurrent = regularHoursSum
         var overTimeHalfHoursSumCurrent = overTimeHalfHoursSum
 
-        val overTimeFullLimit = if (isDriver) { if (vacationHours > 40) 10f else 12f } else 10f
+        val overTimeFullLimit = if (isDriver) { if (vacationHours > 40) 10f else 12f } else 12f
         val overTimeHalfLimit = if (isDriver) regularWorkingTime else 8f
 
-        val currentAmount = (totalPaidWork[costCenter] ?: 0f)
-        if (workTimeType == WorkTimeType.REGULAR && (overTimeHalfLimit == null || regularHoursSumCurrent <= overTimeHalfLimit)) {
-            if (overTimeHalfLimit == null || currentAmount + hours < overTimeHalfLimit) {
-                totalPaidWork[costCenter] = currentAmount + hours
+        val currentCostCenterAmount = (totalPaidWork[costCenter] ?: 0f)
+
+        val total = regularHoursSumCurrent + overTimeHalfHoursSumCurrent
+        if (workTimeType == WorkTimeType.REGULAR && (overTimeHalfLimit == null || total < overTimeHalfLimit)) {
+            if (overTimeHalfLimit == null || total + hours < overTimeHalfLimit) {
+                totalPaidWork[costCenter] = currentCostCenterAmount + hours
                 regularHoursSumCurrent += hours
             } else {
-                val difference = overTimeHalfLimit - currentAmount
-                totalPaidWork[costCenter] = currentAmount + difference
+                val difference = overTimeHalfLimit - total
+                totalPaidWork[costCenter] = currentCostCenterAmount + difference
                 regularHoursSumCurrent += difference
             }
 
-        } else if (overTimeHalfLimit != null && workTimeType == WorkTimeType.OVER_TIME_HALF  && overTimeHalfHoursSumCurrent > overTimeHalfLimit && overTimeHalfHoursSumCurrent <= overTimeFullLimit) {
-            if (currentAmount + hours < overTimeFullLimit) {
-                totalPaidWork[costCenter] = currentAmount + hours
+        } else if (overTimeHalfLimit != null && workTimeType == WorkTimeType.OVER_TIME_HALF  &&  overTimeHalfLimit <= total && total < overTimeFullLimit) {
+            if (total + hours < overTimeFullLimit) {
+                totalPaidWork[costCenter] = currentCostCenterAmount + hours
                 overTimeHalfHoursSumCurrent += hours
             } else {
-                val difference = overTimeFullLimit - currentAmount
-                totalPaidWork[costCenter] = currentAmount + difference
+                val difference = overTimeFullLimit - total
+                totalPaidWork[costCenter] = currentCostCenterAmount + difference
                 overTimeHalfHoursSumCurrent += difference
             }
-        } else if (overTimeHalfLimit != null && workTimeType == WorkTimeType.OVER_TIME_FULL) {
-            totalPaidWork[costCenter] = currentAmount + hours
+        } else if (overTimeHalfLimit != null && workTimeType == WorkTimeType.OVER_TIME_FULL && overTimeFullLimit <= total ) {
+            totalPaidWork[costCenter] = total + hours
         }
 
         return Pair(regularHoursSumCurrent, overTimeHalfHoursSumCurrent)
@@ -377,6 +379,12 @@ class PayrollExportCalculations {
 
         workEvents.forEachIndexed { index, it ->
             val nextEventTime = workEvents.getOrNull(index + 1)?.time
+
+            println("INDEXED:")
+            println(it.workEventType)
+            println(it.time)
+            println(nextEventTime)
+
             if (nextEventTime == null || nextEventTime < it.time) {
                 return@forEachIndexed
             }
