@@ -154,13 +154,39 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             )
         )
 
-        it.manager.workEvents.createWorkEvent(
+        val event1 = it.manager.workEvents.createWorkEvent(
             employeeId = employee.id,
             workEvent = WorkEvent(
                 employeeId = employee.id,
                 time = todayAtMidday.minusHours(5).toString(),
                 workEventType = WorkEventType.DRIVE,
                 workShift1.id
+            )
+        )
+
+        it.manager.workEvents.updateWorkEvent(
+            employeeId = employee.id,
+            id = event1.id!!,
+            workEvent = event1.copy(
+                costCenter = "Cost center 1"
+            )
+        )
+
+        val event2 = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = todayAtMidday.minusHours(3).toString(),
+                workEventType = WorkEventType.OTHER_WORK,
+                workShift1.id
+            )
+        )
+
+        it.manager.workEvents.updateWorkEvent(
+            employeeId = employee.id,
+            id = event2.id!!,
+            workEvent = event2.copy(
+                costCenter = "Cost center 2"
             )
         )
 
@@ -174,30 +200,6 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             )
         )
 
-        /** val workShift2 = it.manager.workShifts.createEmployeeWorkShift(
-            employeeId = employee.id,
-            workShift = EmployeeWorkShift(
-                employeeId = employee.id,
-                startedAt = todayAtMidday.minusDays(1).minusHours(5).toString(),
-                date = todayAtMidday.toLocalDate().minusDays(1).toString(),
-                endedAt = todayAtMidday.minusDays(1).toString(),
-                approved = false,
-                costCentersFromEvents = emptyArray()
-            )
-        )
-
-        val workShift3 = it.manager.workShifts.createEmployeeWorkShift(
-            employeeId = employee.id,
-            workShift = EmployeeWorkShift(
-                employeeId = employee.id,
-                startedAt = todayAtMidday.minusHours(5).toString(),
-                date = todayAtMidday.toLocalDate().toString(),
-                endedAt = todayAtMidday.toString(),
-                approved = false,
-                costCentersFromEvents = emptyArray()
-            )
-        )*/
-
         it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee.id,
             id = workShift1.id!!,
@@ -205,22 +207,6 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
                 approved = true
             )
         )
-
-        /*it.manager.workShifts.updateEmployeeWorkShift(
-            employeeId = employee.id,
-            id = workShift2.id!!,
-            workShift = workShift2.copy(
-                approved = true
-            )
-        )
-
-        it.manager.workShifts.updateEmployeeWorkShift(
-            employeeId = employee.id,
-            id = workShift3.id!!,
-            workShift = workShift3.copy(
-                approved = true
-            )
-        )*/
 
         val payrollExport = it.manager.payrollExports.createPayrollExport(
             PayrollExport(
@@ -231,7 +217,15 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
 
         val s3FileContent = S3FileDownload().downloadFile(ApiTestSettings.S3_FOLDER_PATH + payrollExport.csvFileName)
 
-        val expectedFileContent = ""
+        val date = todayAtMidday.toLocalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+
+        val row1 = "$date;1212;Test Employee;11000;2.00;;Cost center 1;;;"
+        val row2 = "$date;1212;Test Employee;11000;3.00;;Cost center 2;;;"
+        val row3 = "$date;1212;Test Employee;11010;3.00;;;;;"
+
+        val expectedFileContent = row1 + "\n" +
+                row2 + "\n" +
+                row3 + "\n"
         assertEquals(
             expectedFileContent,
             s3FileContent,

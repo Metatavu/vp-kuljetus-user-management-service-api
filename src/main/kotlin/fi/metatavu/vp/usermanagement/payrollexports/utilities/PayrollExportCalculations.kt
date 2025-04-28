@@ -380,11 +380,6 @@ class PayrollExportCalculations {
         workEvents.forEachIndexed { index, it ->
             val nextEventTime = workEvents.getOrNull(index + 1)?.time
 
-            println("INDEXED:")
-            println(it.workEventType)
-            println(it.time)
-            println(nextEventTime)
-
             if (nextEventTime == null || nextEventTime < it.time) {
                 return@forEachIndexed
             }
