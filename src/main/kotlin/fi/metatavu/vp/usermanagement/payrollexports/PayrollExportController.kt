@@ -189,7 +189,7 @@ class PayrollExportController {
         val regularWorkingHours = employee.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat()
         var driverRegularPaidHoursSum = 0f
         var driverOverTimeHalfSum = 0f
-        val fileContent = workShiftsGroupedByDate.map {
+        val dailyRows = workShiftsGroupedByDate.map {
             val result = buildPayrollExportRowsForSingleDate(
                 workShifts = it,
                 employeeNumber = employeeNumber,
@@ -203,11 +203,45 @@ class PayrollExportController {
 
             val (rows, hours) = result
 
-            driverRegularPaidHoursSum += hours.first
-            driverOverTimeHalfSum += hours.second
+            driverRegularPaidHoursSum = hours.first
+            driverOverTimeHalfSum = hours.second
 
             return@map rows
         }.joinToString(separator = "")
+
+        val fillingHours = if (regularWorkingHours != null) salaryPeriodUtils.calculateFillingHours(
+            regularWorkingHours = regularWorkingHours.toBigDecimal(),
+            workingHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
+                workShifts = workShifts,
+                workType = WorkType.PAID_WORK
+            ),
+            vacationHours = vacationHours,
+            sickHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
+                workShifts = workShifts,
+                workType = WorkType.SICK_LEAVE
+            ),
+            officialDutyHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
+                workShifts = workShifts,
+                workType = WorkType.OFFICIAL_DUTIES
+            ),
+            compensatoryLeaveHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(
+                workShifts = workShifts,
+                absenceType = AbsenceType.COMPENSATORY_LEAVE
+            )
+        ) else BigDecimal.valueOf(0)
+
+        val fillingHoursRow = if (fillingHours.toFloat() != 0f) {
+            buildPayrollExportRow(
+                date = workShiftsGroupedByDate.entries.last().key,
+                employeeNumber = employeeNumber,
+                employeeName = "${employee.firstName} ${employee.lastName}",
+                salaryTypeNumber = SalaryTypes.FILLING_HOURS,
+                hoursWorked = fillingHours.toFloat(),
+                costCenter = ""
+            )
+        } else ""
+
+        val fileContent = dailyRows + fillingHoursRow
 
         sendFileToS3(
             fileName = fileName,
@@ -232,7 +266,7 @@ class PayrollExportController {
         const val EVENING_ALLOWANCE = 30000
         const val DRIVER_NIGHT_ALLOWANCE = 30010
         const val TERMINAL_NIGHT_ALLOWANCE = 30011
-        const val HOLIDAY_ALLOWANCE = 20121
+        const val HOLIDAY_ALLOWANCE = 60000
         const val WORKING_CONDITIONS_ALLOWANCE = 30300
         const val ADR_ALLOWANCE = 30058
         const val FROZEN_ALLOWANCE = 30059
@@ -451,38 +485,6 @@ class PayrollExportController {
             )
         }
 
-        val fillingHours = if (regularWorkingTime != null) salaryPeriodUtils.calculateFillingHours(
-            regularWorkingHours = regularWorkingTime.toBigDecimal(),
-            workingHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
-                workShifts = workShifts.value,
-                workType = WorkType.PAID_WORK
-            ),
-            vacationHours = vacationHours.toBigDecimal(),
-            sickHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
-                workShifts = workShifts.value,
-                workType = WorkType.SICK_LEAVE
-            ),
-            officialDutyHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
-                workShifts = workShifts.value,
-                workType = WorkType.OFFICIAL_DUTIES
-            ),
-            compensatoryLeaveHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(
-                workShifts = workShifts.value,
-                absenceType = AbsenceType.COMPENSATORY_LEAVE
-            )
-        ) else BigDecimal.valueOf(0)
-
-        val fillingHoursRow = if (fillingHours.toFloat() != 0f) {
-            buildPayrollExportRow(
-                date = workShifts.key,
-                employeeNumber = employeeNumber,
-                employeeName = employeeName,
-                salaryTypeNumber = SalaryTypes.FILLING_HOURS,
-                hoursWorked = fillingHours.toFloat(),
-                costCenter = ""
-            )
-        } else ""
-
         val dayOffBonus = salaryPeriodUtils.calculateDayOffBonus(workShifts = workShifts.value)
         val dayOffBonusRow = if (dayOffBonus.toFloat() != 0f) {
             buildPayrollExportRow(
@@ -506,7 +508,6 @@ class PayrollExportController {
             overTimeHalfRows,
             overTimeFullRows,
             dailyAllowanceRows,
-            fillingHoursRow,
             dayOffBonusRow
         ).joinToString("")
 
@@ -558,6 +559,9 @@ class PayrollExportController {
 
         var driverRegularHoursSumCurrent = driverRegularHoursSum
         var driverOverTimeHalfSumCurrent = driverOverTimeHalfHoursSum
+
+        println("******************************")
+        println("SUM before iteration: $driverRegularHoursSumCurrent")
         workShifts.forEach {
             val calculatedHours = when(workType) {
                 WorkType.PAID_WORK -> {
@@ -571,8 +575,11 @@ class PayrollExportController {
                         vacationHours = vacationHours
                     )
 
-                    driverRegularHoursSumCurrent += result.second.first
-                    driverOverTimeHalfSumCurrent += result.second.second
+                    if (workTimeType == PayrollExportCalculations.WorkTimeType.REGULAR) {
+                        driverRegularHoursSumCurrent = result.second.first
+                    } else if (workTimeType == PayrollExportCalculations.WorkTimeType.OVER_TIME_HALF) {
+                        driverOverTimeHalfSumCurrent = result.second.first
+                    }
 
                     result.first
                 }
@@ -605,6 +612,7 @@ class PayrollExportController {
                 )
             }
 
+            println("Calculated hours: $calculatedHours")
             calculatedHours.forEach { (costCenter, hours) ->
                 costCenterHours[costCenter] = (costCenterHours[costCenter] ?: 0f) + hours
             }
@@ -621,6 +629,10 @@ class PayrollExportController {
             )
         }.joinToString(separator = "")
 
+
+        println("SUM after iteration: $driverRegularHoursSumCurrent")
+        println(costCenterHours)
+        println("******************************")
         return Pair(costCenterRows, Pair(driverRegularHoursSumCurrent, driverOverTimeHalfSumCurrent))
     }
 

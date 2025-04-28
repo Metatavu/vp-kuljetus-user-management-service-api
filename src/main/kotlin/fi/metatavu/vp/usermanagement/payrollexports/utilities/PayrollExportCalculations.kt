@@ -98,6 +98,8 @@ class PayrollExportCalculations {
             employeeWorkShift = workShift
         ).first.reversed()
 
+        println("Amount of events: ${workEvents.size}")
+
         val (calculatedPaidHoursSum, calculatedPaidHours) = calculateWorkHoursFromEvents(
             workEvents = workEvents,
             workType = WorkType.PAID_WORK
@@ -243,6 +245,7 @@ class PayrollExportCalculations {
             totalPaidWork[defaultCostCenter] = (totalPaidWork[defaultCostCenter] ?: 0f) + trainingHours
         }
 
+        println("SUM: $regularHoursSumCurrent")
         return Pair(totalPaidWork, Pair(regularHoursSumCurrent, overTimeHalfHoursSumCurrent))
     }
 
