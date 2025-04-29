@@ -416,11 +416,153 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             now.year,
             now.monthValue,
             now.dayOfMonth,
-            11,
+            16,
             0,
             0,
             0,
             currentOffset
+        )
+
+        val event1 = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date.minusHours(8).toString(),
+                workEventType = WorkEventType.DRIVE
+            )
+        )
+
+        it.manager.workEvents.updateWorkEvent(
+            employeeId = employee.id,
+            id = event1.id!!,
+            workEvent = event1.copy(
+                costCenter = "Centre 1"
+            )
+        )
+
+        val event2 = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date.minusHours(6).toString(),
+                workEventType = WorkEventType.DRIVE
+            )
+        )
+
+        it.manager.workEvents.updateWorkEvent(
+            employeeId = employee.id,
+            id = event2.id!!,
+            workEvent = event2.copy(
+                costCenter = "Centre 2"
+            )
+        )
+
+        val event3 = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date.minusHours(3).toString(),
+                workEventType = WorkEventType.DRIVE
+            )
+        )
+
+        it.manager.workEvents.updateWorkEvent(
+            employeeId = employee.id,
+            id = event3.id!!,
+            workEvent = event3.copy(
+                costCenter = "Centre 3"
+            )
+        )
+
+        val event4 = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date.minusHours(1).toString(),
+                workEventType = WorkEventType.DRIVE
+            )
+        )
+
+        it.manager.workEvents.updateWorkEvent(
+            employeeId = employee.id,
+            id = event4.id!!,
+            workEvent = event4.copy(
+                costCenter = "Centre 4"
+            )
+        )
+
+        val event5 = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date.minusSeconds(1).toString(),
+                workEventType = WorkEventType.SHIFT_END
+            )
+        )
+
+        it.manager.workEvents.updateWorkEvent(
+            employeeId = employee.id,
+            id = event5.id!!,
+            workEvent = event5.copy(
+                costCenter = "Centre 5"
+            )
+        )
+
+        val workShift = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
+
+        val workShiftHours = it.manager.workShiftHours.listWorkShiftHours(
+            employeeId = employee.id,
+            employeeWorkShiftId = workShift.id!!,
+            workType = WorkType.PAID_WORK
+        ).first()
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = workShiftHours.id!!,
+            workShiftHours = workShiftHours.copy(
+                actualHours = 3.5f
+            )
+        )
+
+        it.manager.workShifts.updateEmployeeWorkShift(
+            employeeId = employee.id,
+            id = workShift.id,
+            workShift = workShift.copy(
+                approved = true
+            )
+        )
+
+        val payrollExport = it.manager.payrollExports.createPayrollExport(
+            PayrollExport(
+                employeeId = employee.id,
+                workShiftIds = arrayOf(workShift.id)
+            )
+        )
+
+        val s3FileContent = S3FileDownload().downloadFile(ApiTestSettings.S3_FOLDER_PATH + payrollExport.csvFileName)
+
+        val formattedDate = date.toLocalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+
+        val row1 = "$formattedDate;1212;Test Employee;11000;2.00;;Centre 1;;;"
+        val row2 = "$formattedDate;1212;Test Employee;11000;1.50;;Centre 2;;;"
+        val row3 = "$formattedDate;1212;Test Employee;11010;36.50;;;;;"
+
+        val expectedFileContent = row1 + "\n" +
+                row2 + "\n" +
+                row3 + "\n"
+
+
+        assertEquals(
+            expectedFileContent,
+            s3FileContent,
+            "Payroll S3 export file content should match the expected content"
+        )
+
+        val ftpFileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+
+        assertEquals(
+            expectedFileContent,
+            ftpFileContent,
+            "Payroll FTP export file content should match the expected content"
         )
     }
 
