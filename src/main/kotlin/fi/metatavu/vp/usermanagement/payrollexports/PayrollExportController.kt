@@ -613,6 +613,7 @@ class PayrollExportController {
             calculatedHours.forEach { (costCenter, hours) ->
                 costCenterHours[costCenter] = (costCenterHours[costCenter] ?: 0f) + hours
             }
+
         }
 
         val costCenterRows = costCenterHours.filterNot { it.value <= 0f }.map {

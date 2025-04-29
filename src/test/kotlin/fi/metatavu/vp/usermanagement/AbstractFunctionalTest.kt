@@ -4,21 +4,37 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import fi.metatavu.vp.test.client.models.Holiday
 import io.quarkus.test.common.DevServicesContext
 import org.eclipse.microprofile.config.ConfigProvider
 import org.json.JSONException
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.skyscreamer.jsonassert.JSONCompare
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.skyscreamer.jsonassert.JSONCompareResult
 import org.skyscreamer.jsonassert.comparator.CustomComparator
-import java.io.File
+import java.time.LocalDate
+import java.time.OffsetDateTime
 import java.util.*
 
 /**
  * Abstract base class for functional tests
  */
 abstract class AbstractFunctionalTest {
+
+    fun getLastWorkDay(
+        date: LocalDate
+    ): LocalDate {
+        var dateToStartFrom = date
+
+        dateToStartFrom = (
+                when (dateToStartFrom.dayOfWeek.value) {
+                    1 -> { dateToStartFrom.minusDays(3) }
+                    7 -> { dateToStartFrom.minusDays(2) }
+                    else -> { dateToStartFrom.minusDays(1) }
+                })
+
+        return dateToStartFrom
+    }
 
     /**
      * Compares objects as serialized JSONs
