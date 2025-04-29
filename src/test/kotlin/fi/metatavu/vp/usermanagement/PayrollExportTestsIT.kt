@@ -16,10 +16,8 @@ import java.io.File
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.time.zone.ZoneRules
 import java.util.*
 
 @QuarkusTest
@@ -165,7 +163,7 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             now.year,
             now.monthValue,
             now.dayOfMonth,
-            11,
+            12,
             0,
             0,
             0,
@@ -176,32 +174,19 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             yesterday.year,
             yesterday.monthValue,
             yesterday.dayOfMonth,
-            11,
+            12,
             0,
             0,
             0,
             ZonedDateTime.now().offset
         )
 
-        val workShift1 = it.manager.workShifts.createEmployeeWorkShift(
-            employeeId = employee.id,
-            workShift = EmployeeWorkShift(
-                employeeId = employee.id,
-                startedAt = date1.minusHours(5).toString(),
-                date = date1.toLocalDate().toString(),
-                endedAt = date1.toString(),
-                approved = false,
-                costCentersFromEvents = emptyArray()
-            )
-        )
-
         val event1 = it.manager.workEvents.createWorkEvent(
             employeeId = employee.id,
             workEvent = WorkEvent(
                 employeeId = employee.id,
-                time = date1.minusHours(5).toString(),
-                workEventType = WorkEventType.DRIVE,
-                workShift1.id
+                time = date2.minusHours(5).toString(),
+                workEventType = WorkEventType.DRIVE
             )
         )
 
@@ -217,9 +202,8 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             employeeId = employee.id,
             workEvent = WorkEvent(
                 employeeId = employee.id,
-                time = date1.minusHours(3).toString(),
-                workEventType = WorkEventType.OTHER_WORK,
-                workShift1.id
+                time = date2.minusHours(3).toString(),
+                workEventType = WorkEventType.OTHER_WORK
             )
         )
 
@@ -235,39 +219,41 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             employeeId = employee.id,
             workEvent = WorkEvent(
                 employeeId = employee.id,
-                time = date1.minusSeconds(1).toString(),
-                workEventType = WorkEventType.SHIFT_END,
-                workShift1.id
+                time = date2.minusSeconds(1).toString(),
+                workEventType = WorkEventType.SHIFT_END
+            )
+        )
+
+        val workShift1 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
+
+        val workShiftHours = it.manager.workShiftHours.listWorkShiftHours(
+            employeeId = employee.id,
+            employeeWorkShiftId = workShift1.id!!,
+            workType = WorkType.PAID_WORK
+        ).first()
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = workShiftHours.id!!,
+            workShiftHours = workShiftHours.copy(
+                actualHours = 6f
             )
         )
 
         it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee.id,
-            id = workShift1.id!!,
+            id = workShift1.id,
             workShift = workShift1.copy(
                 approved = true
             )
         )
 
-        val workShift2 = it.manager.workShifts.createEmployeeWorkShift(
-            employeeId = employee.id,
-            workShift = EmployeeWorkShift(
-                employeeId = employee.id,
-                startedAt = date1.toString(),
-                date = date1.toLocalDate().toString(),
-                endedAt = date1.plusHours(5).toString(),
-                approved = false,
-                costCentersFromEvents = emptyArray()
-            )
-        )
 
         val event3 = it.manager.workEvents.createWorkEvent(
             employeeId = employee.id,
             workEvent = WorkEvent(
                 employeeId = employee.id,
-                time = date1.plusSeconds(1).toString(),
-                workEventType = WorkEventType.DRIVE,
-                workShift2.id
+                time = date1.minusHours(5).toString(),
+                workEventType = WorkEventType.DRIVE
             )
         )
 
@@ -283,9 +269,8 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             employeeId = employee.id,
             workEvent = WorkEvent(
                 employeeId = employee.id,
-                time = date1.plusHours(2).toString(),
-                workEventType = WorkEventType.OTHER_WORK,
-                workShift2.id
+                time = date1.minusHours(3).toString(),
+                workEventType = WorkEventType.OTHER_WORK
             )
         )
 
@@ -301,11 +286,12 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             employeeId = employee.id,
             workEvent = WorkEvent(
                 employeeId = employee.id,
-                time = date1.plusHours(5).toString(),
-                workEventType = WorkEventType.SHIFT_END,
-                workShift2.id
+                time = date1.minusSeconds(1).toString(),
+                workEventType = WorkEventType.SHIFT_END
             )
         )
+
+        val workShift2 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
 
         it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee.id,
@@ -315,25 +301,12 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             )
         )
 
-        val workShift3 = it.manager.workShifts.createEmployeeWorkShift(
-            employeeId = employee.id,
-            workShift = EmployeeWorkShift(
-                employeeId = employee.id,
-                startedAt = date2.toString(),
-                date = date2.toLocalDate().toString(),
-                endedAt = date2.plusHours(5).toString(),
-                approved = false,
-                costCentersFromEvents = emptyArray()
-            )
-        )
-
         val event5 = it.manager.workEvents.createWorkEvent(
             employeeId = employee.id,
             workEvent = WorkEvent(
                 employeeId = employee.id,
-                time = date2.minusHours(5).toString(),
-                workEventType = WorkEventType.DRIVE,
-                workShift3.id!!
+                time = date1.plusSeconds(1).toString(),
+                workEventType = WorkEventType.DRIVE
             )
         )
 
@@ -349,9 +322,8 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             employeeId = employee.id,
             workEvent = WorkEvent(
                 employeeId = employee.id,
-                time = date2.minusHours(3).toString(),
-                workEventType = WorkEventType.OTHER_WORK,
-                workShift3.id
+                time = date1.plusHours(2).toString(),
+                workEventType = WorkEventType.OTHER_WORK
             )
         )
 
@@ -367,33 +339,20 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             employeeId = employee.id,
             workEvent = WorkEvent(
                 employeeId = employee.id,
-                time = date2.minusSeconds(1).toString(),
+                time = date1.plusHours(5).toString(),
                 workEventType = WorkEventType.SHIFT_END,
-                workShift3.id
             )
         )
 
-        val workShiftHours = it.manager.workShiftHours.listWorkShiftHours(
-            employeeId = employee.id,
-            employeeWorkShiftId = workShift3.id,
-            workType = WorkType.PAID_WORK
-        ).first()
-
-        it.manager.workShiftHours.updateWorkShiftHours(
-            id = workShiftHours.id!!,
-            workShiftHours = workShiftHours.copy(
-                actualHours = 6f
-            )
-        )
+        val workShift3 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
 
         it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee.id,
-            id = workShift3.id,
+            id = workShift3.id!!,
             workShift = workShift3.copy(
                 approved = true
             )
         )
-
 
         val payrollExport = it.manager.payrollExports.createPayrollExport(
             PayrollExport(
@@ -433,6 +392,35 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             expectedFileContent,
             ftpFileContent,
             "Payroll FTP export file content should match the expected content"
+        )
+    }
+
+    @Test
+    fun testPayrollExportManualSubtractions() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1212")
+
+        it.manager.employees.updateEmployee(
+            employeeId = employee.id!!,
+            employee = employee.copy(
+                regularWorkingHours = 40f
+            )
+        )
+
+        val now = getLastWorkDay(
+            date = LocalDate.now()
+        )
+
+        val currentOffset = OffsetDateTime.now().atZoneSameInstant(ZoneId.of("Europe/Helsinki")).offset
+
+        val date = OffsetDateTime.of(
+            now.year,
+            now.monthValue,
+            now.dayOfMonth,
+            11,
+            0,
+            0,
+            0,
+            currentOffset
         )
     }
 
