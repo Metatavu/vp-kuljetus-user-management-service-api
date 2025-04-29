@@ -346,11 +346,38 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
 
         val workShift3 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
 
+        val sickHours = it.manager.workShiftHours.listWorkShiftHours(
+            employeeId = employee.id,
+            employeeWorkShiftId = workShift3.id!!,
+            workType = WorkType.SICK_LEAVE
+        ).first()
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = sickHours.id!!,
+            workShiftHours = sickHours.copy(
+                actualHours = 1f
+            )
+        )
+
+        val officialDutyHours = it.manager.workShiftHours.listWorkShiftHours(
+            employeeId = employee.id,
+            employeeWorkShiftId = workShift3.id,
+            workType = WorkType.OFFICIAL_DUTIES
+        ).first()
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = officialDutyHours.id!!,
+            workShiftHours = officialDutyHours.copy(
+                actualHours = 1f
+            )
+        )
+
         it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee.id,
-            id = workShift3.id!!,
+            id = workShift3.id,
             workShift = workShift3.copy(
-                approved = true
+                approved = true,
+                defaultCostCenter = "Default"
             )
         )
 
@@ -371,14 +398,16 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
         val row3 = "$formattedDate2;1212;Test Employee;11000;1.00;;;;;"
         val row4 = "$formattedDate1;1212;Test Employee;11000;4.00;;Cost center 1;;;"
         val row5 = "$formattedDate1;1212;Test Employee;11000;6.00;;Cost center 2;;;"
-        val row6 = "$formattedDate1;1212;Test Employee;11010;24.00;;;;;"
+        val row6 = "$formattedDate1;1212;Test Employee;11000;2.00;;Default;;;"
+        val row7 = "$formattedDate1;1212;Test Employee;11010;22.00;;;;;"
 
         val expectedFileContent = row1 + "\n" +
                 row2 + "\n" +
                 row3 + "\n" +
                 row4 + "\n" +
                 row5 + "\n" +
-                row6 + "\n"
+                row6 + "\n" +
+                row7 + "\n"
 
         assertEquals(
             expectedFileContent,

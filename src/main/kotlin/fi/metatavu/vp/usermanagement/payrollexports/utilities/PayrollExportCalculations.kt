@@ -443,7 +443,7 @@ class PayrollExportCalculations {
                         calculatedHoursSum += holidayAllowanceHours
                     }
 
-                    if(workType == WorkType.FROZEN_ALLOWANCE && it.workEventType == WorkEventType.FROZEN) {
+                    if (workType == WorkType.FROZEN_ALLOWANCE && it.workEventType == WorkEventType.FROZEN) {
                         calculatedHours[costCenter] = currentAmountForCostCenter + hoursToNextEvent
                         calculatedHoursSum += hoursToNextEvent
                     }
