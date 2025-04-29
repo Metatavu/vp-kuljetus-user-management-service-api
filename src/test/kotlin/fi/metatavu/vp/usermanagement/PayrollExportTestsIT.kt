@@ -176,7 +176,7 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             yesterday.year,
             yesterday.monthValue,
             yesterday.dayOfMonth,
-            12,
+            11,
             0,
             0,
             0,
@@ -373,6 +373,19 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
             )
         )
 
+        val workShiftHours = it.manager.workShiftHours.listWorkShiftHours(
+            employeeId = employee.id,
+            employeeWorkShiftId = workShift3.id,
+            workType = WorkType.PAID_WORK
+        ).first()
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = workShiftHours.id!!,
+            workShiftHours = workShiftHours.copy(
+                actualHours = 6f
+            )
+        )
+
         it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee.id,
             id = workShift3.id,
@@ -396,15 +409,18 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
 
         val row1 = "$formattedDate2;1212;Test Employee;11000;2.00;;Cost center 1;;;"
         val row2 = "$formattedDate2;1212;Test Employee;11000;3.00;;Cost center 2;;;"
-        val row3 = "$formattedDate1;1212;Test Employee;11000;4.00;;Cost center 1;;;"
-        val row4 = "$formattedDate1;1212;Test Employee;11000;6.00;;Cost center 2;;;"
-        val row5 = "$formattedDate1;1212;Test Employee;11010;25.00;;;;;"
+        val row3 = "$formattedDate2;1212;Test Employee;11000;1.00;;;;;"
+        val row4 = "$formattedDate1;1212;Test Employee;11000;4.00;;Cost center 1;;;"
+        val row5 = "$formattedDate1;1212;Test Employee;11000;6.00;;Cost center 2;;;"
+        val row6 = "$formattedDate1;1212;Test Employee;11010;24.00;;;;;"
 
         val expectedFileContent = row1 + "\n" +
                 row2 + "\n" +
                 row3 + "\n" +
                 row4 + "\n" +
-                row5 + "\n"
+                row5 + "\n" +
+                row6 + "\n"
+
         assertEquals(
             expectedFileContent,
             s3FileContent,
