@@ -718,7 +718,6 @@ class PayrollExportTestsIT: AbstractFunctionalTest() {
 
         val workShift1 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
 
-
         it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee.id,
             id = workShift1.id!!,

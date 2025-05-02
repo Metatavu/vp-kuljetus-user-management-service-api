@@ -177,71 +177,11 @@ class PayrollExportController {
         employee: UserRepresentation,
         fileName: String
     ) {
-        val employeeNumber = employee.attributes!!["employeeNumber"]!!.first()
-        val salaryGroup = SalaryGroup.valueOf(employee.attributes[SALARY_GROUP_ATTRIBUTE]!!.first())
-        val isDriver = salaryGroup == SalaryGroup.DRIVER || salaryGroup == SalaryGroup.VPLOGISTICS
-        val workShiftsGroupedByDate = workShifts.sortedBy { it.date }.groupBy { it.date }
 
-        val vacationHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(
+        val fileContent = buildRows(
             workShifts = workShifts,
-            absenceType = AbsenceType.VACATION
+            employee = employee
         )
-        val regularWorkingHours = employee.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat()
-        var driverRegularPaidHoursSum = 0f
-        var driverOverTimeHalfSum = 0f
-        val dailyRows = workShiftsGroupedByDate.map {
-            val result = buildPayrollExportRowsForSingleDate(
-                workShifts = it,
-                employeeNumber = employeeNumber,
-                employeeName = "${employee.firstName} ${employee.lastName}",
-                isDriver = isDriver,
-                driverOverTimeHalfHoursSum = driverOverTimeHalfSum,
-                driverRegularHoursSum = driverRegularPaidHoursSum,
-                vacationHours = vacationHours.toFloat(),
-                regularWorkingTime = regularWorkingHours
-            )
-
-            val (rows, hours) = result
-
-            driverRegularPaidHoursSum = hours.first
-            driverOverTimeHalfSum = hours.second
-
-            return@map rows
-        }.joinToString(separator = "")
-
-        val fillingHours = if (regularWorkingHours != null) salaryPeriodUtils.calculateFillingHours(
-            regularWorkingHours = regularWorkingHours.toBigDecimal(),
-            workingHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
-                workShifts = workShifts,
-                workType = WorkType.PAID_WORK
-            ),
-            vacationHours = vacationHours,
-            sickHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
-                workShifts = workShifts,
-                workType = WorkType.SICK_LEAVE
-            ),
-            officialDutyHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
-                workShifts = workShifts,
-                workType = WorkType.OFFICIAL_DUTIES
-            ),
-            compensatoryLeaveHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(
-                workShifts = workShifts,
-                absenceType = AbsenceType.COMPENSATORY_LEAVE
-            )
-        ) else BigDecimal.valueOf(0)
-
-        val fillingHoursRow = if (fillingHours.toFloat() != 0f) {
-            buildPayrollExportRow(
-                date = workShiftsGroupedByDate.entries.last().key,
-                employeeNumber = employeeNumber,
-                employeeName = "${employee.firstName} ${employee.lastName}",
-                salaryTypeNumber = SalaryTypes.FILLING_HOURS,
-                hoursWorked = fillingHours.toFloat(),
-                costCenter = ""
-            )
-        } else ""
-
-        val fileContent = dailyRows + fillingHoursRow
 
         sendFileToS3(
             fileName = fileName,
@@ -279,307 +219,264 @@ class PayrollExportController {
         const val DAY_OFF_BONUS = 20121
     }
 
-    /**
-     * Builds payroll export rows for a single date.
-     *
-     * @param workShifts
-     * @param employeeNumber
-     * @param employeeName
-     * @param isDriver
-     * @param regularWorkingTime
-     * @param vacationHours
-     * @param driverRegularHoursSum
-     * @param driverOverTimeHalfHoursSum
-     */
-    private suspend fun buildPayrollExportRowsForSingleDate(
-        workShifts: Map.Entry<LocalDate, List<WorkShiftEntity>>,
-        employeeNumber: String,
-        employeeName: String,
-        isDriver: Boolean,
-        regularWorkingTime: Float?,
-        vacationHours: Float,
-        driverRegularHoursSum: Float,
-        driverOverTimeHalfHoursSum: Float
-    ): Pair<String, Pair<Float, Float>> {
-        var driverRegularHoursSumCurrent = driverRegularHoursSum
-        var driverOverTimeHalfSumCurrent = driverOverTimeHalfHoursSum
+    private suspend fun buildRows(
+        workShifts: List<WorkShiftEntity>,
+        employee: UserRepresentation
+    ): String {
+        var rows = ""
 
-        val paidWorkRowsResult = buildWorkTypeRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName,
-            workType = WorkType.PAID_WORK,
-            salaryTypeNumber = SalaryTypes.PAID_WORK,
-            isDriver = isDriver,
-            regularWorkingTime = regularWorkingTime,
-            vacationHours = vacationHours,
-            workTimeType = PayrollExportCalculations.WorkTimeType.REGULAR,
-            driverRegularHoursSum = driverRegularHoursSumCurrent,
-            driverOverTimeHalfHoursSum = driverOverTimeHalfSumCurrent
+        val employeeNumber = employee.attributes!!["employeeNumber"]!!.first()
+        val salaryGroup = SalaryGroup.valueOf(employee.attributes[SALARY_GROUP_ATTRIBUTE]!!.first())
+        val isDriver = salaryGroup == SalaryGroup.DRIVER || salaryGroup == SalaryGroup.VPLOGISTICS
+        val workShiftsGroupedByDate = workShifts.sortedBy { it.date }.groupBy { it.date }
+
+        val vacationHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(
+            workShifts = workShifts,
+            absenceType = AbsenceType.VACATION
         )
+        val regularWorkingHours = employee.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat()
+        val employeeName = "${employee.firstName} ${employee.lastName}"
 
-        val paidWorkRows = paidWorkRowsResult.first
-        driverRegularHoursSumCurrent = paidWorkRowsResult.second.first
-        driverOverTimeHalfSumCurrent = paidWorkRowsResult.second.second
+        workShifts.groupBy { it.date }.entries.forEach {
+            val date = it.key
+            val workShiftsForDate = it.value
 
-        val eveningAllowanceRows = buildWorkTypeRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName,
-            workType = WorkType.EVENING_ALLOWANCE,
-            salaryTypeNumber = SalaryTypes.EVENING_ALLOWANCE,
-            isDriver = isDriver,
-            regularWorkingTime = regularWorkingTime,
-            vacationHours = vacationHours,
-            workTimeType = PayrollExportCalculations.WorkTimeType.REGULAR,
-            driverRegularHoursSum = driverRegularHoursSumCurrent,
-            driverOverTimeHalfHoursSum = driverOverTimeHalfSumCurrent
-        ).first
+            val paidHours = getWorkTypeHours(
+                workShifts = workShiftsForDate,
+                workType = WorkType.PAID_WORK,
+                isDriver = isDriver,
+                regularWorkingTime = regularWorkingHours,
+                vacationHours = vacationHours.toFloat()
+            )
 
-
-        val nightAllowanceRows = buildWorkTypeRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName,
-            workType = WorkType.NIGHT_ALLOWANCE,
-            salaryTypeNumber =
-                if (isDriver) SalaryTypes.DRIVER_NIGHT_ALLOWANCE else SalaryTypes.TERMINAL_NIGHT_ALLOWANCE,
-            isDriver = isDriver,
-            regularWorkingTime = regularWorkingTime,
-            vacationHours = vacationHours,
-            workTimeType = PayrollExportCalculations.WorkTimeType.REGULAR,
-            driverRegularHoursSum = driverRegularHoursSumCurrent,
-            driverOverTimeHalfHoursSum = driverOverTimeHalfSumCurrent
-        ).first
-
-        val jobSpecificAllowanceRows = buildWorkTypeRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName,
-            workType = WorkType.JOB_SPECIFIC_ALLOWANCE,
-            salaryTypeNumber =
-                if (isDriver) SalaryTypes.ADR_ALLOWANCE else SalaryTypes.WORKING_CONDITIONS_ALLOWANCE,
-            isDriver = isDriver,
-            regularWorkingTime = regularWorkingTime,
-            vacationHours = vacationHours,
-            workTimeType = PayrollExportCalculations.WorkTimeType.REGULAR,
-            driverRegularHoursSum = driverRegularHoursSumCurrent,
-            driverOverTimeHalfHoursSum = driverOverTimeHalfSumCurrent
-        ).first
-
-        val frozenAllowanceRows = buildWorkTypeRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName,
-            workType = WorkType.FROZEN_ALLOWANCE,
-            salaryTypeNumber = SalaryTypes.FROZEN_ALLOWANCE,
-            isDriver = isDriver,
-            regularWorkingTime = regularWorkingTime,
-            vacationHours = vacationHours,
-            workTimeType = PayrollExportCalculations.WorkTimeType.REGULAR,
-            driverRegularHoursSum = driverRegularHoursSumCurrent,
-            driverOverTimeHalfHoursSum = driverOverTimeHalfSumCurrent
-        ).first
-
-        val holidayAllowanceRows = buildWorkTypeRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName,
-            workType = WorkType.HOLIDAY_ALLOWANCE,
-            salaryTypeNumber = SalaryTypes.HOLIDAY_ALLOWANCE,
-            isDriver = isDriver,
-            regularWorkingTime = regularWorkingTime,
-            vacationHours = vacationHours,
-            workTimeType = PayrollExportCalculations.WorkTimeType.REGULAR,
-            driverRegularHoursSum = driverRegularHoursSumCurrent,
-            driverOverTimeHalfHoursSum = driverOverTimeHalfSumCurrent
-        ).first
-
-        val standbyRows = buildWorkTypeRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName,
-            workType = WorkType.STANDBY,
-            salaryTypeNumber = SalaryTypes.STANDBY,
-            isDriver = isDriver,
-            regularWorkingTime = regularWorkingTime,
-            vacationHours = vacationHours,
-            workTimeType = PayrollExportCalculations.WorkTimeType.REGULAR,
-            driverRegularHoursSum = driverRegularHoursSumCurrent,
-            driverOverTimeHalfHoursSum = driverOverTimeHalfSumCurrent
-        ).first
-
-        val overTimeHalfRowsResult = buildWorkTypeRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName,
-            workType = WorkType.PAID_WORK,
-            salaryTypeNumber = SalaryTypes.OVER_TIME_HALF,
-            isDriver = isDriver,
-            regularWorkingTime = regularWorkingTime,
-            vacationHours = vacationHours,
-            workTimeType = PayrollExportCalculations.WorkTimeType.OVER_TIME_HALF,
-            driverRegularHoursSum = driverRegularHoursSumCurrent,
-            driverOverTimeHalfHoursSum = driverOverTimeHalfSumCurrent
-        )
-
-        val overTimeHalfRows = overTimeHalfRowsResult.first
-        driverRegularHoursSumCurrent = overTimeHalfRowsResult.second.first
-        driverOverTimeHalfSumCurrent = overTimeHalfRowsResult.second.second
-
-        val overTimeFullRowsResult = buildWorkTypeRows(
-            date = workShifts.key,
-            workShifts = workShifts.value,
-            employeeNumber = employeeNumber,
-            employeeName = employeeName,
-            workType = WorkType.PAID_WORK,
-            salaryTypeNumber = SalaryTypes.OVER_TIME_FULL,
-            isDriver = isDriver,
-            regularWorkingTime = regularWorkingTime,
-            vacationHours = vacationHours,
-            workTimeType = PayrollExportCalculations.WorkTimeType.OVER_TIME_FULL,
-            driverRegularHoursSum = driverRegularHoursSumCurrent,
-            driverOverTimeHalfHoursSum = driverOverTimeHalfSumCurrent
-        )
-
-        val overTimeFullRows = overTimeFullRowsResult.first
-        driverRegularHoursSumCurrent = overTimeFullRowsResult.second.first
-        driverOverTimeHalfSumCurrent = overTimeFullRowsResult.second.second
-
-        val partialDailyAllowance = workShifts.value.filter {
-            it.perDiemAllowance == PerDiemAllowanceType.PARTIAL
-        }.size
-
-        val fullDailyAllowance = workShifts.value.filter {
-            it.perDiemAllowance == PerDiemAllowanceType.FULL
-        }.size
-
-        var dailyAllowanceRows = ""
-        if (partialDailyAllowance != 0) {
-            dailyAllowanceRows += buildPayrollExportRow(
-                date = workShifts.key,
+            rows += buildDailyRows(
+                hours = paidHours,
+                date = date,
                 employeeNumber = employeeNumber,
                 employeeName = employeeName,
-                salaryTypeNumber = SalaryTypes.PARTIAL_DAILY_ALLOWANCE,
-                hoursWorked = partialDailyAllowance.toFloat(),
+                salaryTypeNumber = SalaryTypes.PAID_WORK
+            )
+
+            val eveningAllowanceHours = getWorkTypeHours(
+                workShifts = workShiftsForDate,
+                workType = WorkType.EVENING_ALLOWANCE,
+                isDriver = isDriver,
+                regularWorkingTime = regularWorkingHours,
+                vacationHours = vacationHours.toFloat()
+            )
+
+            rows += buildDailyRows(
+                hours = eveningAllowanceHours,
+                date = date,
+                employeeNumber = employeeNumber,
+                employeeName = employeeName,
+                salaryTypeNumber = SalaryTypes.EVENING_ALLOWANCE
+            )
+
+            val nightAllowanceHours = getWorkTypeHours(
+                workShifts = workShiftsForDate,
+                workType = WorkType.NIGHT_ALLOWANCE,
+                isDriver = isDriver,
+                regularWorkingTime = regularWorkingHours,
+                vacationHours = vacationHours.toFloat()
+            )
+
+            rows += buildDailyRows(
+                hours = nightAllowanceHours,
+                date = date,
+                employeeNumber = employeeNumber,
+                employeeName = employeeName,
+                salaryTypeNumber =
+                    if (isDriver) SalaryTypes.DRIVER_NIGHT_ALLOWANCE else SalaryTypes.TERMINAL_NIGHT_ALLOWANCE
+            )
+
+            val jobSpecificAllowanceHours = getWorkTypeHours(
+                workShifts = workShiftsForDate,
+                workType = WorkType.JOB_SPECIFIC_ALLOWANCE,
+                isDriver = isDriver,
+                regularWorkingTime = regularWorkingHours,
+                vacationHours = vacationHours.toFloat()
+            )
+
+            rows += buildDailyRows(
+                hours = jobSpecificAllowanceHours,
+                date = date,
+                employeeNumber = employeeNumber,
+                employeeName = employeeName,
+                salaryTypeNumber =
+                    if (isDriver) SalaryTypes.ADR_ALLOWANCE else SalaryTypes.WORKING_CONDITIONS_ALLOWANCE
+            )
+
+            val frozenAllowanceHours = getWorkTypeHours(
+                workShifts = workShiftsForDate,
+                workType = WorkType.FROZEN_ALLOWANCE,
+                isDriver = isDriver,
+                regularWorkingTime = regularWorkingHours,
+                vacationHours = vacationHours.toFloat()
+            )
+
+            rows += buildDailyRows(
+                hours = frozenAllowanceHours,
+                date = date,
+                employeeNumber = employeeNumber,
+                employeeName = employeeName,
+                salaryTypeNumber = SalaryTypes.FROZEN_ALLOWANCE
+            )
+
+            val holidayAllowanceHours = getWorkTypeHours(
+                workShifts = workShiftsForDate,
+                workType = WorkType.HOLIDAY_ALLOWANCE,
+                isDriver = isDriver,
+                regularWorkingTime = regularWorkingHours,
+                vacationHours = vacationHours.toFloat()
+            )
+
+            rows += buildDailyRows(
+                hours = holidayAllowanceHours,
+                date = date,
+                employeeNumber = employeeNumber,
+                employeeName = employeeName,
+                salaryTypeNumber = SalaryTypes.HOLIDAY_ALLOWANCE
+            )
+
+            val standbyHours = getWorkTypeHours(
+                workShifts = workShiftsForDate,
+                workType = WorkType.STANDBY,
+                isDriver = isDriver,
+                regularWorkingTime = regularWorkingHours,
+                vacationHours = vacationHours.toFloat()
+            )
+
+            rows += buildDailyRows(
+                hours = standbyHours,
+                date = date,
+                employeeNumber = employeeNumber,
+                employeeName = employeeName,
+                salaryTypeNumber = SalaryTypes.STANDBY
+            )
+
+            val partialDailyAllowance = workShifts.filter { shift ->
+                shift.perDiemAllowance == PerDiemAllowanceType.PARTIAL
+            }.size
+
+            if (partialDailyAllowance != 0) {
+                rows += buildPayrollExportRow(
+                    date = date,
+                    employeeNumber = employeeNumber,
+                    employeeName = employeeName,
+                    salaryTypeNumber = SalaryTypes.PARTIAL_DAILY_ALLOWANCE,
+                    hoursWorked = partialDailyAllowance.toFloat(),
+                    costCenter = ""
+                )
+            }
+
+            val fullDailyAllowance = workShifts.filter { shift ->
+                shift.perDiemAllowance == PerDiemAllowanceType.FULL
+            }.size
+
+            if (fullDailyAllowance != 0) {
+                rows += buildPayrollExportRow(
+                    date = date,
+                    employeeNumber = employeeNumber,
+                    employeeName = employeeName,
+                    salaryTypeNumber = SalaryTypes.FULL_DAILY_ALLOWANCE,
+                    hoursWorked = fullDailyAllowance.toFloat(),
+                    costCenter = ""
+                )
+            }
+
+            val dayOffBonus = salaryPeriodUtils.calculateDayOffBonus(workShifts = workShifts)
+            if (dayOffBonus.toFloat() != 0f) {
+                rows += buildPayrollExportRow(
+                    date = date,
+                    employeeNumber = employeeNumber,
+                    employeeName = employeeName,
+                    salaryTypeNumber = SalaryTypes.DAY_OFF_BONUS,
+                    hoursWorked = dayOffBonus.toFloat(),
+                    costCenter = ""
+                )
+            }
+        }
+
+        val fillingHours = if (regularWorkingHours != null) salaryPeriodUtils.calculateFillingHours(
+            regularWorkingHours = regularWorkingHours.toBigDecimal(),
+            workingHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
+                workShifts = workShifts,
+                workType = WorkType.PAID_WORK
+            ),
+            vacationHours = vacationHours,
+            sickHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
+                workShifts = workShifts,
+                workType = WorkType.SICK_LEAVE
+            ),
+            officialDutyHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
+                workShifts = workShifts,
+                workType = WorkType.OFFICIAL_DUTIES
+            ),
+            compensatoryLeaveHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(
+                workShifts = workShifts,
+                absenceType = AbsenceType.COMPENSATORY_LEAVE
+            )
+        ) else BigDecimal.valueOf(0)
+
+        if (fillingHours.toFloat() != 0f) {
+            rows += buildPayrollExportRow(
+                date = workShiftsGroupedByDate.entries.last().key,
+                employeeNumber = employeeNumber,
+                employeeName = "${employee.firstName} ${employee.lastName}",
+                salaryTypeNumber = SalaryTypes.FILLING_HOURS,
+                hoursWorked = fillingHours.toFloat(),
                 costCenter = ""
             )
         }
 
-        if (fullDailyAllowance != 0) {
-            dailyAllowanceRows += buildPayrollExportRow(
-                date = workShifts.key,
-                employeeNumber = employeeNumber,
-                employeeName = employeeName,
-                salaryTypeNumber = SalaryTypes.FULL_DAILY_ALLOWANCE,
-                hoursWorked = fullDailyAllowance.toFloat(),
-                costCenter = ""
-            )
-        }
-
-        val dayOffBonus = salaryPeriodUtils.calculateDayOffBonus(workShifts = workShifts.value)
-        val dayOffBonusRow = if (dayOffBonus.toFloat() != 0f) {
-            buildPayrollExportRow(
-                date = workShifts.key,
-                employeeNumber = employeeNumber,
-                employeeName = employeeName,
-                salaryTypeNumber = SalaryTypes.DAY_OFF_BONUS,
-                hoursWorked = dayOffBonus.toFloat(),
-                costCenter = ""
-            )
-        } else ""
-
-        val rows = arrayOf(
-            paidWorkRows,
-            eveningAllowanceRows,
-            nightAllowanceRows,
-            frozenAllowanceRows,
-            holidayAllowanceRows,
-            standbyRows,
-            jobSpecificAllowanceRows,
-            overTimeHalfRows,
-            overTimeFullRows,
-            dailyAllowanceRows,
-            dayOffBonusRow
-        ).joinToString("")
-
-        return Pair(rows, Pair(driverRegularHoursSumCurrent, driverOverTimeHalfSumCurrent))
+        return rows
     }
 
-    /**
-     * Builds rows for a single work type.
-     * The returned item is a pair of:
-     * 1. String value which contains the rows.
-     * 2. Pair of floats, which contains the sum of regular working hours and the sum of overtime hours that get the half overtime rate.
-     *
-     * These sums in the second item of the returned pair are only when the work type is PAID_WORK.
-     * These values will be inputted to this same function in the next iteration of the loop which builds the rows.
-     * This accumulation is needed to calculate the overtime hours.
-     *
-     * Also, the workTimeType is only relevant when the work type is PAID_WORK.
-     * It is used to determine if the current iteration should return regular time or some type of overtime.
-     *
-     * @param date
-     * @param workShifts
-     * @param employeeNumber
-     * @param employeeName
-     * @param workType
-     * @param salaryTypeNumber
-     * @param isDriver
-     * @param regularWorkingTime
-     * @param vacationHours
-     * @param workTimeType
-     * @param driverRegularHoursSum
-     * @param driverOverTimeHalfHoursSum
-     *
-     */
-    private suspend fun buildWorkTypeRows(
+    private fun buildDailyRows(
+        hours: Map<String, Float>,
         date: LocalDate,
-        workShifts: List<WorkShiftEntity>,
         employeeNumber: String,
         employeeName: String,
+        salaryTypeNumber: Int
+    ): String {
+
+        return hours.entries.joinToString("") {
+            val costCenter = it.key
+            val hoursWorked = it.value
+
+            buildPayrollExportRow(
+                date = date,
+                employeeNumber = employeeNumber,
+                employeeName = employeeName,
+                salaryTypeNumber = salaryTypeNumber,
+                hoursWorked = hoursWorked,
+                costCenter = costCenter
+            )
+        }
+    }
+
+
+    private suspend fun getWorkTypeHours(
+        workShifts: List<WorkShiftEntity>,
         workType: WorkType,
-        salaryTypeNumber: Int,
         isDriver: Boolean,
         regularWorkingTime: Float?,
-        vacationHours: Float,
-        workTimeType: PayrollExportCalculations.WorkTimeType,
-        driverRegularHoursSum: Float,
-        driverOverTimeHalfHoursSum: Float
-    ): Pair<String, Pair<Float, Float>> {
+        vacationHours: Float
+    ): Map<String, Float> {
         val costCenterHours = mutableMapOf<String, Float>()
-
-        var driverRegularHoursSumCurrent = driverRegularHoursSum
-        var driverOverTimeHalfSumCurrent = driverOverTimeHalfHoursSum
 
         workShifts.forEach {
             val calculatedHours = when(workType) {
                 WorkType.PAID_WORK -> {
                     val result = payrollExportCalculations.calculatePaidWorkForWorkShift(
                         workShift = it,
-                        workTimeType = workTimeType,
                         isDriver = isDriver,
-                        driverRegularHoursSum = driverRegularHoursSumCurrent,
-                        driverOverTimeHalfHoursSum = driverOverTimeHalfSumCurrent,
                         regularWorkingTime = regularWorkingTime,
                         vacationHours = vacationHours
                     )
 
-                    if (workTimeType == PayrollExportCalculations.WorkTimeType.REGULAR) {
-                        driverRegularHoursSumCurrent = result.second.first
-                    } else if (workTimeType == PayrollExportCalculations.WorkTimeType.OVER_TIME_HALF) {
-                        driverOverTimeHalfSumCurrent = result.second.first
-                    }
-
-                    result.first
+                    result
                 }
 
                 WorkType.STANDBY -> {
@@ -611,23 +508,14 @@ class PayrollExportController {
             }
 
             calculatedHours.forEach { (costCenter, hours) ->
-                costCenterHours[costCenter] = (costCenterHours[costCenter] ?: 0f) + hours
+                if (hours != 0f) {
+                    costCenterHours[costCenter] = (costCenterHours[costCenter] ?: 0f) + hours
+                }
             }
 
         }
 
-        val costCenterRows = costCenterHours.filterNot { it.value <= 0f }.map {
-            buildPayrollExportRow(
-                date = date,
-                employeeNumber = employeeNumber,
-                employeeName = employeeName,
-                salaryTypeNumber = salaryTypeNumber,
-                hoursWorked = it.value,
-                costCenter = it.key
-            )
-        }.joinToString(separator = "")
-
-        return Pair(costCenterRows, Pair(driverRegularHoursSumCurrent, driverOverTimeHalfSumCurrent))
+        return costCenterHours
     }
 
 
