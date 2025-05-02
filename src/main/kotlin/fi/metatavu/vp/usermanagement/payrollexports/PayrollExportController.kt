@@ -237,6 +237,10 @@ class PayrollExportController {
         val regularWorkingHours = employee.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat()
         val employeeName = "${employee.firstName} ${employee.lastName}"
 
+        var paidHoursForDriver = 0f
+
+        val driverOverTimeFullLimit = regularWorkingHours?.plus(if (vacationHours > BigDecimal.valueOf(40)) 10 else 12)
+
         workShiftsGroupedByDate.entries.forEach {
             val date = it.key
             val workShiftsForDate = it.value
@@ -249,13 +253,94 @@ class PayrollExportController {
                 vacationHours = vacationHours.toFloat()
             )
 
-            rows += buildDailyRows(
-                hours = paidHours,
-                date = date,
-                employeeNumber = employeeNumber,
-                employeeName = employeeName,
-                salaryTypeNumber = SalaryTypes.PAID_WORK
+            val trainingHours = getWorkTypeHours(
+                workShifts = workShiftsForDate,
+                workType = WorkType.TRAINING,
+                isDriver = isDriver,
+                regularWorkingTime = regularWorkingHours,
+                vacationHours = vacationHours.toFloat()
             )
+
+            if (isDriver && regularWorkingHours != null && driverOverTimeFullLimit != null) {
+                val regularPaidHours = mutableMapOf<String, Float>()
+                val overTimeHalfHours = mutableMapOf<String, Float>()
+                val overTimeFullHours = mutableMapOf<String, Float>()
+
+                paidHours.entries.forEach { entry ->
+                    val costCenter = entry.key
+                    val hours = entry.value
+
+                    if (paidHoursForDriver + hours < regularWorkingHours) {
+                        regularPaidHours[costCenter] = (regularPaidHours[costCenter] ?: 0f) + hours
+                    } else {
+                        var regularHoursPart = regularWorkingHours - paidHoursForDriver
+                        if (regularHoursPart < 0) {
+                            regularHoursPart = 0f
+                        }
+
+                        regularPaidHours[costCenter] = (regularPaidHours[costCenter] ?: 0f) + regularHoursPart
+
+                        val overTime = hours - regularHoursPart
+
+                        if (paidHoursForDriver + regularHoursPart + overTime < driverOverTimeFullLimit) {
+                            overTimeHalfHours[costCenter] = (overTimeHalfHours[costCenter] ?: 0f) + overTime
+                        } else {
+                            var overTimeHalfHoursPart = driverOverTimeFullLimit - (paidHoursForDriver + regularHoursPart)
+
+                            if (overTimeHalfHoursPart < 0) {
+                                overTimeHalfHoursPart = 0f
+                            }
+
+                            overTimeHalfHours[costCenter] = (overTimeHalfHours[costCenter] ?: 0f) + overTimeHalfHoursPart
+
+                            val overTimeFull = overTime - overTimeHalfHoursPart
+                            overTimeFullHours[costCenter] = (overTimeFullHours[costCenter] ?: 0f) + overTimeFull
+                        }
+                    }
+
+                    paidHoursForDriver += hours
+                }
+
+                trainingHours.entries.forEach { trainingHour ->
+                    regularPaidHours[trainingHour.key] = (regularPaidHours[trainingHour.key] ?: 0f) + trainingHour.value
+                }
+
+                rows += buildDailyRows(
+                    hours = regularPaidHours,
+                    date = date,
+                    employeeNumber = employeeNumber,
+                    employeeName = employeeName,
+                    salaryTypeNumber = SalaryTypes.PAID_WORK
+                )
+
+                rows += buildDailyRows(
+                    hours = overTimeHalfHours,
+                    date = date,
+                    employeeNumber = employeeNumber,
+                    employeeName = employeeName,
+                    salaryTypeNumber = SalaryTypes.OVER_TIME_HALF
+                )
+
+                rows += buildDailyRows(
+                    hours = overTimeFullHours,
+                    date = date,
+                    employeeNumber = employeeNumber,
+                    employeeName = employeeName,
+                    salaryTypeNumber = SalaryTypes.OVER_TIME_FULL
+                )
+            } else {
+                trainingHours.entries.forEach { trainingHour ->
+                    paidHours[trainingHour.key] = (paidHours[trainingHour.key] ?: 0f) + trainingHour.value
+                }
+
+                rows += buildDailyRows(
+                    hours = paidHours,
+                    date = date,
+                    employeeNumber = employeeNumber,
+                    employeeName = employeeName,
+                    salaryTypeNumber = SalaryTypes.PAID_WORK
+                )
+            }
 
             val eveningAllowanceHours = getWorkTypeHours(
                 workShifts = workShiftsForDate,
@@ -445,6 +530,10 @@ class PayrollExportController {
             val costCenter = it.key
             val hoursWorked = it.value
 
+            if (hoursWorked == 0f) {
+                return@joinToString ""
+            }
+
             buildPayrollExportRow(
                 date = date,
                 employeeNumber = employeeNumber,
@@ -463,7 +552,7 @@ class PayrollExportController {
         isDriver: Boolean,
         regularWorkingTime: Float?,
         vacationHours: Float
-    ): Map<String, Float> {
+    ): MutableMap<String, Float> {
         val costCenterHours = mutableMapOf<String, Float>()
 
         workShifts.forEach {
@@ -477,6 +566,17 @@ class PayrollExportController {
                     )
 
                     result
+                }
+
+                WorkType.TRAINING -> {
+                    val trainingMap = mutableMapOf<String, Float>()
+                    val hours = workShiftHoursController.listWorkShiftHours(
+                        workShiftFilter = it,
+                        workType = WorkType.TRAINING
+                    ).first.first().actualHours ?: 0f
+                    trainingMap[it.defaultCostCenter ?: ""] = hours
+
+                    trainingMap
                 }
 
                 WorkType.STANDBY -> {
@@ -508,9 +608,7 @@ class PayrollExportController {
             }
 
             calculatedHours.forEach { (costCenter, hours) ->
-                if (hours != 0f) {
-                    costCenterHours[costCenter] = (costCenterHours[costCenter] ?: 0f) + hours
-                }
+                costCenterHours[costCenter] = (costCenterHours[costCenter] ?: 0f) + hours
             }
 
         }

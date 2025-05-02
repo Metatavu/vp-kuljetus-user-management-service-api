@@ -94,7 +94,7 @@ class PayrollExportCalculations {
             totalPaidWork[it.key] = currentCostCenterAmount + it.value
         }
 
-        val breakIsPaid = 8 <= ChronoUnit.HOURS.between(workShift.startedAt!!, workShift.endedAt!!)
+        val breakIsPaid = 8f <= (modifiedPaidHours.entries.sumOf { it.value.toBigDecimal() } + modifiedBreakHours.entries.sumOf { it.value.toBigDecimal() }).toFloat()
 
         if (breakIsPaid) {
             modifiedBreakHours.forEach {
@@ -113,11 +113,6 @@ class PayrollExportCalculations {
             workType = WorkType.OFFICIAL_DUTIES
         ).first.firstOrNull()?.actualHours ?: 0f
 
-        val trainingHours = workShiftHoursController.listWorkShiftHours(
-            workShiftFilter = workShift,
-            workType = WorkType.TRAINING
-        ).first.firstOrNull()?.actualHours ?: 0f
-
         val defaultCostCenter = workShift.defaultCostCenter ?: ""
 
         val isHoliday = workShift.startedAt?.dayOfWeek == DayOfWeek.SUNDAY || holidayController.list().first.find { it.date == workShift.startedAt?.toLocalDate() } != null
@@ -132,7 +127,7 @@ class PayrollExportCalculations {
 
         val defaultCostCenterAmount = (totalPaidWork[defaultCostCenter] ?: 0f)
 
-        totalPaidWork[defaultCostCenter] = defaultCostCenterAmount + sickHours + officialDutyHours + trainingHours
+        totalPaidWork[defaultCostCenter] = defaultCostCenterAmount + sickHours + officialDutyHours
 
         return totalPaidWork
     }
@@ -298,5 +293,12 @@ class PayrollExportCalculations {
         }
 
         return Pair(calculatedHoursSum, calculatedHours)
+    }
+
+    private fun calculateDriverRegularHoursPart(
+        currentSum: Float,
+        overTimeHalfLimit: Float
+    ): Float {
+        return overTimeHalfLimit - currentSum
     }
 }
