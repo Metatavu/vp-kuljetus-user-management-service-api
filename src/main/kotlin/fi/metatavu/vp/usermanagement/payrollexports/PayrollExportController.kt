@@ -340,6 +340,40 @@ class PayrollExportController {
                     employeeName = employeeName,
                     salaryTypeNumber = SalaryTypes.PAID_WORK
                 )
+
+                val overTimeHalfRows = getWorkTypeHours(
+                    workShifts = workShiftsForDate,
+                    workType = WorkType.PAID_WORK,
+                    officeWorkerOverTimeType = PayrollExportCalculations.OfficeWorkerOverTimeType.OVERTIME_HALF,
+                    isDriver = isDriver,
+                    regularWorkingTime = regularWorkingHours,
+                    vacationHours = vacationHours.toFloat()
+                )
+
+                rows += buildDailyRows(
+                    hours = overTimeHalfRows,
+                    date = date,
+                    employeeNumber = employeeNumber,
+                    employeeName = employeeName,
+                    salaryTypeNumber = SalaryTypes.OVER_TIME_HALF,
+
+                )
+
+                val overTimeFullRows = getWorkTypeHours(
+                    workShifts = workShiftsForDate,
+                    workType = WorkType.PAID_WORK,
+                    officeWorkerOverTimeType = PayrollExportCalculations.OfficeWorkerOverTimeType.OVERTIME_FULL,
+                    isDriver = isDriver,
+                    regularWorkingTime = regularWorkingHours,
+                    vacationHours = vacationHours.toFloat()
+                )
+                rows += buildDailyRows(
+                    hours = overTimeFullRows,
+                    date = date,
+                    employeeNumber = employeeNumber,
+                    employeeName = employeeName,
+                    salaryTypeNumber = SalaryTypes.OVER_TIME_FULL
+                )
             }
 
             val eveningAllowanceHours = getWorkTypeHours(
@@ -551,7 +585,8 @@ class PayrollExportController {
         workType: WorkType,
         isDriver: Boolean,
         regularWorkingTime: Float?,
-        vacationHours: Float
+        vacationHours: Float,
+        officeWorkerOverTimeType: PayrollExportCalculations.OfficeWorkerOverTimeType? = null
     ): MutableMap<String, Float> {
         val costCenterHours = mutableMapOf<String, Float>()
 
@@ -562,7 +597,8 @@ class PayrollExportController {
                         workShift = it,
                         isDriver = isDriver,
                         regularWorkingTime = regularWorkingTime,
-                        vacationHours = vacationHours
+                        vacationHours = vacationHours,
+                        officeWorkerOverTimeType = officeWorkerOverTimeType
                     )
 
                     result

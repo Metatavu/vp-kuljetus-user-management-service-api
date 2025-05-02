@@ -53,11 +53,17 @@ class PayrollExportCalculations {
         return modifiedAllowanceHours
     }
 
+    enum class OfficeWorkerOverTimeType {
+        OVERTIME_HALF,
+        OVERTIME_FULL
+    }
+
     suspend fun calculatePaidWorkForWorkShift(
         workShift: WorkShiftEntity,
         isDriver: Boolean,
         regularWorkingTime: Float?,
-        vacationHours: Float
+        vacationHours: Float,
+        officeWorkerOverTimeType: OfficeWorkerOverTimeType? = null
     ): Map<String, Float> {
         val totalPaidWork = mutableMapOf<String, Float>()
 
@@ -128,6 +134,66 @@ class PayrollExportCalculations {
         val defaultCostCenterAmount = (totalPaidWork[defaultCostCenter] ?: 0f)
 
         totalPaidWork[defaultCostCenter] = defaultCostCenterAmount + sickHours + officialDutyHours
+
+        if (!isDriver) {
+            val overTimeHalfLimit = 8f
+            val overTimeFullLimit = 10f
+
+            var total = 0f
+            val regularPaidHours = mutableMapOf<String, Float>()
+            val overTimeHalfHours = mutableMapOf<String, Float>()
+            val overTimeFullHours = mutableMapOf<String, Float>()
+
+            totalPaidWork.entries.forEach { item ->
+                val costCenter = item.key
+                val hours = item.value
+
+                if (total + hours < overTimeHalfLimit) {
+                    regularPaidHours[costCenter] = (regularPaidHours[costCenter] ?: 0f) + hours
+                } else {
+                    var regularHoursPart = overTimeHalfLimit - total
+
+                    if (regularHoursPart < 0) {
+                        regularHoursPart = 0f
+                    }
+
+                    regularPaidHours[costCenter] = (regularPaidHours[costCenter] ?: 0f) + regularHoursPart
+
+                    val overTime = hours - regularHoursPart
+
+                    if (total + regularHoursPart + overTime < overTimeFullLimit) {
+                        overTimeHalfHours[costCenter] = (overTimeHalfHours[costCenter] ?: 0f) + overTime
+                    } else {
+                        var overTimeHalfPart = overTimeFullLimit - total - regularHoursPart
+
+                        if (overTimeHalfPart < 0) {
+                            overTimeHalfPart = 0f
+                        }
+
+                        overTimeHalfHours[costCenter] = (overTimeHalfHours[costCenter] ?: 0f) + overTimeHalfPart
+
+                        val overTimeFullPart = overTime - overTimeHalfPart
+                        if (overTimeFullPart > 0) {
+                            overTimeFullHours[costCenter] = (overTimeFullHours[costCenter] ?: 0f) + overTimeFullPart
+                        }
+                    }
+                }
+
+                total += hours
+            }
+
+            return when (officeWorkerOverTimeType) {
+                OfficeWorkerOverTimeType.OVERTIME_HALF -> {
+                    overTimeHalfHours
+                }
+                OfficeWorkerOverTimeType.OVERTIME_FULL -> {
+                    overTimeFullHours
+                }
+                else -> {
+                    regularPaidHours
+                }
+            }
+        }
 
         return totalPaidWork
     }
