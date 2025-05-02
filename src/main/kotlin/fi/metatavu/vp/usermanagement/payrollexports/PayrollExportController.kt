@@ -237,7 +237,7 @@ class PayrollExportController {
         val regularWorkingHours = employee.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat()
         val employeeName = "${employee.firstName} ${employee.lastName}"
 
-        workShifts.groupBy { it.date }.entries.forEach {
+        workShiftsGroupedByDate.entries.forEach {
             val date = it.key
             val workShiftsForDate = it.value
 
