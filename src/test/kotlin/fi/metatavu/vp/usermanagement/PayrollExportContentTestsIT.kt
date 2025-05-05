@@ -313,7 +313,12 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val ftpFileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val resourcesFolder = File(
+            this::class.java.classLoader.getResource("")?.toURI()
+                ?: throw IllegalStateException("Resources folder not found")
+        ).absolutePath
+
+        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
 
         assertEquals(
             expectedFileContent,
@@ -483,7 +488,12 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val ftpFileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val resourcesFolder = File(
+            this::class.java.classLoader.getResource("")?.toURI()
+                ?: throw IllegalStateException("Resources folder not found")
+        ).absolutePath
+
+        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
 
         assertEquals(
             expectedFileContent,
@@ -690,7 +700,12 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val ftpFileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val resourcesFolder = File(
+            this::class.java.classLoader.getResource("")?.toURI()
+                ?: throw IllegalStateException("Resources folder not found")
+        ).absolutePath
+
+        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
 
         assertEquals(
             expectedFileContent,
@@ -950,7 +965,12 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val ftpFileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val resourcesFolder = File(
+            this::class.java.classLoader.getResource("")?.toURI()
+                ?: throw IllegalStateException("Resources folder not found")
+        ).absolutePath
+
+        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
 
         assertEquals(
             expectedFileContent,
@@ -1214,7 +1234,12 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val ftpFileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val resourcesFolder = File(
+            this::class.java.classLoader.getResource("")?.toURI()
+                ?: throw IllegalStateException("Resources folder not found")
+        ).absolutePath
+
+        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
 
         assertEquals(
             expectedFileContent,
@@ -1380,7 +1405,12 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val ftpFileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val resourcesFolder = File(
+            this::class.java.classLoader.getResource("")?.toURI()
+                ?: throw IllegalStateException("Resources folder not found")
+        ).absolutePath
+
+        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
 
         assertEquals(
             expectedFileContent,
@@ -1532,7 +1562,12 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val ftpFileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val resourcesFolder = File(
+            this::class.java.classLoader.getResource("")?.toURI()
+                ?: throw IllegalStateException("Resources folder not found")
+        ).absolutePath
+
+        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
 
         assertEquals(
             expectedContent,
