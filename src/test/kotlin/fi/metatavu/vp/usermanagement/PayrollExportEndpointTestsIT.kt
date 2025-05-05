@@ -68,7 +68,6 @@ class PayrollExportEndpointTestsIT: AbstractFunctionalTest() {
             ),
             expectedStatus = 400
         )
-        //
 
         val workShift2 = it.manager.workShifts.createEmployeeWorkShift(
             employeeId = employee.id,
