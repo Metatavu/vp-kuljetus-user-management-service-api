@@ -1447,14 +1447,22 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             )
         )
 
+        it.manager.holidays.create(holiday = Holiday(
+                date = date.toString(),
+                name = "Black Christmas",
+                compensationType = CompensationType.PUBLIC_HOLIDAY_ALLOWANCE
+            )
+        )
+
         val formattedDate = date.toLocalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
         val row1 = "$formattedDate;1212;Test Employee;11000;5.00;;;;;"
         val row2 = "$formattedDate;1212;Test Employee;30000;4.00;;;;;"
         val row3 = "$formattedDate;1212;Test Employee;30010;1.00;;;;;"
         val row4 = "$formattedDate;1212;Test Employee;30059;5.00;;;;;"
-        val row5 = "$formattedDate;1212;Test Employee;80102;1.00;;;;;"
-        val row6 = "$formattedDate;1212;Test Employee;20121;5.00;;;;;"
-        val row7 = "$formattedDate;1212;Test Employee;11010;35.00;;;;;"
+        val row5 = "$formattedDate;1212;Test Employee;60000;5.00;;;;;"
+        val row6 = "$formattedDate;1212;Test Employee;80102;1.00;;;;;"
+        val row7 = "$formattedDate;1212;Test Employee;20121;5.00;;;;;"
+        val row8 = "$formattedDate;1212;Test Employee;11010;35.00;;;;;"
 
         val expectedContent = row1 + "\n" +
                 row2 + "\n" +
@@ -1462,7 +1470,8 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
                 row4 + "\n" +
                 row5 + "\n" +
                 row6 + "\n" +
-                row7 + "\n"
+                row7 + "\n" +
+                row8 + "\n"
 
         val payrollExport = it.manager.payrollExports.createPayrollExport(
             PayrollExport(

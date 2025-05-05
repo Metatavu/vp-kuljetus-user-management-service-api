@@ -2,6 +2,7 @@ package fi.metatavu.vp.usermanagement.payrollexports.utilities
 
 import fi.metatavu.vp.usermanagement.holidays.HolidayController
 import fi.metatavu.vp.usermanagement.model.AbsenceType
+import fi.metatavu.vp.usermanagement.model.CompensationType
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.model.WorkType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
@@ -318,7 +319,7 @@ class PayrollExportCalculations {
                     }
 
                     if (workType == WorkType.HOLIDAY_ALLOWANCE) {
-                        val publicHolidays = holidayController.list().first
+                        val publicHolidays = holidayController.list().first.filter { holiday -> holiday.compensationType == CompensationType.PUBLIC_HOLIDAY_ALLOWANCE }
 
                         var minutes = 0f
 
