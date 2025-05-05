@@ -219,6 +219,13 @@ class PayrollExportController {
         const val DAY_OFF_BONUS = 20121
     }
 
+    /**
+     * Builds a string of rows for the payroll export file.
+     * Each row represents work done for a specific salary type for a specific cost center on a given day.
+     *
+     * @param workShifts
+     * @param employee
+     */
     private suspend fun buildRows(
         workShifts: List<WorkShiftEntity>,
         employee: UserRepresentation
@@ -306,7 +313,7 @@ class PayrollExportController {
                 }
 
                 rows += buildDailyRows(
-                    hours = regularPaidHours,
+                    costCenterHours = regularPaidHours,
                     date = date,
                     employeeNumber = employeeNumber,
                     employeeName = employeeName,
@@ -314,7 +321,7 @@ class PayrollExportController {
                 )
 
                 rows += buildDailyRows(
-                    hours = overTimeHalfHours,
+                    costCenterHours = overTimeHalfHours,
                     date = date,
                     employeeNumber = employeeNumber,
                     employeeName = employeeName,
@@ -322,7 +329,7 @@ class PayrollExportController {
                 )
 
                 rows += buildDailyRows(
-                    hours = overTimeFullHours,
+                    costCenterHours = overTimeFullHours,
                     date = date,
                     employeeNumber = employeeNumber,
                     employeeName = employeeName,
@@ -334,7 +341,7 @@ class PayrollExportController {
                 }
 
                 rows += buildDailyRows(
-                    hours = paidHours,
+                    costCenterHours = paidHours,
                     date = date,
                     employeeNumber = employeeNumber,
                     employeeName = employeeName,
@@ -351,7 +358,7 @@ class PayrollExportController {
                 )
 
                 rows += buildDailyRows(
-                    hours = overTimeHalfRows,
+                    costCenterHours = overTimeHalfRows,
                     date = date,
                     employeeNumber = employeeNumber,
                     employeeName = employeeName,
@@ -368,7 +375,7 @@ class PayrollExportController {
                     vacationHours = vacationHours.toFloat()
                 )
                 rows += buildDailyRows(
-                    hours = overTimeFullRows,
+                    costCenterHours = overTimeFullRows,
                     date = date,
                     employeeNumber = employeeNumber,
                     employeeName = employeeName,
@@ -385,7 +392,7 @@ class PayrollExportController {
             )
 
             rows += buildDailyRows(
-                hours = eveningAllowanceHours,
+                costCenterHours = eveningAllowanceHours,
                 date = date,
                 employeeNumber = employeeNumber,
                 employeeName = employeeName,
@@ -401,7 +408,7 @@ class PayrollExportController {
             )
 
             rows += buildDailyRows(
-                hours = nightAllowanceHours,
+                costCenterHours = nightAllowanceHours,
                 date = date,
                 employeeNumber = employeeNumber,
                 employeeName = employeeName,
@@ -418,7 +425,7 @@ class PayrollExportController {
             )
 
             rows += buildDailyRows(
-                hours = jobSpecificAllowanceHours,
+                costCenterHours = jobSpecificAllowanceHours,
                 date = date,
                 employeeNumber = employeeNumber,
                 employeeName = employeeName,
@@ -435,7 +442,7 @@ class PayrollExportController {
             )
 
             rows += buildDailyRows(
-                hours = frozenAllowanceHours,
+                costCenterHours = frozenAllowanceHours,
                 date = date,
                 employeeNumber = employeeNumber,
                 employeeName = employeeName,
@@ -451,7 +458,7 @@ class PayrollExportController {
             )
 
             rows += buildDailyRows(
-                hours = holidayAllowanceHours,
+                costCenterHours = holidayAllowanceHours,
                 date = date,
                 employeeNumber = employeeNumber,
                 employeeName = employeeName,
@@ -467,7 +474,7 @@ class PayrollExportController {
             )
 
             rows += buildDailyRows(
-                hours = standbyHours,
+                costCenterHours = standbyHours,
                 date = date,
                 employeeNumber = employeeNumber,
                 employeeName = employeeName,
@@ -552,15 +559,24 @@ class PayrollExportController {
         return rows
     }
 
+    /**
+     * Builds a string that contains rows for a single day and salary type number.
+     *
+     * @param costCenterHours a map that contains key-value pairs of cost centers and hours worked per cost center
+     * @param date
+     * @param employeeNumber
+     * @param employeeName
+     * @param salaryTypeNumber
+     */
     private fun buildDailyRows(
-        hours: Map<String, Float>,
+        costCenterHours: Map<String, Float>,
         date: LocalDate,
         employeeNumber: String,
         employeeName: String,
         salaryTypeNumber: Int
     ): String {
 
-        return hours.entries.joinToString("") {
+        return costCenterHours.entries.joinToString("") {
             val costCenter = it.key
             val hoursWorked = it.value
 
@@ -580,6 +596,22 @@ class PayrollExportController {
     }
 
 
+    /**
+     * This function is used to extract data to build rows for a specific salary type.
+     * Builds a map of key-value pairs that contain cost centers and hours worked per cost center.
+     * The data will be extracted from a list of work shifts.
+     * The map will contain hours accumulated only for the work type that is defined by the workType-parameter.
+     * Also, the parameters isDriver, regularWorkingTime, and vacationHours affect the calculations based on the salary rules used by VP-kuljetus.
+     * Parameter officeWorkerOverTimeType is used when extracting data about overtime done by office workers. Type can OVERTIME_HALF or OVERTIME:FULL.
+     * THis is relevant only if the parameter workType is PAID_WORK and isDriver is false.
+     *
+     * @param workShifts
+     * @param workType
+     * @param isDriver
+     * @param regularWorkingTime
+     * @param vacationHours
+     * @param officeWorkerOverTimeType
+     */
     private suspend fun getWorkTypeHours(
         workShifts: List<WorkShiftEntity>,
         workType: WorkType,

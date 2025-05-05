@@ -59,6 +59,17 @@ class PayrollExportCalculations {
         OVERTIME_FULL
     }
 
+    /**
+     * Calculates hours that are considered regular paid work that accumulates overtime. That includes work types PAID_WORK, BREAK, SICK_LEAVE and OFFICIAL_DUTIES.
+     * Overtime for drivers is calculated in a higher level function. Overtime for office workers can be extracted by this function by passing a value to the officeWorkerOverTimeType parameter.
+     * When officeWorkerOverTimeType is null, the function will return regular paid hours.
+     *
+     * @param workShift
+     * @param isDriver
+     * @param regularWorkingTime
+     * @param vacationHours
+     * @param officeWorkerOverTimeType
+     */
     suspend fun calculatePaidWorkForWorkShift(
         workShift: WorkShiftEntity,
         isDriver: Boolean,

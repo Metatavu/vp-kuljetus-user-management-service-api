@@ -21,6 +21,11 @@ import java.util.*
  */
 abstract class AbstractFunctionalTest {
 
+    /**
+     * Returns the latest day before the given date that is not on a weekend
+     *
+     * @param date date to subtract from
+     */
     fun getLastWorkDay(
         date: LocalDate
     ): LocalDate {
