@@ -37,7 +37,12 @@ class SftpServerTestResource: QuarkusTestResourceLifecycleManager {
     }
 
     override fun stop() {
-        val bindFolder = "src/test/resources/${ApiTestSettings.FTP_FOLDER}"
+        val resourcesFolder = File(
+            this::class.java.classLoader.getResource("")?.toURI()
+                ?: throw IllegalStateException("Resources folder not found")
+        ).absolutePath
+
+        val bindFolder = "$resourcesFolder/${ApiTestSettings.FTP_FOLDER}"
         File(bindFolder).deleteRecursively()
         ftpContainer.stop()
     }
