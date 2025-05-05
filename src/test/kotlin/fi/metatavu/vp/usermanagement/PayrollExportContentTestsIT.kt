@@ -1406,17 +1406,79 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
 
         val currentOffset = OffsetDateTime.now().atZoneSameInstant(ZoneId.of("Europe/Helsinki")).offset
 
-        val date1 = OffsetDateTime.of(
+        val date = OffsetDateTime.of(
             now.year,
             now.monthValue,
             now.dayOfMonth,
-            16,
+            23,
             0,
             0,
             0,
             currentOffset
         )
-        
 
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date.minusHours(5).toString(),
+                workEventType = WorkEventType.FROZEN
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date.toString(),
+                workEventType = WorkEventType.SHIFT_END
+            )
+        )
+
+        val workShift = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
+
+        it.manager.workShifts.updateEmployeeWorkShift(
+            employeeId = employee.id,
+            id = workShift.id!!,
+            workShift = workShift.copy(
+                approved = true
+            )
+        )
+
+        val formattedDate = date.toLocalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+        val row1 = "$formattedDate;1212;Test Employee;11000;5.00;;;;;"
+        val row2 = "$formattedDate;1212;Test Employee;30000;4.00;;;;;"
+        val row3 = "$formattedDate;1212;Test Employee;30010;1.00;;;;;"
+        val row4 = "$formattedDate;1212;Test Employee;30059;5.00;;;;;"
+        val row5 = "$formattedDate;1212;Test Employee;11010;35.00;;;;;"
+
+        val expectedContent = row1 + "\n" +
+                row2 + "\n" +
+                row3 + "\n" +
+                row4 + "\n" +
+                row5 + "\n"
+
+        val payrollExport = it.manager.payrollExports.createPayrollExport(
+            PayrollExport(
+                employeeId = employee.id,
+                workShiftIds = arrayOf(workShift.id)
+            )
+        )
+
+        val s3FileContent = S3FileDownload().downloadFile(ApiTestSettings.S3_FOLDER_PATH + payrollExport.csvFileName)
+
+        assertEquals(
+            expectedContent,
+            s3FileContent,
+            "Payroll S3 export file content should match the expected content"
+        )
+
+        val ftpFileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+
+        assertEquals(
+            expectedContent,
+            ftpFileContent,
+            "Payroll FTP export file content should match the expected content"
+        )
     }
 }

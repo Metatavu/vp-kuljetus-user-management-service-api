@@ -303,12 +303,13 @@ class PayrollExportCalculations {
                             workEventTime = it.time,
                             nextWorkEventTime = nextEventTime
                         )
+
                         calculatedHours[costCenter] = currentAmountForCostCenter + eveningAllowanceHours
                         calculatedHoursSum += eveningAllowanceHours
                     }
 
                     if (workType == WorkType.NIGHT_ALLOWANCE) {
-                        val nightAllowanceHours = workShiftHoursController.getEveningAllowanceHours(
+                        val nightAllowanceHours = workShiftHoursController.getNightAllowanceHours(
                             workEventTime = it.time,
                             nextWorkEventTime = nextEventTime
                         )
@@ -359,12 +360,5 @@ class PayrollExportCalculations {
         }
 
         return Pair(calculatedHoursSum, calculatedHours)
-    }
-
-    private fun calculateDriverRegularHoursPart(
-        currentSum: Float,
-        overTimeHalfLimit: Float
-    ): Float {
-        return overTimeHalfLimit - currentSum
     }
 }
