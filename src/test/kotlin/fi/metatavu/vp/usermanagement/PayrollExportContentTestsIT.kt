@@ -1222,4 +1222,201 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll FTP export file content should match the expected content"
         )
     }
+
+    @Test
+    fun testPayrollExportOfficeWorkerOverTime() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1212")
+
+        val day = getLastWorkDay(
+            date = LocalDate.now()
+        )
+
+        val day2 = getLastWorkDay(
+            date = day
+        )
+
+        val date = OffsetDateTime.of(
+            day.year,
+            day.monthValue,
+            day.dayOfMonth,
+            18,
+            0,
+            0,
+            0,
+            ZonedDateTime.now().offset
+        )
+
+        val date2 = OffsetDateTime.of(
+            day2.year,
+            day2.monthValue,
+            day2.dayOfMonth,
+            18,
+            0,
+            0,
+            0,
+            ZonedDateTime.now().offset
+        )
+
+        it.manager.employees.updateEmployee(
+            employeeId = employee.id!!,
+            employee = employee.copy(
+                salaryGroup = SalaryGroup.OFFICE,
+                regularWorkingHours = null
+            )
+        )
+
+        val event1 = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date2.minusHours(11).minusMinutes(30).toString(),
+                workEventType = WorkEventType.DRIVE
+            )
+        )
+
+        it.manager.workEvents.updateWorkEvent(
+            employeeId = employee.id,
+            id = event1.id!!,
+            workEvent = event1.copy(
+                costCenter = "A"
+            )
+        )
+
+        val event2 = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date2.minusHours(2).toString(),
+                workEventType = WorkEventType.DRIVE
+            )
+        )
+
+        it.manager.workEvents.updateWorkEvent(
+            employeeId = employee.id,
+            id = event2.id!!,
+            workEvent = event2.copy(
+                costCenter = "B"
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date2.toString(),
+                workEventType = WorkEventType.SHIFT_END
+            )
+        )
+
+        val workShift = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
+
+        it.manager.workShifts.updateEmployeeWorkShift(
+            employeeId = employee.id,
+            id = workShift.id!!,
+            workShift = workShift.copy(
+                approved = true
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date.minusHours(11).toString(),
+                workEventType = WorkEventType.DRIVE
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date.toString(),
+                workEventType = WorkEventType.SHIFT_END
+            )
+        )
+
+        val workShift2 = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
+
+        it.manager.workShifts.updateEmployeeWorkShift(
+            employeeId = employee.id,
+            id = workShift2.id!!,
+            workShift = workShift2.copy(
+                approved = true
+            )
+        )
+
+        val formattedDate1 = date.toLocalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+        val formattedDate2 = date2.toLocalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+
+        val row1 = "$formattedDate2;1212;Test Employee;11000;8.00;;A;;;"
+        val row2 = "$formattedDate2;1212;Test Employee;20050;1.50;;A;;;"
+        val row3 = "$formattedDate2;1212;Test Employee;20050;0.50;;B;;;"
+        val row4 = "$formattedDate2;1212;Test Employee;20060;1.50;;B;;;"
+        val row5 = "$formattedDate1;1212;Test Employee;11000;8.00;;;;;"
+        val row6 = "$formattedDate1;1212;Test Employee;20050;2.00;;;;;"
+        val row7 = "$formattedDate1;1212;Test Employee;20060;1.00;;;;;"
+
+        val expectedFileContent = row1 + "\n" +
+                row2 + "\n" +
+                row3 + "\n" +
+                row4 + "\n" +
+                row5 + "\n" +
+                row6 + "\n" +
+                row7 + "\n"
+
+        val payrollExport = it.manager.payrollExports.createPayrollExport(
+            PayrollExport(
+                employeeId = employee.id,
+                workShiftIds = arrayOf(workShift.id, workShift2.id)
+            )
+        )
+
+        val s3FileContent = S3FileDownload().downloadFile(ApiTestSettings.S3_FOLDER_PATH + payrollExport.csvFileName)
+
+        assertEquals(
+            expectedFileContent,
+            s3FileContent,
+            "Payroll S3 export file content should match the expected content"
+        )
+
+        val ftpFileContent = File("src/test/resources/payrollexports/" + payrollExport.csvFileName!!).readText()
+
+        assertEquals(
+            expectedFileContent,
+            ftpFileContent,
+            "Payroll FTP export file content should match the expected content"
+        )
+    }
+
+    @Test
+    fun testPayrollExportAllowances() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1212")
+
+        it.manager.employees.updateEmployee(
+            employeeId = employee.id!!,
+            employee = employee.copy(
+                regularWorkingHours = 40f
+            )
+        )
+
+        val now = getLastWorkDay(
+            date = LocalDate.now()
+        )
+
+        val currentOffset = OffsetDateTime.now().atZoneSameInstant(ZoneId.of("Europe/Helsinki")).offset
+
+        val date1 = OffsetDateTime.of(
+            now.year,
+            now.monthValue,
+            now.dayOfMonth,
+            16,
+            0,
+            0,
+            0,
+            currentOffset
+        )
+        
+
+    }
 }
