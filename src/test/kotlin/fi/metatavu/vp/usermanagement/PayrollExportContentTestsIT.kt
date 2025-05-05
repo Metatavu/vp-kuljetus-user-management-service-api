@@ -35,7 +35,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
                 regularWorkingHours = 40f
             )
         )
-//
+        
         val day1 = getLastWorkDay(
             date = LocalDate.now()
         )
