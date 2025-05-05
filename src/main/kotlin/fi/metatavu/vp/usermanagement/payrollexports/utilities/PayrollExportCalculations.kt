@@ -320,17 +320,26 @@ class PayrollExportCalculations {
                     if (workType == WorkType.HOLIDAY_ALLOWANCE) {
                         val publicHolidays = holidayController.list().first
 
-                        val daysOffDuringWorkShift = workEvents
-                            .distinctBy { it.time.toLocalDate() }
-                            .filter { workShiftHoursController.isDayOffWork(it.time, it.workShift.employeeId) }
-                            .map { it.time.toLocalDate() }
+                        var minutes = 0f
 
-                        val holidayAllowanceHours = workShiftHoursController.getHolidayAllowanceHours(
-                            workEventTime = it.time,
-                            nextWorkEventTime = nextEventTime,
-                            publicHolidays = publicHolidays,
-                            daysOff = daysOffDuringWorkShift
-                        )
+                        val workEventTime = it.time
+                        var iteratedStartOfDay = workEventTime.withHour(0).withMinute(0).withSecond(0)
+                        while (iteratedStartOfDay.isBefore(nextEventTime)) {
+                            val startOfNextDay = iteratedStartOfDay.plusDays(1)
+
+                            val start = if (workEventTime.isBefore(iteratedStartOfDay)) iteratedStartOfDay else workEventTime
+                            // if the next event ends before the next day, use that as the end of the interval
+                            val end = if (startOfNextDay.isAfter(nextEventTime)) nextEventTime else startOfNextDay
+
+                            val isPublicHoliday = publicHolidays.any { it.date == start.toLocalDate() }
+                            if (isPublicHoliday) {
+                                minutes += ChronoUnit.MINUTES.between(start, end)
+                            }
+
+                            iteratedStartOfDay = startOfNextDay
+                        }
+
+                        val holidayAllowanceHours = minutes / 60f
                         calculatedHours[costCenter] = currentAmountForCostCenter + holidayAllowanceHours
                         calculatedHoursSum += holidayAllowanceHours
                     }
