@@ -268,7 +268,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
         assertEquals(WorkType.entries.size, workShiftHours.size, "Correct amount of work shift hours created")
         assertEquals(19.5f, workShiftHours.find { it.workType == WorkType.PAID_WORK }?.calculatedHours, "Amount of paid work")
         assertEquals(3.5f, workShiftHours.find { it.workType == WorkType.EVENING_ALLOWANCE }?.calculatedHours, "Amount of evening allowance")
-        assertEquals(8f, workShiftHours.find { it.workType == WorkType.NIGHT_ALLOWANCE }?.calculatedHours, "Amount of night allowance")
+        assertEquals(7.5f, workShiftHours.find { it.workType == WorkType.NIGHT_ALLOWANCE }?.calculatedHours, "Amount of night allowance")
         assertEquals(1f, workShiftHours.find { it.workType == WorkType.BREAK }?.calculatedHours, "Amount of break")
         assertEquals(1f, workShiftHours.find { it.workType == WorkType.FROZEN_ALLOWANCE }?.calculatedHours, "Amount of frozen allowance")
         assertEquals(0f, workShiftHours.find { it.workType == WorkType.JOB_SPECIFIC_ALLOWANCE }?.calculatedHours, "Amount of job specific allowance")
@@ -322,7 +322,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
         assertEquals(WorkType.entries.size, dayOffWorkShiftHours.size, "Correct amount of work shift hours created")
         assertEquals(17f, dayOffWorkShiftHours.find { it.workType == WorkType.PAID_WORK }?.calculatedHours, "Amount of paid work")
         assertEquals(4f, dayOffWorkShiftHours.find { it.workType == WorkType.EVENING_ALLOWANCE }?.calculatedHours, "Amount of evening allowance")
-        assertEquals(3f, dayOffWorkShiftHours.find { it.workType == WorkType.NIGHT_ALLOWANCE }?.calculatedHours, "Amount of night allowance")
+        assertEquals(5f, dayOffWorkShiftHours.find { it.workType == WorkType.NIGHT_ALLOWANCE }?.calculatedHours, "Amount of night allowance")
         assertEquals(16f, dayOffWorkShiftHours.find { it.workType == WorkType.HOLIDAY_ALLOWANCE }?.calculatedHours, "Amount of holiday allowance")
 
         // sunday work (2015-01-05), starting at 23.00
@@ -357,7 +357,7 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
         var workShiftHours = tb.manager.workShiftHours.listWorkShiftHours(employeeId = employee1Id)
         assertEquals(WorkType.entries.size, workShiftHours.size, "Correct amount of work shift hours created")
         assertEquals(2f, workShiftHours.find { it.workType == WorkType.PAID_WORK }?.calculatedHours, "Amount of paid work")
-        assertEquals(0.5f, workShiftHours.find { it.workType == WorkType.EVENING_ALLOWANCE }?.calculatedHours, "Amount of evening allowance")
+        assertEquals(2f, workShiftHours.find { it.workType == WorkType.EVENING_ALLOWANCE }?.calculatedHours, "Amount of evening allowance")
 
         // move SHIFT_END event 0.5h earlier
         tb.manager.workEvents.updateWorkEvent(
@@ -460,6 +460,6 @@ class WorkShiftHoursTestIT : AbstractFunctionalTest() {
         val createdShift = workShiftHoursByWorkShifts.keys.find { !listOf(shift1.id, shift2.id, shift3.id).contains(it) }
         assertEquals(WorkType.entries.size, workShiftHoursByWorkShifts[createdShift]?.size, "Correct amount of work shift hours created")
         assertEquals(2f, workShiftHoursByWorkShifts[createdShift]?.find { it.workType == WorkType.PAID_WORK }?.calculatedHours, "Amount of paid work")
-        assertEquals(0.5f, workShiftHoursByWorkShifts[createdShift]?.find { it.workType == WorkType.EVENING_ALLOWANCE }?.calculatedHours, "Amount of evening allowance")
+        assertEquals(2f, workShiftHoursByWorkShifts[createdShift]?.find { it.workType == WorkType.EVENING_ALLOWANCE }?.calculatedHours, "Amount of evening allowance")
     }
 }
