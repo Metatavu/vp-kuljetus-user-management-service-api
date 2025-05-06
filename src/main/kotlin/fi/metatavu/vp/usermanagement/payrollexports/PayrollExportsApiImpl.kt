@@ -69,9 +69,8 @@ class PayrollExportsApiImpl: PayrollExportsApi, AbstractApi() {
                 fileName = fileName
             )
         } catch (e: Exception) {
-            println("**************************************")
-            println("TESTING EXCEPTIOM")
-            throw e
+            e.printStackTrace()
+            return@withCoroutineScope createInternalServerError("Payroll export failed: ${e.message}")
         }
 
         createOk(payrollExportTranslator.translate(payrollExportController.save(

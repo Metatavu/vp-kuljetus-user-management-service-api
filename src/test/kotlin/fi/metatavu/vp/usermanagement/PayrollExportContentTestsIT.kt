@@ -1,5 +1,7 @@
 package fi.metatavu.vp.usermanagement
 
+import com.jcraft.jsch.ChannelSftp
+import com.jcraft.jsch.JSch
 import fi.metatavu.vp.test.client.models.*
 import fi.metatavu.vp.usermanagement.resources.S3FileDownload
 import fi.metatavu.vp.usermanagement.resources.S3TestResource
@@ -9,9 +11,11 @@ import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.TestProfile
+import org.eclipse.microprofile.config.ConfigProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.File
+import java.io.FileOutputStream
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneId
@@ -35,7 +39,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
                 regularWorkingHours = 40f
             )
         )
-        //
+
         val day1 = getLastWorkDay(
             date = LocalDate.now()
         )
@@ -313,9 +317,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val resourcesFolder = "/tmp"
-
-        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val ftpFileContent = downloadStringContentFromFtp(payrollExport.csvFileName!!)
 
         assertEquals(
             expectedFileContent,
@@ -485,9 +487,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val resourcesFolder = "/tmp"
-
-        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val ftpFileContent = downloadStringContentFromFtp(payrollExport.csvFileName!!)
 
         assertEquals(
             expectedFileContent,
@@ -694,9 +694,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val resourcesFolder = "/tmp"
-
-        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val ftpFileContent = downloadStringContentFromFtp(payrollExport.csvFileName!!)
 
         assertEquals(
             expectedFileContent,
@@ -956,9 +954,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val resourcesFolder = "/tmp"
-
-        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val ftpFileContent = downloadStringContentFromFtp(payrollExport.csvFileName!!)
 
         assertEquals(
             expectedFileContent,
@@ -1222,9 +1218,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val resourcesFolder = "/tmp"
-
-        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val ftpFileContent = downloadStringContentFromFtp(payrollExport.csvFileName!!)
 
         assertEquals(
             expectedFileContent,
@@ -1390,9 +1384,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val resourcesFolder = "/tmp"
-
-        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val ftpFileContent = downloadStringContentFromFtp(payrollExport.csvFileName!!)
 
         assertEquals(
             expectedFileContent,
@@ -1544,15 +1536,30 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             "Payroll S3 export file content should match the expected content"
         )
 
-        val resourcesFolder = "/tmp"
-
-        val ftpFileContent = File("$resourcesFolder/payrollexports/" + payrollExport.csvFileName!!).readText()
+        val ftpFileContent = downloadStringContentFromFtp(payrollExport.csvFileName!!)
 
         assertEquals(
             expectedContent,
             ftpFileContent,
             "Payroll FTP export file content should match the expected content"
         )
+    }
+
+    private fun downloadStringContentFromFtp(fileName: String): String {
+        val ftpAddress = ConfigProvider.getConfig().getValue("vp.usermanagement.payrollexports.ftp.address", String::class.java)
+
+        val jsch = JSch()
+        val address = ftpAddress.removeSuffix("/${ApiTestSettings.FTP_FOLDER}")
+        val session = jsch.getSession(ApiTestSettings.FTP_USER_NAME, address.split(":")[0], address.split(":")[1].toInt())
+        session.setPassword(ApiTestSettings.FTP_USER_PASSWORD)
+        session.setConfig("StrictHostKeyChecking", "no")
+        session.connect()
+
+        val channel = session.openChannel("sftp") as ChannelSftp
+
+        channel.connect()
+
+       return String(channel.get("/${ApiTestSettings.FTP_FOLDER}/${fileName}").readAllBytes())
     }
 
 }
