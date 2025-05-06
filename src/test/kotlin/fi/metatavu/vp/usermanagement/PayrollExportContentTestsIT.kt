@@ -48,6 +48,9 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             date = day1
         )
 
+        val finlandZone = ZoneId.of("Europe/Helsinki")
+        val currentOffset = OffsetDateTime.now().atZoneSameInstant(finlandZone).offset
+
         val date1 = OffsetDateTime.of(
             day1.year,
             day1.monthValue,
@@ -56,7 +59,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
         val date2 = OffsetDateTime.of(
@@ -67,7 +70,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
         val event1 = it.manager.workEvents.createWorkEvent(
@@ -519,6 +522,9 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             date = day2
         )
 
+        val finlandZone = ZoneId.of("Europe/Helsinki")
+        val currentOffset = OffsetDateTime.now().atZoneSameInstant(finlandZone).offset
+
         val date1 = OffsetDateTime.of(
             day1.year,
             day1.monthValue,
@@ -527,7 +533,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
         val date2 = OffsetDateTime.of(
@@ -538,7 +544,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
         val date3 = OffsetDateTime.of(
@@ -549,7 +555,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
         it.manager.workEvents.createWorkEvent(
@@ -719,6 +725,9 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             date = day2
         )
 
+        val finlandZone = ZoneId.of("Europe/Helsinki")
+        val currentOffset = OffsetDateTime.now().atZoneSameInstant(finlandZone).offset
+
         val date1 = OffsetDateTime.of(
             day1.year,
             day1.monthValue,
@@ -727,7 +736,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
         val date2 = OffsetDateTime.of(
@@ -738,7 +747,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
         val date3 = OffsetDateTime.of(
@@ -749,7 +758,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
 
@@ -979,6 +988,9 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             date = day2
         )
 
+        val finlandZone = ZoneId.of("Europe/Helsinki")
+        val currentOffset = OffsetDateTime.now().atZoneSameInstant(finlandZone).offset
+
         val date1 = OffsetDateTime.of(
             day1.year,
             day1.monthValue,
@@ -987,7 +999,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
         val date2 = OffsetDateTime.of(
@@ -998,7 +1010,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
         val date3 = OffsetDateTime.of(
@@ -1009,7 +1021,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
 
@@ -1239,6 +1251,9 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             date = day
         )
 
+        val finlandZone = ZoneId.of("Europe/Helsinki")
+        val currentOffset = OffsetDateTime.now().atZoneSameInstant(finlandZone).offset
+
         val date = OffsetDateTime.of(
             day.year,
             day.monthValue,
@@ -1247,7 +1262,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
         val date2 = OffsetDateTime.of(
@@ -1258,7 +1273,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             0,
             0,
             0,
-            ZonedDateTime.now().offset
+            currentOffset
         )
 
         it.manager.employees.updateEmployee(
