@@ -169,5 +169,6 @@ tasks.named<Test>("test") {
 tasks.named<Test>("testNative") {
     testLogging.showStandardStreams = true
     testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    jvmArgs("-Xmx24g")
 }
 
