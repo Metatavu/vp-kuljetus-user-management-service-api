@@ -11,10 +11,10 @@ class SftpServerTestResource: QuarkusTestResourceLifecycleManager {
     private lateinit var ftpContainer: GenericContainer<*>
 
     override fun start(): MutableMap<String, String> {
-        val resourcesFolder = File(
+        val resourcesFolder = "/tmp"/*File(
             this::class.java.classLoader.getResource("")?.toURI()
                 ?: throw IllegalStateException("Resources folder not found")
-        ).absolutePath
+        ).absolutePath*/
 
         ftpContainer = GenericContainer(DockerImageName.parse("atmoz/sftp:alpine-3.7"))
             .withEnv("SFTP_USERS", "${ApiTestSettings.FTP_USER_NAME}:${ApiTestSettings.FTP_USER_PASSWORD}:1001")
@@ -37,10 +37,7 @@ class SftpServerTestResource: QuarkusTestResourceLifecycleManager {
     }
 
     override fun stop() {
-        val resourcesFolder = File(
-            this::class.java.classLoader.getResource("")?.toURI()
-                ?: throw IllegalStateException("Resources folder not found")
-        ).absolutePath
+        val resourcesFolder = "/tmp"
 
         val bindFolder = "$resourcesFolder/${ApiTestSettings.FTP_FOLDER}"
         File(bindFolder).deleteRecursively()
