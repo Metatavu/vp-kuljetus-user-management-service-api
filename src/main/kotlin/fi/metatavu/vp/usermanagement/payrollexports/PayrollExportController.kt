@@ -188,6 +188,12 @@ class PayrollExportController {
             fileContent = fileContent
         )
 
+        println("**********************")
+        println("SFTP credentials")
+        println("address: $ftpAddress")
+        println("username: $ftpUserName")
+        println("password: $ftpUserPassword")
+        println("**********************")
         if (ftpEnabled == "TRUE") {
             producerTemplate.sendBodyAndHeader(
                 "sftp://$ftpUserName@$ftpAddress?password=$ftpUserPassword",
