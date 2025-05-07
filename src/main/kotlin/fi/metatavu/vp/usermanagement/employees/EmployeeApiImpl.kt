@@ -68,10 +68,6 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
         createOk(employeeTranslator.translate(employee))
     }
 
-    override fun getSalaryPeriodTotalWorkHours(employeeId: UUID, dateInSalaryPeriod: OffsetDateTime): Uni<Response> {
-        TODO("Not yet implemented")
-    }
-
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
     override fun getSalaryPeriodTotalWorkHours(employeeId: UUID, dateInSalaryPeriod: OffsetDateTime): Uni<Response> = withCoroutineScope {
