@@ -327,6 +327,6 @@
         <update tableName="workshift">
             <column name="checkedforeventduplicates" value="false"/>
         </update>
-        <addNotNullConstraint tableName="workshift" columnName="checkedforeventduplicates"/>
+        <addNotNullConstraint tableName="workshift" columnName="checkedforeventduplicates" columnDataType="boolean"/>
     </changeSet>
 </databaseChangeLog>
