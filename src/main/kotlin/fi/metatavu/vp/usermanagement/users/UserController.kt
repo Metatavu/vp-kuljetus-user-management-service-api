@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.users
 
+import fi.metatavu.keycloak.adminclient.models.CredentialRepresentation
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
 import fi.metatavu.vp.usermanagement.model.Employee
 import fi.metatavu.vp.usermanagement.model.EmployeeType
@@ -191,7 +192,19 @@ class UserController {
             username = selectedUsername,
             briefRepresentation = false
         ).firstOrNull()
-        assignRole(keycloakUser!!, AbstractApi.EMPLOYEE_ROLE)
+
+        try {
+            keycloakAdminClient.getUserApi().realmUsersIdResetPasswordPut(
+                realm = keycloakAdminClient.getRealm(),
+                id = keycloakUser!!.id.toString(),
+                credentialRepresentation = CredentialRepresentation(value = UUID.randomUUID().toString(), temporary = false, type = "password")
+            )
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+            return null
+        }
+
+        assignRole(keycloakUser, AbstractApi.EMPLOYEE_ROLE)
         return keycloakUser
     }
 
