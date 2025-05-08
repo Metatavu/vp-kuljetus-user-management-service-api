@@ -137,6 +137,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
         createOk(workEventTranslator.translate(timeEntries), count)
     }
 
+
     @WithTransaction
     override fun removeEventDuplicates(): Uni<Response> = withCoroutineScope {
         if (requestCronKey != cronKey) {
