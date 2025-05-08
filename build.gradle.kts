@@ -43,6 +43,9 @@ dependencies {
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("org.apache.camel.quarkus:camel-quarkus-ftp:3.20.0")
+    implementation("io.quarkiverse.amazonservices:quarkus-amazon-s3:3.4.0")
+    implementation("software.amazon.awssdk:url-connection-client:2.31.18")
 
     configurations.all {
         exclude(group = "commons-logging", module = "commons-logging")
@@ -54,6 +57,7 @@ dependencies {
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("com.squareup.okhttp3:okhttp:$okhttpVersion")
     testImplementation("org.testcontainers:mysql")
+    testImplementation("org.testcontainers:localstack")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("fi.metatavu.jaxrs.testbuilder:jaxrs-functional-test-builder:$jaxrsFunctionalTestBuilderVersion")
 }
@@ -165,5 +169,6 @@ tasks.named<Test>("test") {
 tasks.named<Test>("testNative") {
     testLogging.showStandardStreams = true
     testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    jvmArgs("-Xmx24g")
 }
 
