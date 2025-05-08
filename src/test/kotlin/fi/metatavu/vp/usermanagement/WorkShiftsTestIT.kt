@@ -167,12 +167,12 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 startedAt = now.toString(),
                 endedAt = now.plusHours(25).toString(),
                 costCentersFromEvents = arrayOf(),
-                notes = "Drink while driving"
+                notes = "Truck changed to ABC-123"
             )
         )
 
         val foundWorShift = it.manager.workShifts.findEmployeeWorkShift(employeeId = employee1.id, id = createdWorkShift.id!!)
-        assertEquals("Drink while driving", foundWorShift.notes, "Found shift should have the same notes that where entered when the shift was created")
+        assertEquals("Truck changed to ABC-123", foundWorShift.notes, "Found shift should have the same notes that where entered when the shift was created")
 
         // employee 2 events
         it.manager.workEvents.createWorkEvent(employee2.id!!, now.toString(), WorkEventType.MEAT_CELLAR)
