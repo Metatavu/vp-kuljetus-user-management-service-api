@@ -2,6 +2,7 @@ package fi.metatavu.vp.usermanagement.workshifts
 
 import fi.metatavu.vp.usermanagement.model.AbsenceType
 import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
+import fi.metatavu.vp.usermanagement.payrollexports.PayrollExportEntity
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -44,6 +45,13 @@ class WorkShiftEntity {
     @Column
     var notes: String? = null
 
+    @ManyToOne(optional = true)
+    var payrollExport: PayrollExportEntity? = null
+
+    @Column
+    var defaultCostCenter: String? = null
+
     @Column(nullable = false)
     var checkedForEventDuplicates: Boolean? = null
+
 }

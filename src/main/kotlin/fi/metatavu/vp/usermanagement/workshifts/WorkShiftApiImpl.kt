@@ -119,7 +119,8 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
                 startedAt = employeeWorkShift.startedAt,
                 endedAt = employeeWorkShift.endedAt,
                 dayOffWorkAllowance = employeeWorkShift.dayOffWorkAllowance,
-                notes = employeeWorkShift.notes
+                notes = employeeWorkShift.notes,
+                defaultCostCenter = employeeWorkShift.defaultCostCenter
             )
 
             val changeSet = workShiftChangeSetController.create(workShiftChangeSetId, created, loggedUserId!!)

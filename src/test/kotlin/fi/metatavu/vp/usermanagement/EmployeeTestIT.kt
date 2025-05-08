@@ -484,7 +484,7 @@ class EmployeeTestIT : AbstractFunctionalTest() {
             )
         )
 
-        assertEquals(0.toBigDecimal(), salaryPeriodTotalWorkHours2.fillingHours, "Filling hours should be 10.66")
+        assertEquals(0.toBigDecimal(), salaryPeriodTotalWorkHours2.fillingHours, "Filling hours should be 0")
 
         val salaryPeriodTotalWorkHours3 = it.manager.employees.getSalaryPeriodTotalWorkHours(
             employeeId = employee.id,
