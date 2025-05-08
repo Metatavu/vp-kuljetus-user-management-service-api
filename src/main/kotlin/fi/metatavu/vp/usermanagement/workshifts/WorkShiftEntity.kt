@@ -43,4 +43,7 @@ class WorkShiftEntity {
 
     @Column
     var notes: String? = null
+
+    @Column(nullable = false)
+    var checkedForEventDuplicates: Boolean? = null
 }

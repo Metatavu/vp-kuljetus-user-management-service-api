@@ -5,6 +5,7 @@ import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.WorkEventsApi
 import fi.metatavu.vp.usermanagement.users.UserController
+import fi.metatavu.vp.usermanagement.workevents.scheduled.WorkEventScheduledJobs
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftRepository
 import fi.metatavu.vp.usermanagement.workshifts.changelogs.changes.WorkShiftChangeController
@@ -17,6 +18,7 @@ import jakarta.annotation.security.RolesAllowed
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
+import org.eclipse.microprofile.config.inject.ConfigProperty
 import java.time.OffsetDateTime
 import java.util.*
 
@@ -48,6 +50,13 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
 
     @Inject
     lateinit var workShiftRepository: WorkShiftRepository
+
+    @Inject
+    lateinit var workEventScheduledJobs: WorkEventScheduledJobs
+
+    @ConfigProperty(name = "vp.usermanagement.cron.apiKey")
+    lateinit var cronKey: String
+
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
     @WithTransaction
@@ -128,8 +137,16 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
         createOk(workEventTranslator.translate(timeEntries), count)
     }
 
-    override fun removeEventDuplicates(): Uni<Response> {
-        TODO("Not yet implemented")
+
+    @WithTransaction
+    override fun removeEventDuplicates(): Uni<Response> = withCoroutineScope {
+        if (requestCronKey != cronKey) {
+            return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
+        }
+
+        workEventScheduledJobs.removeDuplicateEvents()
+
+        createOk()
     }
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
