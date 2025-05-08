@@ -128,6 +128,10 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
         createOk(workEventTranslator.translate(timeEntries), count)
     }
 
+    override fun removeEventDuplicates(): Uni<Response> {
+        TODO("Not yet implemented")
+    }
+
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE)
     @WithTransaction
     override fun updateEmployeeWorkEvent(employeeId: UUID, workEventId: UUID, workShiftChangeSetId: UUID, workEvent: WorkEvent): Uni<Response> =
