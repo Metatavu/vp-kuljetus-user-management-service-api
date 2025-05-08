@@ -319,6 +319,15 @@
             </column>
         </createTable>
     </changeSet>
+    <changeSet id="workeventduplicates" author="Simeon Platonov">
+        <addColumn tableName="workshift">
+            <column name="checkedforeventduplicates" type="boolean"/>
+        </addColumn>
+        <update tableName="workshift">
+            <column name="checkedforeventduplicates" value="false"/>
+        </update>
+        <addNotNullConstraint tableName="workshift" columnName="checkedforeventduplicates" columnDataType="boolean"/>
+    </changeSet>
     <changeSet id="payrollexports" author="Simeon Platonov">
         <createTable tableName="payrollexport">
             <column name="id" type="binary(16)">
