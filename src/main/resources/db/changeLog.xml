@@ -324,9 +324,6 @@
             <column name="checkedforeventduplicates" type="boolean"/>
         </addColumn>
     </changeSet>
-    <changeSet id="workeventduplicatesconstraint" author="Simeon Platonov">
-        <addNotNullConstraint defaultNullValue="false" tableName="workshift" columnName="checkedforeventduplicates" columnDataType="boolean"/>
-    </changeSet>
     <changeSet id="payrollexports" author="Simeon Platonov">
         <createTable tableName="payrollexport">
             <column name="id" type="binary(16)">
@@ -355,5 +352,8 @@
         <addColumn tableName="workshift">
             <column name="defaultcostcenter" type="varchar(191)"/>
         </addColumn>
+    </changeSet>
+    <changeSet id="workeventduplicatesconstraint" author="Simeon Platonov">
+        <addNotNullConstraint defaultNullValue="false" tableName="workshift" columnName="checkedforeventduplicates" columnDataType="boolean"/>
     </changeSet>
 </databaseChangeLog>
