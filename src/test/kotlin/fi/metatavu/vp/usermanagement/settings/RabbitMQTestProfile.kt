@@ -30,6 +30,8 @@ class RabbitMQTestProfile: QuarkusTestProfile {
         config["mp.messaging.outgoing.vp-out.connector"] = "smallrye-rabbitmq"
         config["mp.messaging.outgoing.vp-out.exchange.name"] = EXCHANGE_NAME
 
+        config["vp.usermanagement.workevents.duplicateremoval.graceperiod.days"] = "3"
+
         config["env"] = "TEST"
         return config
     }

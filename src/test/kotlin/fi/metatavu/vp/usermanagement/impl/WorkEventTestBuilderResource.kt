@@ -23,6 +23,7 @@ import java.util.*
 class WorkEventTestBuilderResource(
     testBuilder: TestBuilder,
     private val accessTokenProvider: AccessTokenProvider?,
+    private val cronKey: String?,
     apiClient: ApiClient
 ) : ApiTestBuilderResource<WorkEvent, ApiClient>(testBuilder, apiClient) {
 
@@ -46,6 +47,10 @@ class WorkEventTestBuilderResource(
     }
 
     override fun getApi(): WorkEventsApi {
+        if (cronKey != null) {
+            ApiClient.apiKey["X-CRON-Key"] = cronKey
+        }
+
         ApiClient.accessToken = accessTokenProvider?.accessToken
         return WorkEventsApi(ApiTestSettings.apiBasePath)
     }
@@ -203,6 +208,25 @@ class WorkEventTestBuilderResource(
             if (event.workEventType == WorkEventType.SHIFT_START) {
                 addClosable(event)
             }
+        }
+    }
+
+    /**
+     * Calls the cron endpoint that removes duplicate events
+     */
+    fun removeEventDuplicates() {
+        api.removeEventDuplicates()
+    }
+
+    /**
+     * Asserts that remove event duplicates fails with status 401
+     */
+    fun assertRemoveEventDuplicatesUnauthorized() {
+        try {
+            api.removeEventDuplicates()
+            Assert.fail("Expected remove event duplicates to fail with status 401")
+        } catch (ex: ClientException) {
+            assertClientExceptionStatus(401, ex)
         }
     }
 }
