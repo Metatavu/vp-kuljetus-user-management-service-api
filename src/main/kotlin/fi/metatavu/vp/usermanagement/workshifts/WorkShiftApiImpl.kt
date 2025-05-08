@@ -119,6 +119,7 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
                 startedAt = employeeWorkShift.startedAt,
                 endedAt = employeeWorkShift.endedAt,
                 dayOffWorkAllowance = employeeWorkShift.dayOffWorkAllowance,
+                notes = employeeWorkShift.notes,
                 defaultCostCenter = employeeWorkShift.defaultCostCenter
             )
 

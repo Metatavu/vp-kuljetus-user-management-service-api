@@ -43,6 +43,8 @@ class WorkShiftController {
      * @param startedAt started at
      * @param endedAt ended at
      * @param dayOffWorkAllowance day off work allowance
+     * @param notes
+     * @param defaultCostCenter
      * @return created employee work shift
      */
     suspend fun create(
@@ -53,6 +55,7 @@ class WorkShiftController {
         startedAt: OffsetDateTime? = null,
         endedAt: OffsetDateTime? = null,
         dayOffWorkAllowance: Boolean? = null,
+        notes: String? = null,
         defaultCostCenter: String? = null
     ): WorkShiftEntity {
         val shift = workShiftRepository.create(
@@ -65,7 +68,9 @@ class WorkShiftController {
             startedAt = startedAt,
             endedAt = endedAt,
             dayOffWorkAllowance = dayOffWorkAllowance,
+            notes = notes,
             defaultCostCenter = defaultCostCenter
+
         )
 
         workShiftHoursController.createWorkShiftHours(
