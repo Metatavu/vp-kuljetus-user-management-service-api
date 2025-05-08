@@ -30,6 +30,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
      * @param startedAt started at
      * @param endedAt ended at
      * @param dayOffWorkAllowance day off work allowance
+     * @param notes
      * @param defaultCostCenter default cost center
      * @return created employee work shift
      */
@@ -43,6 +44,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         startedAt: OffsetDateTime?,
         endedAt: OffsetDateTime?,
         dayOffWorkAllowance: Boolean? = null,
+        notes: String?,
         defaultCostCenter: String?
     ): WorkShiftEntity {
         val employeeWorkShift = WorkShiftEntity()
@@ -55,6 +57,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         employeeWorkShift.startedAt = startedAt
         employeeWorkShift.endedAt = endedAt
         employeeWorkShift.dayOffWorkAllowance = dayOffWorkAllowance
+        employeeWorkShift.notes = notes
         employeeWorkShift.defaultCostCenter = defaultCostCenter
         employeeWorkShift.checkedForEventDuplicates = false
         return persistSuspending(employeeWorkShift)
