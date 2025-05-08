@@ -3,6 +3,10 @@ package fi.metatavu.vp.usermanagement
 import fi.metatavu.invalid.InvalidValueTestScenarioBuilder
 import fi.metatavu.invalid.InvalidValueTestScenarioPath
 import fi.metatavu.invalid.InvalidValues
+import fi.metatavu.vp.test.client.models.Employee
+import fi.metatavu.vp.test.client.models.EmployeeType
+import fi.metatavu.vp.test.client.models.Office
+import fi.metatavu.vp.test.client.models.SalaryGroup
 import fi.metatavu.vp.usermanagement.settings.ApiTestSettings
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
 import io.quarkus.test.junit.QuarkusTest
@@ -89,6 +93,46 @@ class DriversTestIT : AbstractFunctionalTest() {
             )
             .build()
             .test()
+    }
+
+    @Test
+    fun testDriverCreate() = createTestBuilder().use {
+        assertEquals(2, it.manager.drivers.listDrivers().size, "There should be 2 drivers at the start")
+
+        val employee = it.manager.employees.createEmployee(
+            Employee(
+                firstName = "Test",
+                lastName = "Employee",
+                type = EmployeeType.AH,
+                office = Office.KOTKA,
+                salaryGroup = SalaryGroup.DRIVER,
+                driverCardLastReadOut = OffsetDateTime.now().toString(),
+                driverCardId = "001",
+                regularWorkingHours = 12.0f,
+                employeeNumber = "001"
+            )
+        )
+
+        assertEquals(3, it.manager.drivers.listDrivers().size, "There should be one new driver in addition to 2 that exist at the start")
+
+        it.manager.employees.updateEmployee(
+            employeeId = employee.id!!,
+            employee = employee.copy(
+                driverCardId = ""
+            )
+        )
+
+        assertEquals(2, it.manager.drivers.listDrivers().size, "There should be 2 drivers after removing driver card id")
+
+
+        it.manager.employees.updateEmployee(
+            employeeId = employee.id,
+            employee = employee.copy(
+                driverCardId = "001"
+            )
+        )
+
+        assertEquals(3, it.manager.drivers.listDrivers().size, "The driver should be added back as the driver card has been added again")
     }
 
 }

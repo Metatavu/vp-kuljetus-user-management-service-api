@@ -191,7 +191,13 @@ class UserController {
             username = selectedUsername,
             briefRepresentation = false
         ).firstOrNull()
-        assignRole(keycloakUser!!, AbstractApi.EMPLOYEE_ROLE)
+
+        addRole(keycloakUser!!, AbstractApi.EMPLOYEE_ROLE)
+
+        if (!employee.driverCardId.isNullOrBlank()) {
+            addRole(keycloakUser, AbstractApi.DRIVER_ROLE)
+        }
+
         return keycloakUser
     }
 
@@ -222,28 +228,67 @@ class UserController {
             return null
         }
 
-        return keycloakAdminClient.getUserApi().realmUsersIdGet(
+       val keycloakUser = keycloakAdminClient.getUserApi().realmUsersIdGet(
             realm = keycloakAdminClient.getRealm(),
             id = found.id.toString()
         )
+
+        if (!employee.driverCardId.isNullOrBlank()) {
+            addRole(keycloakUser, AbstractApi.DRIVER_ROLE)
+        } else {
+            removeRole(keycloakUser, AbstractApi.DRIVER_ROLE)
+        }
+
+        return keycloakUser
     }
 
     /**
-     * Update user role
+     * Add user role
      *
      * @param userRepresentation user representation
      * @param role role to assign
      */
-    suspend fun assignRole(userRepresentation: UserRepresentation, role: String) {
-        val userRoles = keycloakAdminClient.getRoleContainerApi().realmRolesRoleNameGet(
+    suspend fun addRole(userRepresentation: UserRepresentation, role: String) {
+        val userRole = keycloakAdminClient.getRoleContainerApi().realmRolesRoleNameGet(
             roleName = role,
             realm = keycloakAdminClient.getRealm()
         )
 
+        val currentRoles = keycloakAdminClient.getRoleMapperApi().realmUsersIdRoleMappingsRealmGet(
+            id = userRepresentation.id.toString(),
+            realm = keycloakAdminClient.getRealm()
+        )
+
+        if (currentRoles.any { it.name == role }) {
+            return
+        }
+
+        val mutableRolesList = currentRoles.toMutableList()
+        mutableRolesList.add(userRole)
+
         keycloakAdminClient.getRoleMapperApi().realmUsersIdRoleMappingsRealmPost(
             id = userRepresentation.id.toString(),
             realm = keycloakAdminClient.getRealm(),
-            roleRepresentation = arrayOf(userRoles)
+            roleRepresentation = mutableRolesList.toTypedArray()
+        )
+    }
+
+    /**
+     * Remove user role
+     *
+     * @param userRepresentation user representation
+     * @param role role to assign
+     */
+    suspend fun removeRole(userRepresentation: UserRepresentation, role: String) {
+        val roleRepresentation = keycloakAdminClient.getRoleContainerApi().realmRolesRoleNameGet(
+            roleName = role,
+            realm = keycloakAdminClient.getRealm()
+        )
+
+        keycloakAdminClient.getRoleMapperApi().realmUsersIdRoleMappingsRealmDelete(
+            id = userRepresentation.id.toString(),
+            realm = keycloakAdminClient.getRealm(),
+            roleRepresentation = arrayOf(roleRepresentation)
         )
     }
 
