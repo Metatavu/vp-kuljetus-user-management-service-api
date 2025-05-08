@@ -602,7 +602,7 @@ class PayrollExportController {
      * The data will be extracted from a list of work shifts.
      * The map will contain hours accumulated only for the work type that is defined by the workType-parameter.
      * Also, the parameters isDriver, regularWorkingTime, and vacationHours affect the calculations based on the salary rules used by VP-kuljetus.
-     * Parameter officeWorkerOverTimeType is used when extracting data about overtime done by office workers. Type can OVERTIME_HALF or OVERTIME:FULL.
+     * Parameter officeWorkerOverTimeType is used when extracting data about overtime done by office workers. Type can OVERTIME_HALF or OVERTIME_FULL.
      * THis is relevant only if the parameter workType is PAID_WORK and isDriver is false.
      *
      * @param workShifts
