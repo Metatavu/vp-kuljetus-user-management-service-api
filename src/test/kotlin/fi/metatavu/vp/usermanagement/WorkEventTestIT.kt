@@ -1,6 +1,5 @@
 package fi.metatavu.vp.usermanagement
 
-import fi.metatavu.vp.test.client.models.EmployeeWorkShift
 import fi.metatavu.vp.test.client.models.WorkEvent
 import fi.metatavu.vp.test.client.models.WorkEventType
 import fi.metatavu.vp.usermanagement.settings.DefaultTestProfile
@@ -389,4 +388,212 @@ class WorkEventTestIT : AbstractFunctionalTest() {
         it.manager.workEvents.deleteWorkEvent(employee1.id, shiftCreate.id)
     }
 
+    @Test
+    fun testRemoveEventDuplicates() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1")
+
+        val date1 = OffsetDateTime.now().minusDays(7).withHour(18)
+
+        val event1 = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id!!,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.DRIVE,
+                time = date1.minusHours(9).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.DRIVE,
+                time = date1.minusHours(8).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.DRIVE,
+                time = date1.minusHours(7).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        val event2 = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.FROZEN,
+                time = date1.minusHours(6).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.FROZEN,
+                time = date1.minusHours(5).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.FROZEN,
+                time = date1.minusHours(4).toString(),
+                employeeId = employee.id
+            )
+        )
+        val event3 = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.GREASE,
+                time = date1.minusHours(3).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.GREASE,
+                time = date1.minusHours(2).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.GREASE,
+                time = date1.minusHours(1).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        val endEvent = it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.SHIFT_END,
+                time = date1.toString(),
+                employeeId = employee.id
+            )
+        )
+
+        assertEquals(11, it.manager.workEvents.listWorkEvents(employeeId = employee.id, max = 100).size, "There should be 11 events before the duplicate removal cron job has run")
+
+        it.setCronKey().workEvents.removeEventDuplicates()
+
+        val events = it.manager.workEvents.listWorkEvents(employeeId = employee.id).reversed()
+
+        assertEquals(5, events.size, "There should be 5 events after the duplicate removal cron job has run")
+
+        assertEquals(WorkEventType.SHIFT_START, events[0].workEventType, "First event should be SHIFT_START")
+        assertEquals(event1.id, events[1].id, "Second event should be the first DRIVE event")
+        assertEquals(event2.id, events[2].id, "Third event should be the first FROZEN event")
+        assertEquals(event3.id, events[3].id, "Fourth event should be the first GREASE event")
+        assertEquals(endEvent.id, events[4].id, "Fifth event should be the SHIFT_END event")
+
+        it.setCronKey(UUID.randomUUID().toString()).workEvents.assertRemoveEventDuplicatesUnauthorized()
+        it.manager.workEvents.assertRemoveEventDuplicatesUnauthorized()
+
+        val date2 = OffsetDateTime.now().minusDays(1).withHour(18)
+
+         it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.DRIVE,
+                time = date2.minusHours(9).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.DRIVE,
+                time = date2.minusHours(8).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.DRIVE,
+                time = date2.minusHours(7).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.FROZEN,
+                time = date2.minusHours(6).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.FROZEN,
+                time = date2.minusHours(5).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.FROZEN,
+                time = date2.minusHours(4).toString(),
+                employeeId = employee.id
+            )
+        )
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.GREASE,
+                time = date2.minusHours(3).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.GREASE,
+                time = date2.minusHours(2).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.GREASE,
+                time = date2.minusHours(1).toString(),
+                employeeId = employee.id
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                workEventType = WorkEventType.SHIFT_END,
+                time = date2.toString(),
+                employeeId = employee.id
+            )
+        )
+
+        val newShift = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
+        it.setCronKey().workEvents.removeEventDuplicates()
+        assertEquals(11, it.manager.workEvents.listWorkEvents(employeeId = employee.id, employeeWorkShiftId = newShift.id, max = 100).size, "There should be 11 events in the new shift even after duplicate removal because grace period has not passed yet")
+        assertEquals(16, it.manager.workEvents.listWorkEvents(employeeId = employee.id, max = 100).size, "There should be 16 events in total")
+    }
 }

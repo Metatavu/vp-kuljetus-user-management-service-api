@@ -52,6 +52,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         employeeWorkShift.startedAt = startedAt
         employeeWorkShift.endedAt = endedAt
         employeeWorkShift.dayOffWorkAllowance = dayOffWorkAllowance
+        employeeWorkShift.checkedForEventDuplicates = false
         return persistSuspending(employeeWorkShift)
     }
 
@@ -107,6 +108,24 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
             firstIndex = first,
             maxResults = max
         )
+    }
+
+    /**
+     * Lists work shifts that meet the following conditions:
+     * 1. They have not been checked for event duplicates.
+     * 2. They have ended before the given date.
+     *
+     * @param endedBefore
+     */
+    suspend fun listWorkShiftsWithPossibleDuplicateEvents(endedBefore: OffsetDateTime): List<WorkShiftEntity> {
+        val queryBuilder = StringBuilder()
+        val parameters = Parameters()
+
+        queryBuilder.append("checkedForEventDuplicates = false")
+        queryBuilder.append(" AND endedAt < :endedBefore")
+        parameters.and("endedBefore", endedBefore)
+
+        return find(queryBuilder.toString(), parameters).list<WorkShiftEntity>().awaitSuspending()
     }
 
     /**
@@ -194,4 +213,14 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         return persistSuspending(workShiftEntity)
     }
 
+    /**
+     * Marks that the work shift has been checked for work event duplicates.
+     * This function will be used by a cron job after the job has removed all the duplicates.
+     *
+     * @param workShiftEntity
+     */
+    suspend fun markShiftAsCheckedForDuplicates(workShiftEntity: WorkShiftEntity): WorkShiftEntity {
+        workShiftEntity.checkedForEventDuplicates = true
+        return persistSuspending(workShiftEntity)
+    }
 }
