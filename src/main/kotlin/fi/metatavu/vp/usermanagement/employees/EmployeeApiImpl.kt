@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.employees
 
+import fi.metatavu.vp.usermanagement.employees.utilities.SalaryPeriodUtils
 import fi.metatavu.vp.usermanagement.model.Employee
 import fi.metatavu.vp.usermanagement.model.EmployeeType
 import fi.metatavu.vp.usermanagement.model.Office

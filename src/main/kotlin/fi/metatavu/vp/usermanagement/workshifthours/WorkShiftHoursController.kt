@@ -18,6 +18,7 @@ import org.jboss.logging.Logger
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.math.max
@@ -256,7 +257,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
      * @param employeeId employee id
      * @return true if the work event is a day off work
      */
-    private suspend fun isDayOffWork(date: OffsetDateTime, employeeId: UUID): Boolean {
+    suspend fun isDayOffWork(date: OffsetDateTime, employeeId: UUID): Boolean {
         val shiftsDuringThisDay = workShiftController.listEmployeeWorkShifts(
             employeeId = employeeId,
             startedAfter = date.withHour(0).withMinute(0).withSecond(0),
@@ -275,17 +276,21 @@ class WorkShiftHoursController: WithCoroutineScope() {
      * @param workEventTime work event time
      * @param nextWorkEventTime next work event time
      */
-    private fun getEveningAllowanceHours(workEventTime: OffsetDateTime, nextWorkEventTime: OffsetDateTime): Float {
+    fun getEveningAllowanceHours(workEventTime: OffsetDateTime, nextWorkEventTime: OffsetDateTime): Float {
         var minutes = 0f
 
-        var iteratedStartOfDay = workEventTime.withHour(0).withMinute(0).withSecond(0)
-        while (iteratedStartOfDay.isBefore(nextWorkEventTime)) {
+        val finlandZone = ZoneId.of("Europe/Helsinki")
+        val workEventTimeAtTimeZone = workEventTime.atZoneSameInstant(finlandZone).toOffsetDateTime()
+        val nextWorkEventTimeAtTimeZone = nextWorkEventTime.atZoneSameInstant(finlandZone).toOffsetDateTime()
+
+        var iteratedStartOfDay = workEventTimeAtTimeZone.withHour(0).withMinute(0).withSecond(0)
+        while (iteratedStartOfDay.isBefore(nextWorkEventTimeAtTimeZone)) {
             val eveningStart = iteratedStartOfDay.withHour(18).withMinute(0).withSecond(0)
             val eveningEnd = iteratedStartOfDay.withHour(22).withMinute(0).withSecond(0)
 
             // if the next event ends before 22.00 the current day, use that as the end of the interval
-            val start = if (workEventTime.isBefore(eveningStart)) eveningStart else workEventTime
-            val end = if (nextWorkEventTime.isAfter(eveningEnd)) eveningEnd else nextWorkEventTime
+            val start = if (workEventTimeAtTimeZone.isBefore(eveningStart)) eveningStart else workEventTimeAtTimeZone
+            val end = if (nextWorkEventTimeAtTimeZone.isAfter(eveningEnd)) eveningEnd else nextWorkEventTimeAtTimeZone
             if (start.isBefore(end)) {
                 minutes += ChronoUnit.MINUTES.between(start, end)
             }
@@ -303,16 +308,20 @@ class WorkShiftHoursController: WithCoroutineScope() {
      * @param workEventTime work event time
      * @param nextWorkEventTime next work event time
      */
-    private fun getNightAllowanceHours(workEventTime: OffsetDateTime, nextWorkEventTime: OffsetDateTime): Float {
+    fun getNightAllowanceHours(workEventTime: OffsetDateTime, nextWorkEventTime: OffsetDateTime): Float {
         var totalMinutes = 0f
 
-        var iteratedStartOfDay = workEventTime.withHour(0).withMinute(0).withSecond(0)
-        while (iteratedStartOfDay.isBefore(nextWorkEventTime)) {
+        val finlandZone = ZoneId.of("Europe/Helsinki")
+        val workEventTimeAtTimeZone = workEventTime.atZoneSameInstant(finlandZone).toOffsetDateTime()
+        val nextWorkEventTimeAtTimeZone = nextWorkEventTime.atZoneSameInstant(finlandZone).toOffsetDateTime()
+
+        var iteratedStartOfDay = workEventTimeAtTimeZone.withHour(0).withMinute(0).withSecond(0)
+        while (iteratedStartOfDay.isBefore(nextWorkEventTimeAtTimeZone)) {
             val currentNightStart = iteratedStartOfDay.withHour(0).withMinute(0).withSecond(0).withNano(0)
             val currentNightEnd = iteratedStartOfDay.withHour(6).withMinute(0).withSecond(0).withNano(0)
 
-            val start1 = if (workEventTime.isBefore(currentNightStart)) currentNightStart else workEventTime
-            val end1 = if (nextWorkEventTime.isAfter(currentNightEnd)) currentNightEnd else nextWorkEventTime
+            val start1 = if (workEventTimeAtTimeZone.isBefore(currentNightStart)) currentNightStart else workEventTimeAtTimeZone
+            val end1 = if (nextWorkEventTimeAtTimeZone.isAfter(currentNightEnd)) currentNightEnd else nextWorkEventTimeAtTimeZone
             if (start1.isBefore(end1)) {
                 totalMinutes += ChronoUnit.MINUTES.between(start1, end1)
             }
@@ -320,8 +329,8 @@ class WorkShiftHoursController: WithCoroutineScope() {
             val nextNightStart = iteratedStartOfDay.withHour(22).withMinute(0).withSecond(0).withNano(0)
             val nextNightEnd = iteratedStartOfDay.withHour(0).withMinute(0).withSecond(0).withNano(0).plusDays(1)
 
-            val start = if (workEventTime.isBefore(nextNightStart)) nextNightStart else workEventTime
-            val end = if (nextWorkEventTime.isAfter(nextNightEnd)) nextNightEnd else nextWorkEventTime
+            val start = if (workEventTimeAtTimeZone.isBefore(nextNightStart)) nextNightStart else workEventTimeAtTimeZone
+            val end = if (nextWorkEventTimeAtTimeZone.isAfter(nextNightEnd)) nextNightEnd else nextWorkEventTimeAtTimeZone
 
             if (start.isBefore(end)) {
                 totalMinutes += ChronoUnit.MINUTES.between(start, end)
@@ -344,7 +353,7 @@ class WorkShiftHoursController: WithCoroutineScope() {
      * @param publicHolidays list of public holidays
      * @param daysOff list of days off work
      */
-    private fun getHolidayAllowanceHours(
+    fun getHolidayAllowanceHours(
         workEventTime: OffsetDateTime,
         nextWorkEventTime: OffsetDateTime,
         publicHolidays: List<HolidayEntity>,

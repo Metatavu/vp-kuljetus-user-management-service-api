@@ -19,6 +19,7 @@ class DefaultTestProfile: QuarkusTestProfile {
         config["vp.usermanagement.driverapp.apiKey"] = DRIVER_APP_API_KEY
         config["vp.usermanagement.keycloak.apiKey"] = KEYCLOAK_API_KEY
         config["vp.usermanagement.cron.apiKey"] = CRON_API_KEY
+        config["vp.usermanagement.workevents.duplicateremoval.graceperiod.days"] = "3"
         config["env"] = "TEST"
         return config
     }

@@ -1,11 +1,13 @@
 package fi.metatavu.vp.usermanagement.users
 
+import fi.metatavu.keycloak.adminclient.models.CredentialRepresentation
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
 import fi.metatavu.vp.usermanagement.model.Employee
 import fi.metatavu.vp.usermanagement.model.EmployeeType
 import fi.metatavu.vp.usermanagement.model.Office
 import fi.metatavu.vp.usermanagement.model.SalaryGroup
 import fi.metatavu.vp.usermanagement.keycloak.KeycloakAdminClient
+import fi.metatavu.vp.usermanagement.payrollexports.PayrollExportController
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -19,6 +21,9 @@ class UserController {
 
     @Inject
     lateinit var keycloakAdminClient: KeycloakAdminClient
+
+    @Inject
+    lateinit var payrollExportController: PayrollExportController
 
     /**
      * Finds a user by id
@@ -198,6 +203,18 @@ class UserController {
             addRole(keycloakUser, AbstractApi.DRIVER_ROLE)
         }
 
+        try {
+            keycloakAdminClient.getUserApi().realmUsersIdResetPasswordPut(
+                realm = keycloakAdminClient.getRealm(),
+                id = keycloakUser!!.id.toString(),
+                credentialRepresentation = CredentialRepresentation(value = UUID.randomUUID().toString(), temporary = false, type = "password")
+            )
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+            return null
+        }
+
+
         return keycloakUser
     }
 
@@ -299,6 +316,16 @@ class UserController {
      */
     suspend fun deleteEmployee(id: UUID) {
         try {
+            payrollExportController.list(
+                employeeId = id,
+                null,
+                null,
+                null,
+                null
+            ).forEach {
+                payrollExportController.delete(it)
+            }
+
             keycloakAdminClient.getUserApi().realmUsersIdDelete(
                 realm = keycloakAdminClient.getRealm(),
                 id = id.toString()

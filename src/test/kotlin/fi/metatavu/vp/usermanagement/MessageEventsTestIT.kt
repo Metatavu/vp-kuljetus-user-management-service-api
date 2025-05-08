@@ -32,6 +32,7 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
             MessagingClient.publishMessage(createDriverWorkEvent(driverId, UUID.randomUUID(), WorkEventType.SHIFT_START))
         }
         Awaitility.await().atMost(Duration.ofMinutes(5)).until {
+
             val workEvents = tb.manager.workEvents.listWorkEvents(employeeId = driverId, max = 200)
             workEvents.size == 25
         }

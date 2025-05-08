@@ -2,6 +2,7 @@ package fi.metatavu.vp.usermanagement.workshifts
 
 import fi.metatavu.vp.usermanagement.model.AbsenceType
 import fi.metatavu.vp.usermanagement.model.PerDiemAllowanceType
+import fi.metatavu.vp.usermanagement.payrollexports.PayrollExportEntity
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
@@ -29,6 +30,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
      * @param startedAt started at
      * @param endedAt ended at
      * @param dayOffWorkAllowance day off work allowance
+     * @param defaultCostCenter default cost center
      * @return created employee work shift
      */
     suspend fun create(
@@ -40,7 +42,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         perDiemAllowance: PerDiemAllowanceType?,
         startedAt: OffsetDateTime?,
         endedAt: OffsetDateTime?,
-        dayOffWorkAllowance: Boolean? = null
+        dayOffWorkAllowance: Boolean? = null,
+        defaultCostCenter: String?
     ): WorkShiftEntity {
         val employeeWorkShift = WorkShiftEntity()
         employeeWorkShift.id = id
@@ -52,6 +55,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         employeeWorkShift.startedAt = startedAt
         employeeWorkShift.endedAt = endedAt
         employeeWorkShift.dayOffWorkAllowance = dayOffWorkAllowance
+        employeeWorkShift.defaultCostCenter = defaultCostCenter
+        employeeWorkShift.checkedForEventDuplicates = false
         return persistSuspending(employeeWorkShift)
     }
 
@@ -63,6 +68,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
      * @param startedBefore started before
      * @param dateAfter date after filter
      * @param dateBefore date before filter
+     * @param payrollExport payroll export
      * @param first first
      * @param max max
      * @return pair of list of employee work shifts and count
@@ -74,7 +80,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         dateAfter: LocalDate?,
         dateBefore: LocalDate?,
         first: Int? = null,
-        max: Int? = null
+        max: Int? = null,
+        payrollExport: PayrollExportEntity?
     ): Pair<List<WorkShiftEntity>, Long> {
         val queryBuilder = StringBuilder()
         val parameters = Parameters()
@@ -102,11 +109,34 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
             parameters.and("dateBefore", dateBefore)
         }
 
+        if (payrollExport != null) {
+            queryBuilder.append(" AND payrollExport = :payrollExport")
+            parameters.and("payrollExport", payrollExport)
+        }
+
         return queryWithCount(
             query = find(queryBuilder.toString(), Sort.by("date", Sort.Direction.Descending).and("startedAt", Sort.Direction.Descending), parameters),
             firstIndex = first,
             maxResults = max
         )
+    }
+
+    /**
+     * Lists work shifts that meet the following conditions:
+     * 1. They have not been checked for event duplicates.
+     * 2. They have ended before the given date.
+     *
+     * @param endedBefore
+     */
+    suspend fun listWorkShiftsWithPossibleDuplicateEvents(endedBefore: OffsetDateTime): List<WorkShiftEntity> {
+        val queryBuilder = StringBuilder()
+        val parameters = Parameters()
+
+        queryBuilder.append("checkedForEventDuplicates = false")
+        queryBuilder.append(" AND endedAt < :endedBefore")
+        parameters.and("endedBefore", endedBefore)
+
+        return find(queryBuilder.toString(), parameters).list<WorkShiftEntity>().awaitSuspending()
     }
 
     /**
@@ -183,15 +213,43 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         dayOffWorkAllowance: Boolean?,
         perDiemAllowance: PerDiemAllowanceType?,
         notes: String?,
-        approved: Boolean
+        approved: Boolean,
+        defaultCostCenter: String?
     ): WorkShiftEntity {
         workShiftEntity.absence = absence
         workShiftEntity.dayOffWorkAllowance = dayOffWorkAllowance
         workShiftEntity.perDiemAllowance = perDiemAllowance
         workShiftEntity.notes = notes
         workShiftEntity.approved = approved
+        workShiftEntity.defaultCostCenter = defaultCostCenter
 
         return persistSuspending(workShiftEntity)
     }
 
+    /**
+
+     * Sets a payroll export for work shift.
+     * Work shift can be part only of one payroll export at a time.
+     *
+     * @param workShiftEntity
+     * @param payrollExportEntity
+     */
+    suspend fun setPayrollExport(
+        workShiftEntity: WorkShiftEntity,
+        payrollExportEntity: PayrollExportEntity?
+    ): WorkShiftEntity {
+        workShiftEntity.payrollExport = payrollExportEntity
+        return persistSuspending(workShiftEntity)
+    }
+
+    /**
+     * Marks that the work shift has been checked for work event duplicates.
+     * This function will be used by a cron job after the job has removed all the duplicates.
+     *
+     * @param workShiftEntity
+     */
+    suspend fun markShiftAsCheckedForDuplicates(workShiftEntity: WorkShiftEntity): WorkShiftEntity {
+        workShiftEntity.checkedForEventDuplicates = true
+        return persistSuspending(workShiftEntity)
+    }
 }
