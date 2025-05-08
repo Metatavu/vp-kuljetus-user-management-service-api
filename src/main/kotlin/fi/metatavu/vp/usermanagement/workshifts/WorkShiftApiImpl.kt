@@ -118,7 +118,8 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
                 perDiemAllowanceType = employeeWorkShift.perDiemAllowance,
                 startedAt = employeeWorkShift.startedAt,
                 endedAt = employeeWorkShift.endedAt,
-                dayOffWorkAllowance = employeeWorkShift.dayOffWorkAllowance
+                dayOffWorkAllowance = employeeWorkShift.dayOffWorkAllowance,
+                defaultCostCenter = employeeWorkShift.defaultCostCenter
             )
 
             val changeSet = workShiftChangeSetController.create(workShiftChangeSetId, created, loggedUserId!!)

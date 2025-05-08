@@ -7,6 +7,7 @@ import fi.metatavu.vp.usermanagement.model.EmployeeType
 import fi.metatavu.vp.usermanagement.model.Office
 import fi.metatavu.vp.usermanagement.model.SalaryGroup
 import fi.metatavu.vp.usermanagement.keycloak.KeycloakAdminClient
+import fi.metatavu.vp.usermanagement.payrollexports.PayrollExportController
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -20,6 +21,9 @@ class UserController {
 
     @Inject
     lateinit var keycloakAdminClient: KeycloakAdminClient
+
+    @Inject
+    lateinit var payrollExportController: PayrollExportController
 
     /**
      * Finds a user by id
@@ -267,6 +271,16 @@ class UserController {
      */
     suspend fun deleteEmployee(id: UUID) {
         try {
+            payrollExportController.list(
+                employeeId = id,
+                null,
+                null,
+                null,
+                null
+            ).forEach {
+                payrollExportController.delete(it)
+            }
+
             keycloakAdminClient.getUserApi().realmUsersIdDelete(
                 realm = keycloakAdminClient.getRealm(),
                 id = id.toString()
