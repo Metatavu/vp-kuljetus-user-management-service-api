@@ -51,7 +51,7 @@ class WorkShiftEntity {
     @Column
     var defaultCostCenter: String? = null
 
-    @Column(nullable = false)
+    @Column
     var checkedForEventDuplicates: Boolean? = null
 
 }
