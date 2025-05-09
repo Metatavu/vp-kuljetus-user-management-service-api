@@ -97,8 +97,8 @@ class PayrollExportEndpointTestsIT: AbstractFunctionalTest() {
 
         assertEquals(exportId, it.manager.workShifts.findEmployeeWorkShift(
             employeeId = employee.id,
-            id = workShift.payrollExportId!!
-        ), "Payroll export ID should match the work shift's payroll export ID")
+            id = workShift.id
+        ).payrollExportId, "Payroll export ID should match the work shift's payroll export ID")
 
         val payrollExport = it.manager.payrollExports.findPayrollExport(exportId)
 

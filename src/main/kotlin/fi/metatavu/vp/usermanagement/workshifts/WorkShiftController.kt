@@ -192,16 +192,9 @@ class WorkShiftController {
         workShift: WorkShiftEntity,
         payrollExport: PayrollExportEntity?
     ) {
-        if (workShift.payrollExport == null) {
-            workShiftRepository.setPayrollExport(
-                workShiftEntity = workShift,
-                payrollExportEntity = payrollExport
-            )
-        } else if (payrollExport == null) {
-            workShiftRepository.setPayrollExport(
-                workShiftEntity = workShift,
-                payrollExportEntity = null
-            )
-        }
+        workShiftRepository.setPayrollExport(
+            workShiftEntity = workShift,
+            payrollExportEntity = payrollExport
+        )
     }
 }
