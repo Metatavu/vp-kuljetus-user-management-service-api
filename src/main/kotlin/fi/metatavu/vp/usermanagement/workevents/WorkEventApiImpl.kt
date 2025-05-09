@@ -138,7 +138,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
     }
 
     @WithTransaction
-    override fun removeEventDuplicates(): Uni<Response> = withCoroutineScope {
+    override fun removeEventDuplicates(): Uni<Response> = withCoroutineScope(requestTimeOut = 120000L) {
         if (requestCronKey != cronKey) {
             return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
         }
