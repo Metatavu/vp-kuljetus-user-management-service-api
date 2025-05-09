@@ -34,7 +34,8 @@ class WorkShiftTranslator: AbstractTranslator<WorkShiftEntity, EmployeeWorkShift
             endedAt = entity.endedAt,
             costCentersFromEvents = workEventController.list(employeeWorkShift = entity).first.mapNotNull {
                 it.costCenter
-            }
+            },
+            payrollExportId = entity.payrollExport?.id
         )
     }
 
