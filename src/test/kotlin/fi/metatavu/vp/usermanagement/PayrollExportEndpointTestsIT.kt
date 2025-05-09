@@ -69,8 +69,6 @@ class PayrollExportEndpointTestsIT: AbstractFunctionalTest() {
             expectedStatus = 400
         )
 
-        //
-
         val workShift2 = it.manager.workShifts.createEmployeeWorkShift(
             employeeId = employee.id,
             workShift = EmployeeWorkShift(
@@ -96,6 +94,11 @@ class PayrollExportEndpointTestsIT: AbstractFunctionalTest() {
                 workShiftIds = arrayOf(workShift.id, workShift2.id)
             )
         ).id!!
+
+        assertEquals(exportId, it.manager.workShifts.findEmployeeWorkShift(
+            employeeId = employee.id,
+            id = workShift.payrollExportId!!
+        ), "Payroll export ID should match the work shift's payroll export ID")
 
         val payrollExport = it.manager.payrollExports.findPayrollExport(exportId)
 
