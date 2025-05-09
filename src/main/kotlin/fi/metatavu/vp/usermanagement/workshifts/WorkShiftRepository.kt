@@ -139,7 +139,10 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         queryBuilder.append(" AND endedAt < :endedBefore")
         parameters.and("endedBefore", endedBefore)
 
-        return find(queryBuilder.toString(), parameters).list<WorkShiftEntity>().awaitSuspending()
+        return queryWithCount(
+            query = find(queryBuilder.toString(), Sort.by("date", Sort.Direction.Descending).and("startedAt", Sort.Direction.Descending), parameters),
+            maxResults = 10,
+        ).first
     }
 
     /**
