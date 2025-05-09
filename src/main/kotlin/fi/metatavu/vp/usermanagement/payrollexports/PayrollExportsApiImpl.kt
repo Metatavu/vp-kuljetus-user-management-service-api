@@ -17,7 +17,7 @@ import java.util.*
 
 @RequestScoped
 @WithSession
-class   PayrollExportsApiImpl: PayrollExportsApi, AbstractApi() {
+class PayrollExportsApiImpl: PayrollExportsApi, AbstractApi() {
     @Inject
     lateinit var payrollExportController: PayrollExportController
 
