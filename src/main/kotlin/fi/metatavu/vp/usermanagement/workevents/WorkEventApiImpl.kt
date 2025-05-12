@@ -19,6 +19,7 @@ import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.config.inject.ConfigProperty
+import org.jboss.logging.Logger
 import java.time.OffsetDateTime
 import java.util.*
 
@@ -54,6 +55,12 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
     @Inject
     lateinit var workEventScheduledJobs: WorkEventScheduledJobs
 
+    @Inject
+    lateinit var workShiftController: WorkShiftController
+
+    @Inject
+    lateinit var logger: Logger
+
     @ConfigProperty(name = "vp.usermanagement.cron.apiKey")
     lateinit var cronKey: String
 
@@ -79,6 +86,26 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
             isWorkEventCreatable(workEvent)?.let {
                 return@withCoroutineScope createBadRequest(it)
             }
+
+            val workShift = workShiftController.listEmployeeWorkShifts(
+                employeeId = workEvent.employeeId,
+                null,
+                null,
+                null,
+                null
+            ).first.firstOrNull()
+
+            if (workShift != null) {
+                val events = workEventController.list(employeeWorkShift = workShift).first
+                val previousEvent = events.first()
+                val isPreviousEventTaskEvent = previousEvent.workEventType == WorkEventType.LOADING || previousEvent.workEventType == WorkEventType.UNLOADING
+
+                if (workShift.endedAt == null && isPreviousEventTaskEvent) {
+                    logger.error("Cannot add an event while there is an active loading or unloading task ongoing. Ignoring the event.")
+                    return@withCoroutineScope createBadRequest("Cannot add an event while there is an active loading or unloading task ongoing.")
+                }
+            }
+
 
             val created = workEventController.create(
                 employee = employee,

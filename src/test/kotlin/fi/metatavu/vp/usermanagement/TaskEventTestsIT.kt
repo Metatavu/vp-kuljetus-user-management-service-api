@@ -55,6 +55,16 @@ class TaskEventTestsIT: AbstractFunctionalTest() {
         assertEquals(truckId, taskEvent.truckId)
         assertEquals(employee.id, taskEvent.employeeId)
 
+        it.manager.workEvents.assertCreateFail(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = OffsetDateTime.now().toString(),
+                workEventType = WorkEventType.GREASE
+            ),
+            expectedStatus = 400
+        )
+
         MessagingClient.publishMessage(
             TaskGlobalEvent(
                 userId = employee.id,

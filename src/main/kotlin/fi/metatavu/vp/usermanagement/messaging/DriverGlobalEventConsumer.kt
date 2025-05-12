@@ -2,8 +2,10 @@ package fi.metatavu.vp.usermanagement.messaging
 
 import fi.metatavu.vp.messaging.events.DriverWorkEventGlobalEvent
 import fi.metatavu.vp.usermanagement.WithCoroutineScope
+import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.users.UserController
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.vertx.ConsumeEvent
 import io.smallrye.mutiny.Uni
@@ -25,6 +27,9 @@ class DriverGlobalEventConsumer: WithCoroutineScope() {
     lateinit var userController: UserController
 
     @Inject
+    lateinit var workShiftController: WorkShiftController
+
+    @Inject
     lateinit var logger: Logger
 
     /**
@@ -41,6 +46,23 @@ class DriverGlobalEventConsumer: WithCoroutineScope() {
 
         if (foundDriver == null) {
             logger.error("Driver with id ${event.driverId} not found")
+            return@withCoroutineScope false
+        }
+
+        val workShift = workShiftController.listEmployeeWorkShifts(
+            employeeId = event.driverId,
+            null,
+            null,
+            null,
+            null
+        ).first.first()
+
+        val events = workEventController.list(employeeWorkShift = workShift).first
+        val previousEvent = events.first()
+        val isPreviousEventTaskEvent = previousEvent.workEventType == WorkEventType.LOADING || previousEvent.workEventType == WorkEventType.UNLOADING
+
+        if (workShift.endedAt == null && isPreviousEventTaskEvent) {
+            logger.error("Cannot add an event while there is an active loading or unloading task ongoing. Ignoring the event.")
             return@withCoroutineScope false
         }
 
