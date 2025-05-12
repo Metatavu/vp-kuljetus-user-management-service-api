@@ -10,14 +10,13 @@ import io.smallrye.mutiny.Uni
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
-import java.util.*
 
 /**
  * Controller that listens to events sent by messaging service
  */
 @ApplicationScoped
 @Suppress("unused")
-class MessagingController: WithCoroutineScope() {
+class DriverGlobalEventConsumer: WithCoroutineScope() {
 
     @Inject
     lateinit var workEventController: WorkEventController
