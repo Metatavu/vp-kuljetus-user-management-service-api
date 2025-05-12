@@ -125,13 +125,13 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
     }
 
     /**
-     * Lists work shifts that meet the following conditions:
-     * 1. They have not been checked for event duplicates.
-     * 2. They have ended before the given date.
+     * Gets the next work shift that meets the following conditions:
+     * 1. Has not been checked for event duplicates.
+     * 2. Has ended before the given date.
      *
      * @param endedBefore
      */
-    suspend fun listWorkShiftsWithPossibleDuplicateEvents(endedBefore: OffsetDateTime): List<WorkShiftEntity> {
+    suspend fun getNextWorkShiftWithPossibleDuplicateEvents(endedBefore: OffsetDateTime): WorkShiftEntity? {
         val queryBuilder = StringBuilder()
         val parameters = Parameters()
 
@@ -141,8 +141,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
 
         return queryWithCount(
             query = find(queryBuilder.toString(), Sort.by("date", Sort.Direction.Descending).and("startedAt", Sort.Direction.Descending), parameters),
-            maxResults = 10,
-        ).first
+            maxResults = 1,
+        ).first.firstOrNull()
     }
 
     /**
