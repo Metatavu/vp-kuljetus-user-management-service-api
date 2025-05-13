@@ -141,7 +141,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
 
         return queryWithCount(
             query = find(queryBuilder.toString(), Sort.by("date", Sort.Direction.Descending).and("startedAt", Sort.Direction.Descending), parameters),
-            maxResults = 10,
+            maxResults = 1,
         ).first
     }
 
