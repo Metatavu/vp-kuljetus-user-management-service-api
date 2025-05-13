@@ -179,7 +179,7 @@ class PayrollExportController {
     ) {
 
         val fileContent = buildRows(
-            workShifts = workShifts,
+            workShiftsForSalaryPeriod = workShifts,
             employee = employee
         )
 
@@ -223,11 +223,11 @@ class PayrollExportController {
      * Builds a string of rows for the payroll export file.
      * Each row represents work done for a specific salary type for a specific cost center on a given day.
      *
-     * @param workShifts
+     * @param workShiftsForSalaryPeriod
      * @param employee
      */
     private suspend fun buildRows(
-        workShifts: List<WorkShiftEntity>,
+        workShiftsForSalaryPeriod: List<WorkShiftEntity>,
         employee: UserRepresentation
     ): String {
         var rows = ""
@@ -235,10 +235,10 @@ class PayrollExportController {
         val employeeNumber = employee.attributes!!["employeeNumber"]!!.first()
         val salaryGroup = SalaryGroup.valueOf(employee.attributes[SALARY_GROUP_ATTRIBUTE]!!.first())
         val isDriver = salaryGroup == SalaryGroup.DRIVER || salaryGroup == SalaryGroup.VPLOGISTICS
-        val workShiftsGroupedByDate = workShifts.sortedBy { it.date }.groupBy { it.date }
+        val workShiftsGroupedByDate = workShiftsForSalaryPeriod.sortedBy { it.date }.groupBy { it.date }
 
         val vacationHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(
-            workShifts = workShifts,
+            workShifts = workShiftsForSalaryPeriod,
             absenceType = AbsenceType.VACATION
         )
         val regularWorkingHours = employee.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat()
@@ -481,7 +481,7 @@ class PayrollExportController {
                 salaryTypeNumber = SalaryTypes.STANDBY
             )
 
-            val partialDailyAllowance = workShifts.filter { shift ->
+            val partialDailyAllowance = workShiftsForDate.filter { shift ->
                 shift.perDiemAllowance == PerDiemAllowanceType.PARTIAL
             }.size
 
@@ -496,7 +496,7 @@ class PayrollExportController {
                 )
             }
 
-            val fullDailyAllowance = workShifts.filter { shift ->
+            val fullDailyAllowance = workShiftsForDate.filter { shift ->
                 shift.perDiemAllowance == PerDiemAllowanceType.FULL
             }.size
 
@@ -511,7 +511,7 @@ class PayrollExportController {
                 )
             }
 
-            val dayOffBonus = salaryPeriodUtils.calculateDayOffBonus(workShifts = workShifts)
+            val dayOffBonus = salaryPeriodUtils.calculateDayOffBonus(workShifts = workShiftsForDate)
             if (dayOffBonus.toFloat() != 0f) {
                 rows += buildPayrollExportRow(
                     date = date,
@@ -527,20 +527,20 @@ class PayrollExportController {
         val fillingHours = if (regularWorkingHours != null) salaryPeriodUtils.calculateFillingHours(
             regularWorkingHours = regularWorkingHours.toBigDecimal(),
             workingHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
-                workShifts = workShifts,
+                workShifts = workShiftsForSalaryPeriod,
                 workType = WorkType.PAID_WORK
             ),
             vacationHours = vacationHours,
             sickHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
-                workShifts = workShifts,
+                workShifts = workShiftsForSalaryPeriod,
                 workType = WorkType.SICK_LEAVE
             ),
             officialDutyHours = salaryPeriodUtils.calculateWorkingHoursByWorkType(
-                workShifts = workShifts,
+                workShifts = workShiftsForSalaryPeriod,
                 workType = WorkType.OFFICIAL_DUTIES
             ),
             compensatoryLeaveHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(
-                workShifts = workShifts,
+                workShifts = workShiftsForSalaryPeriod,
                 absenceType = AbsenceType.COMPENSATORY_LEAVE
             )
         ) else BigDecimal.valueOf(0)
