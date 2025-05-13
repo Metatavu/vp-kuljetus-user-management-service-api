@@ -32,7 +32,7 @@ class PayrollExportsApiImpl: PayrollExportsApi, AbstractApi() {
 
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
-    override fun createPayrollExport(payrollExport: PayrollExport): Uni<Response> = withCoroutineScope {
+    override fun createPayrollExport(payrollExport: PayrollExport): Uni<Response> = withCoroutineScope(60000L) {
         loggedUserId ?: return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
 
         val employee = userController.find(
