@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement
 
+import fi.metatavu.vp.messaging.RoutingKey
 import fi.metatavu.vp.messaging.client.MessagingClient
 import fi.metatavu.vp.messaging.events.DriverWorkEventGlobalEvent
 import fi.metatavu.vp.test.client.models.WorkEventType
@@ -29,7 +30,7 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
         val drivers = tb.manager.drivers.listDrivers()
         val driverId = drivers[0].id!!
         (0 until 25).forEach { _ ->
-            MessagingClient.publishMessage(createDriverWorkEvent(driverId, UUID.randomUUID(), WorkEventType.SHIFT_START))
+            MessagingClient.publishMessage(createDriverWorkEvent(driverId, UUID.randomUUID(), WorkEventType.SHIFT_START), routingKey = RoutingKey.DRIVER_WORKING_STATE_CHANGE)
         }
         Awaitility.await().atMost(Duration.ofMinutes(5)).until {
 
@@ -52,7 +53,7 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
         val driverId = drivers[0].id!!
         val startWorkEvent = createDriverWorkEvent(driverId, UUID.randomUUID(), WorkEventType.SHIFT_START)
 
-        MessagingClient.publishMessage(startWorkEvent)
+        MessagingClient.publishMessage(startWorkEvent, routingKey = RoutingKey.DRIVER_WORKING_STATE_CHANGE)
         Awaitility.await().atMost(Duration.ofMinutes(2)).until {
             val workEvents = tb.manager.workEvents.listWorkEvents(driverId)
             workEvents.size == 1 && workEvents[0].truckId == startWorkEvent.truckId
@@ -73,7 +74,7 @@ class MessageEventsTestIT: AbstractFunctionalTest() {
         assertNotNull(shiftStartedWorkEvent.time)
 
         val endWorkDayEvent = createDriverWorkEvent(driverId, UUID.randomUUID(), WorkEventType.DRIVE)
-        MessagingClient.publishMessage(endWorkDayEvent)
+        MessagingClient.publishMessage(endWorkDayEvent, routingKey = RoutingKey.DRIVER_WORKING_STATE_CHANGE)
 
         Awaitility.await().atMost(Duration.ofMinutes(2)).until {
             val workEvents = tb.manager.workEvents.listWorkEvents(driverId)

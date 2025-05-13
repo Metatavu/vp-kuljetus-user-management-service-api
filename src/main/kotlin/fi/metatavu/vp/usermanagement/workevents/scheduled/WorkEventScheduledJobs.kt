@@ -31,12 +31,14 @@ class WorkEventScheduledJobs {
     suspend fun removeDuplicateEvents() {
         val endedBefore = OffsetDateTime.now().minusDays(gracePeriodDays.toLong())
 
-        val notCheckedWorkShifts = workShiftRepository.listWorkShiftsWithPossibleDuplicateEvents(endedBefore = endedBefore)
-        val amountOfShifts = notCheckedWorkShifts.size
+        val workShift = workShiftRepository.getNextWorkShiftWithPossibleDuplicateEvents(endedBefore = endedBefore)
 
-        logger.info("Found $amountOfShifts work shifts that will be checked for duplicate events.")
+        if (workShift != null) {
+            logger.info("Found work shift ${workShift.id} that will be checked for duplicate events.")
 
-        notCheckedWorkShifts.forEach { removeDuplicatesFromWorkShift(it) }
+            removeDuplicatesFromWorkShift(workShift)
+        }
+
     }
 
     /**
