@@ -55,20 +55,21 @@ class DriverGlobalEventConsumer: WithCoroutineScope() {
             null,
             null,
             null
-        ).first.first()
+        ).first.firstOrNull()
 
-        val events = workEventController.list(employeeWorkShift = workShift).first
-        val previousEvent = events.firstOrNull()
-        if (previousEvent != null) {
-            val isPreviousEventTaskEvent = previousEvent.workEventType == WorkEventType.LOADING || previousEvent.workEventType == WorkEventType.UNLOADING
+        if (workShift != null) {
+            val events = workEventController.list(employeeWorkShift = workShift).first
+            val previousEvent = events.firstOrNull()
+            if (previousEvent != null) {
+                val isPreviousEventTaskEvent = previousEvent.workEventType == WorkEventType.LOADING || previousEvent.workEventType == WorkEventType.UNLOADING
 
-            if (workShift.endedAt == null && isPreviousEventTaskEvent) {
-                logger.error("Cannot add an event while there is an active loading or unloading task ongoing. Ignoring the event.")
-                return@withCoroutineScope false
+                if (workShift.endedAt == null && isPreviousEventTaskEvent) {
+                    logger.error("Cannot add an event while there is an active loading or unloading task ongoing. Ignoring the event.")
+                    return@withCoroutineScope false
+                }
             }
         }
-
-
+        
         workEventController.create(
             employee = foundDriver,
             time = event.time,
