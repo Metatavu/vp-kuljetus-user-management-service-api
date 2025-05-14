@@ -434,7 +434,7 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         )
 
         assertEquals(20f.toBigDecimal(), salaryPeriodTotalWorkHours.workingHours, "Working hours should be 20")
-        assertEquals(8f.toBigDecimal(), salaryPeriodTotalWorkHours.workingTime, "Working time should be 8")
+        assertEquals(6f.toBigDecimal(), salaryPeriodTotalWorkHours.workingTime, "Working time should be 8")
         assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.overTimeFull, "Overtime full should be 1")
         assertEquals(3f.toBigDecimal(), salaryPeriodTotalWorkHours.overTimeHalf, "Overtime half should be 3")
         assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.waitingTime, "Waiting time should be 1")
@@ -490,7 +490,7 @@ class EmployeeTestIT : AbstractFunctionalTest() {
             employeeId = employee.id,
             dateInSalaryPeriod = now
         )
-        assertEquals(8.66.toBigDecimal(), salaryPeriodTotalWorkHours3.fillingHours, "Filling hours should be 8.66")
+        assertEquals(6.66.toBigDecimal(), salaryPeriodTotalWorkHours3.fillingHours, "Filling hours should be 6.66")
     }
 
 }

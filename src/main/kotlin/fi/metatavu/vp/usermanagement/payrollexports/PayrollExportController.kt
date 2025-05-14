@@ -241,7 +241,19 @@ class PayrollExportController {
             workShifts = workShiftsForSalaryPeriod,
             absenceType = AbsenceType.VACATION
         )
-        val regularWorkingHours = employee.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat()
+
+        val regularWorkingHoursAttribute = employee.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat()
+        val unpaidHoursDuringSalaryPeriod  = salaryPeriodUtils.calculateWorkingHoursByWorkType(
+            workShifts = workShiftsForSalaryPeriod,
+            workType = WorkType.UNPAID
+        ).toFloat()
+        val regularWorkingHours = if (regularWorkingHoursAttribute == null) {
+            null
+        } else {
+            regularWorkingHoursAttribute - unpaidHoursDuringSalaryPeriod
+        }
+
+
         val employeeName = "${employee.firstName} ${employee.lastName}"
 
         var paidHoursForDriver = 0f

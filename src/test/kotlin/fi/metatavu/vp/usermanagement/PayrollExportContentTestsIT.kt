@@ -131,6 +131,19 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             )
         )
 
+        val unpaidHours = it.manager.workShiftHours.listWorkShiftHours(
+            employeeId = employee.id,
+            employeeWorkShiftId = workShift1.id!!,
+            workType = WorkType.UNPAID
+        ).first()
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = unpaidHours.id!!,
+            workShiftHours = unpaidHours.copy(
+                actualHours = 0.5f
+            )
+        )
+
         it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee.id,
             id = workShift1.id,
@@ -304,7 +317,7 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
         val row4 = "$formattedDate1;1212;Test Employee;11000;4.00;;Cost center 1;;;"
         val row5 = "$formattedDate1;1212;Test Employee;11000;6.00;;Cost center 2;;;"
         val row6 = "$formattedDate1;1212;Test Employee;11000;4.00;;Default;;;"
-        val row7 = "$formattedDate1;1212;Test Employee;11010;22.00;;;;;"
+        val row7 = "$formattedDate1;1212;Test Employee;11010;21.50;;;;;"
 
         val expectedFileContent = row1 + "\n" +
                 row2 + "\n" +
@@ -1060,7 +1073,6 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
             )
         )
 
-
         it.manager.workEvents.updateWorkEvent(
             employeeId = employee.id,
             id = event2.id!!,
@@ -1071,9 +1083,22 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
 
         val workShift = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
 
+        val unpaidHours = it.manager.workShiftHours.listWorkShiftHours(
+            employeeId = employee.id,
+            employeeWorkShiftId = workShift.id!!,
+            workType = WorkType.UNPAID
+        ).first()
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = unpaidHours.id!!,
+            workShiftHours = unpaidHours.copy(
+                actualHours = 0.5f
+            )
+        )
+
         it.manager.workShifts.updateEmployeeWorkShift(
             employeeId = employee.id,
-            id = workShift.id!!,
+            id = workShift.id,
             workShift = workShift.copy(
                 approved = true
             )
@@ -1206,12 +1231,12 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
         val formattedDate3 = date3.toLocalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
 
         val row1 = "$formattedDate3;1212;Test Employee;11000;4.00;;A;;;"
-        val row2 = "$formattedDate3;1212;Test Employee;11000;1.00;;B;;;"
-        val row3 = "$formattedDate3;1212;Test Employee;20050;3.00;;B;;;"
+        val row2 = "$formattedDate3;1212;Test Employee;11000;0.50;;B;;;"
+        val row3 = "$formattedDate3;1212;Test Employee;20050;3.50;;B;;;"
         val row4 = "$formattedDate2;1212;Test Employee;20050;4.00;;A;;;"
         val row5 = "$formattedDate2;1212;Test Employee;20050;4.00;;B;;;"
-        val row6 = "$formattedDate1;1212;Test Employee;20050;1.00;;A;;;"
-        val row7 = "$formattedDate1;1212;Test Employee;20060;3.00;;A;;;"
+        val row6 = "$formattedDate1;1212;Test Employee;20050;0.50;;A;;;"
+        val row7 = "$formattedDate1;1212;Test Employee;20060;3.50;;A;;;"
         val row8 = "$formattedDate1;1212;Test Employee;20060;4.00;;B;;;"
 
 
