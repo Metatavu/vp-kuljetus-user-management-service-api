@@ -81,7 +81,7 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
             employeeId = employeeId,
             dateInSalaryPeriod = dateInSalaryPeriod,
             isDriver = isDriver,
-            regularWorkingHours = regularWorkingHours
+            regularWorkingHoursFromAttributes = regularWorkingHours
         ))
 
     }

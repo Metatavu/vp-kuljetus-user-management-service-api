@@ -33,7 +33,7 @@ class SalaryPeriodUtils {
      */
     suspend fun aggregateSalaryPeriodTotalWorkHours(
         employeeId: UUID,
-        regularWorkingHours: Float?,
+        regularWorkingHoursFromAttributes: Float?,
         isDriver: Boolean,
         dateInSalaryPeriod: OffsetDateTime
     ): SalaryPeriodTotalWorkHours {
@@ -50,6 +50,17 @@ class SalaryPeriodUtils {
             startedBefore = null,
             startedAfter = null
         ).first
+
+        val unpaidHours = calculateWorkingHoursByWorkType(
+            workShifts = workShifts,
+            workType = WorkType.UNPAID
+        )
+
+        val regularWorkingHours = if (regularWorkingHoursFromAttributes != null) {
+            regularWorkingHoursFromAttributes - unpaidHours.toFloat()
+        } else {
+            null
+        }
 
         val workingHours = calculateWorkingHoursByWorkType(
             workShifts = workShifts,
@@ -130,11 +141,6 @@ class SalaryPeriodUtils {
 
         val dayOffBonusHours = calculateDayOffBonus(
             workShifts = workShifts
-        )
-
-        val unpaidHours = calculateWorkingHoursByWorkType(
-            workShifts = workShifts,
-            workType = WorkType.UNPAID
         )
 
         val sickHours = calculateWorkingHoursByWorkType(
