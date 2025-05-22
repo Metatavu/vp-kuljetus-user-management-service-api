@@ -356,4 +356,7 @@
     <changeSet id="workeventduplicatesconstraint" author="Simeon Platonov">
         <addNotNullConstraint defaultNullValue="false" tableName="workshift" columnName="checkedforeventduplicates" columnDataType="boolean"/>
     </changeSet>
+    <changeSet id="rechekforduplicates" author="Simeon Platonoc">
+        <sql>UPDATE workshift SET checkedforeventduplicates = false</sql>
+    </changeSet>
 </databaseChangeLog>
