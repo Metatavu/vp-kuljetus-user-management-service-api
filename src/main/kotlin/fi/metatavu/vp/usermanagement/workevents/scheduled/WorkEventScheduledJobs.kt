@@ -33,7 +33,7 @@ class WorkEventScheduledJobs {
 
         val notCheckedWorkShifts = workShiftRepository.listWorkShiftsWithPossibleDuplicateEvents(endedBefore = endedBefore, maxResults = 100000)
 
-        logger.info("Amount shifts that have not been checked for duplicates: ${notCheckedWorkShifts.size}")
+        logger.info("Amount of shifts that have not been checked for duplicates: ${notCheckedWorkShifts.size}")
 
         if (notCheckedWorkShifts.isEmpty()) {
             return
