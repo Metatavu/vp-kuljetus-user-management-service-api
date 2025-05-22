@@ -65,9 +65,13 @@ class WorkEventScheduledJobs {
                     removedDuplicates++
                     duplicatesIndex++
                 }
+
+                if (removedDuplicates >= 20) {
+                    break
+                }
             }
 
-            if (removedDuplicates >= 100) {
+            if (removedDuplicates >= 20) {
                 break
             }
 
