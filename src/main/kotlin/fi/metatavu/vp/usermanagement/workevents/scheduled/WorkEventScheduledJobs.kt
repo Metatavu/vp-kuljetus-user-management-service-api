@@ -67,6 +67,10 @@ class WorkEventScheduledJobs {
                 }
             }
 
+            if (removedDuplicates >= 100) {
+                break
+            }
+
             currentIndex+=duplicatesIndex
         }
 
