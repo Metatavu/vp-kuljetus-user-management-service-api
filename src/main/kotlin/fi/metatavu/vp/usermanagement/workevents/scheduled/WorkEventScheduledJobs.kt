@@ -81,11 +81,11 @@ class WorkEventScheduledJobs {
             currentIndex+=duplicatesIndex
         }
 
+        logger.info("Removed $removedDuplicates duplicate events from work shift ${workShift.id}.")
+
         if (removedDuplicates == 0) {
             workShiftRepository.markShiftAsCheckedForDuplicates(workShiftEntity = workShift)
             removeDuplicateEvents()
         }
-
-        logger.info("Removed $removedDuplicates duplicate events from work shift ${workShift.id}.")
     }
 }
