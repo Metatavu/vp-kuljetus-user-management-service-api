@@ -67,7 +67,7 @@ class WorkEventScheduledJobs {
                 }
             }
 
-            if (removedDuplicates >= 100) {
+            if (removedDuplicates >= 20) {
                 break
             }
 
