@@ -167,13 +167,14 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 startedAt = now.toString(),
                 endedAt = now.plusHours(25).toString(),
                 costCentersFromEvents = arrayOf(),
-                notes = "Truck changed to ABC-123"
+                notes = "Truck changed to ABC-123",
+                defaultCostCenter = "Centre 1"
             )
         )
 
         val foundWorShift = it.manager.workShifts.findEmployeeWorkShift(employeeId = employee1.id, id = createdWorkShift.id!!)
         assertEquals("Truck changed to ABC-123", foundWorShift.notes, "Found shift should have the same notes that where entered when the shift was created")
-
+        assertEquals("Centre 1", foundWorShift.defaultCostCenter, "Found shift should have the same default cost center that where entered when the shift was created")
         // employee 2 events
         it.manager.workEvents.createWorkEvent(employee2.id!!, now.toString(), WorkEventType.MEAT_CELLAR)
         it.manager.workEvents.createWorkEvent(employee2.id, now.plusHours(1).toString(), WorkEventType.BREAK)
@@ -347,7 +348,8 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 date = now.toLocalDate().toString(),
                 employeeId = employee1,
                 approved = false,
-                costCentersFromEvents = arrayOf()
+                costCentersFromEvents = arrayOf(),
+                defaultCostCenter = "Centre 1"
             )
         )
 
@@ -359,10 +361,12 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
                 dayOffWorkAllowance = true,
                 perDiemAllowance = PerDiemAllowanceType.FULL,
                 absence = AbsenceType.COMPENSATORY_LEAVE,
-                notes = "approved"
+                notes = "approved",
+                defaultCostCenter = "Centre 2"
             )
         )
         assertEquals(true, updatedWorkShift.approved, "After update, work shift should be approved")
+        assertEquals("Centre 2", updatedWorkShift.defaultCostCenter, "After update, default cost center should be 'Centre 2'")
         assertEquals(true, updatedWorkShift.dayOffWorkAllowance, "After update, day off work allowance should be true")
         assertEquals(PerDiemAllowanceType.FULL, updatedWorkShift.perDiemAllowance, "After update, per diem allowance should be FULL")
         assertEquals(AbsenceType.COMPENSATORY_LEAVE, updatedWorkShift.absence, "After update, absence should be COMPENSATORY_LEAVE")
