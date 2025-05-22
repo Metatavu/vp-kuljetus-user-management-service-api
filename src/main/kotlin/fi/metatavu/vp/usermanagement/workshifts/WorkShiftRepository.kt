@@ -131,7 +131,7 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
      *
      * @param endedBefore
      */
-    suspend fun getNextWorkShiftWithPossibleDuplicateEvents(endedBefore: OffsetDateTime): WorkShiftEntity? {
+    suspend fun listWorkShiftsWithPossibleDuplicateEvents(endedBefore: OffsetDateTime, maxResults: Int): List<WorkShiftEntity> {
         val queryBuilder = StringBuilder()
         val parameters = Parameters()
 
@@ -141,8 +141,8 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
 
         return queryWithCount(
             query = find(queryBuilder.toString(), Sort.by("date", Sort.Direction.Descending).and("startedAt", Sort.Direction.Descending), parameters),
-            maxResults = 1,
-        ).first.firstOrNull()
+            maxResults = maxResults,
+        ).first
     }
 
     /**
