@@ -31,12 +31,15 @@ class WorkEventScheduledJobs {
     suspend fun removeDuplicateEvents() {
         val endedBefore = OffsetDateTime.now().minusDays(gracePeriodDays.toLong())
 
-        val notCheckedWorkShifts = workShiftRepository.listWorkShiftsWithPossibleDuplicateEvents(endedBefore = endedBefore)
-        val amountOfShifts = notCheckedWorkShifts.size
+        val notCheckedWorkShifts = workShiftRepository.listWorkShiftsWithPossibleDuplicateEvents(endedBefore = endedBefore, maxResults = 100000)
 
-        logger.info("Found $amountOfShifts work shifts that will be checked for duplicate events.")
+        logger.info("Amount shifts that have not been checked for duplicates: ${notCheckedWorkShifts.size}")
 
-        notCheckedWorkShifts.forEach { removeDuplicatesFromWorkShift(it) }
+        if (notCheckedWorkShifts.isEmpty()) {
+            return
+        }
+
+        removeDuplicatesFromWorkShift(notCheckedWorkShifts.first())
     }
 
     /**
@@ -80,6 +83,7 @@ class WorkEventScheduledJobs {
 
         if (removedDuplicates == 0) {
             workShiftRepository.markShiftAsCheckedForDuplicates(workShiftEntity = workShift)
+            removeDuplicateEvents()
         }
 
         logger.info("Removed $removedDuplicates duplicate events from work shift ${workShift.id}.")
