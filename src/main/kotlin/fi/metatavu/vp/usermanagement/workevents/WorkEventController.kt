@@ -1,7 +1,6 @@
 package fi.metatavu.vp.usermanagement.workevents
 
 import fi.metatavu.keycloak.adminclient.models.UserRepresentation
-import fi.metatavu.vp.usermanagement.model.Employee
 import fi.metatavu.vp.usermanagement.model.WorkEvent
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
@@ -158,12 +157,12 @@ class WorkEventController {
 
     /**
      * Deletes work event, removes the work shift if it was the last event for it,
-     * recalculates the work shift date if needed,
-     * recalculates the work shift hours
+     * and recalculates the work shift date and work shift hours if needed.
      *
      * @param foundWorkEvent found work event
+     * @param recalculate whether to recalculate the work shift date and hours
      */
-    suspend fun delete(foundWorkEvent: WorkEventEntity) {
+    suspend fun delete(foundWorkEvent: WorkEventEntity, recalculate: Boolean = true) {
         workShiftChangeRepository.listByWorkEvent(foundWorkEvent).forEach {
             workShiftChangeRepository.deleteSuspending(it)
         }
@@ -176,6 +175,8 @@ class WorkEventController {
             return
         }
 
+        if (!recalculate) return
+
         val updatedWorkShift = recalculateWorkShiftTimes(workShift = foundWorkEvent.workShift)
         workShiftHoursController.recalculateWorkShiftHours(workShift = updatedWorkShift)
     }
@@ -187,7 +188,6 @@ class WorkEventController {
      */
     suspend fun deleteWithNoSideEffects(foundWorkEvent: WorkEventEntity) {
         workEventRepository.deleteSuspending(foundWorkEvent)
-
     }
 
     /**
