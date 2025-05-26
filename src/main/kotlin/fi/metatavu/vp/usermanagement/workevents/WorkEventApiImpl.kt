@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.workevents
 
+import fi.metatavu.vp.usermanagement.messaging.WorkEventDuplicateRemovalEvent
 import fi.metatavu.vp.usermanagement.model.WorkEvent
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
@@ -14,6 +15,7 @@ import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftC
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
+import io.vertx.mutiny.core.eventbus.EventBus
 import jakarta.annotation.security.RolesAllowed
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
@@ -63,6 +65,9 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
 
     @ConfigProperty(name = "vp.usermanagement.cron.apiKey")
     lateinit var cronKey: String
+
+    @Inject
+    lateinit var eventBus: EventBus
 
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
@@ -171,7 +176,8 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
             return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
         }
 
-        workEventScheduledJobs.removeDuplicateEvents()
+        logger.info("Pushing a job to queue remove duplicate work events")
+        eventBus.send("WORK_EVENT_DUPLICATE_REMOVAL", WorkEventDuplicateRemovalEvent())
 
         createOk()
     }
