@@ -49,7 +49,14 @@ class TaskGlobalEventConsumer: WithCoroutineScope() {
                 null
             ).first.first()
 
-            val events = workEventController.list(employeeWorkShift = workShift).first
+            val events = workEventController.list(employeeWorkShift = workShift).first.filter {
+                if (it.time.isAfter(event.eventTime)) {
+                    workEventController.delete(it)
+                    return@filter false
+                }
+
+                return@filter true
+            }
             val previousEvent = events.first()
             val isPreviousEventTaskEvent = previousEvent.workEventType == WorkEventType.LOADING || previousEvent.workEventType == WorkEventType.UNLOADING
 
