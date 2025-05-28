@@ -1781,6 +1781,145 @@ class PayrollExportContentTestsIT: AbstractFunctionalTest() {
         )
     }
 
+    @Test
+    fun testPayrollExportDriverOverTimeWithAbsence() = createTestBuilder().use {
+        val employee = it.manager.employees.createEmployee("1212")
+
+        it.manager.employees.updateEmployee(
+            employeeId = employee.id!!,
+            employee = employee.copy(
+                regularWorkingHours = 10f
+            )
+        )
+
+        val now = getLastWorkDay(
+            date = LocalDate.now()
+        )
+
+        val day2 = getLastWorkDay(
+            date = now
+        )
+
+        val currentOffset = OffsetDateTime.now().atZoneSameInstant(ZoneId.of("Europe/Helsinki")).offset
+
+        val date = OffsetDateTime.of(
+            now.year,
+            now.monthValue,
+            now.dayOfMonth,
+            16,
+            0,
+            0,
+            0,
+            currentOffset
+        )
+
+        val date2 = OffsetDateTime.of(
+            day2.year,
+            day2.monthValue,
+            day2.dayOfMonth,
+            16,
+            0,
+            0,
+            0,
+            currentOffset
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date2.minusHours(8).toString(),
+                workEventType = WorkEventType.DRIVE
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date2.toString(),
+                workEventType = WorkEventType.SHIFT_END
+            )
+        )
+
+        val previousDayWorkShift = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
+
+        it.manager.workShifts.updateEmployeeWorkShift(
+            employeeId = employee.id,
+            id = previousDayWorkShift.id!!,
+            workShift = previousDayWorkShift.copy(
+                approved = true,
+                absence = AbsenceType.COMPENSATORY_LEAVE
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date.minusHours(8).toString(),
+                workEventType = WorkEventType.DRIVE
+            )
+        )
+
+        it.manager.workEvents.createWorkEvent(
+            employeeId = employee.id,
+            workEvent = WorkEvent(
+                employeeId = employee.id,
+                time = date.toString(),
+                workEventType = WorkEventType.SHIFT_END
+            )
+        )
+
+        val sameDayWorkShift = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id).first()
+
+        it.manager.workShifts.updateEmployeeWorkShift(
+            employeeId = employee.id,
+            id = sameDayWorkShift.id!!,
+            workShift = sameDayWorkShift.copy(
+                approved = true,
+                absence = AbsenceType.VACATION
+            )
+        )
+
+        val formattedDate = date.toLocalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+        val formattedDate2 = date2.toLocalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+
+        val previousDayRow1 = "$formattedDate2;1212;Test Employee;11000;8.00;;;;;"
+        val previousDayRow2 = "$formattedDate2;1212;Test Employee;20050;8.00;;;;;"
+        val currentDayRow1 = "$formattedDate;1212;Test Employee;11000;6.67;;;;;"
+        val currentDayRow2 = "$formattedDate;1212;Test Employee;20050;4.00;;;;;"
+        val currentDayRow3 = "$formattedDate;1212;Test Employee;20060;4.00;;;;;"
+
+        val expectedContent =
+            previousDayRow1 + "\n" +
+                    previousDayRow2 + "\n" +
+                    currentDayRow1 + "\n" +
+                    currentDayRow2 + "\n" +
+                    currentDayRow3 + "\n"
+
+        val payrollExport = it.manager.payrollExports.createPayrollExport(
+            PayrollExport(
+                employeeId = employee.id,
+                workShiftIds = arrayOf(sameDayWorkShift.id, previousDayWorkShift.id)
+            )
+        )
+
+        val s3FileContent = S3FileDownload().downloadFile(ApiTestSettings.S3_FOLDER_PATH + payrollExport.csvFileName)
+        assertEquals(
+            expectedContent,
+            s3FileContent,
+            "Payroll S3 export file content should match the expected content"
+        )
+
+        val ftpFileContent = downloadStringContentFromFtp(payrollExport.csvFileName!!)
+        assertEquals(
+            expectedContent,
+            ftpFileContent,
+            "Payroll FTP export file content should match the expected content"
+        )
+    }
+
 
     private fun downloadStringContentFromFtp(fileName: String): String {
         val ftpAddress = ConfigProvider.getConfig().getValue("vp.usermanagement.payrollexports.ftp.address", String::class.java)
