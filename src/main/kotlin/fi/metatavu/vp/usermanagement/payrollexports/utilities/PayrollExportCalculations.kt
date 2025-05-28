@@ -133,23 +133,23 @@ class PayrollExportCalculations {
 
         val defaultCostCenter = workShift.defaultCostCenter ?: ""
 
-        val isHoliday = workShift.startedAt?.dayOfWeek == DayOfWeek.SUNDAY || holidayController.list().first.find { it.date == workShift.startedAt?.toLocalDate() } != null
-
-        if (workShift.absence == AbsenceType.COMPENSATORY_LEAVE) {
-            val currentCostCenterAmount = (totalPaidWork[defaultCostCenter] ?: 0f)
-            totalPaidWork[defaultCostCenter] = currentCostCenterAmount + 8f
-        } else if (workShift.absence == AbsenceType.VACATION && !isHoliday) {
-            val currentCostCenterAmount = (totalPaidWork[defaultCostCenter] ?: 0f)
-            totalPaidWork[defaultCostCenter] = currentCostCenterAmount + 6.67f
-        }
-
         val defaultCostCenterAmount = (totalPaidWork[defaultCostCenter] ?: 0f)
 
         totalPaidWork[defaultCostCenter] = defaultCostCenterAmount + sickHours + officialDutyHours
 
+        val isHoliday = workShift.startedAt?.dayOfWeek == DayOfWeek.SUNDAY || holidayController.list().first.find { it.date == workShift.startedAt?.toLocalDate() } != null
+
         if (!isDriver) {
-            val overTimeHalfLimit = 8f
-            val overTimeFullLimit = 10f
+            var overTimeHalfLimit = 8f
+            var overTimeFullLimit = 10f
+
+            if (!isHoliday && workShift.absence == AbsenceType.VACATION) {
+                overTimeHalfLimit = 1.33f
+                overTimeFullLimit = 3.33f
+            } else if (workShift.absence == AbsenceType.COMPENSATORY_LEAVE) {
+                overTimeHalfLimit = 0f
+                overTimeFullLimit = 2f
+            }
 
             var total = 0f
             val regularPaidHours = mutableMapOf<String, Float>()
@@ -192,6 +192,14 @@ class PayrollExportCalculations {
                 }
 
                 total += hours
+            }
+
+            if (workShift.absence == AbsenceType.COMPENSATORY_LEAVE) {
+                val currentCostCenterAmount = (regularPaidHours[defaultCostCenter] ?: 0f)
+                regularPaidHours[defaultCostCenter] = currentCostCenterAmount + 8f
+            } else if (workShift.absence == AbsenceType.VACATION && !isHoliday) {
+                val currentCostCenterAmount = (regularPaidHours[defaultCostCenter] ?: 0f)
+                regularPaidHours[defaultCostCenter] = currentCostCenterAmount + 6.67f
             }
 
             return when (officeWorkerOverTimeType) {
