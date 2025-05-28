@@ -14,6 +14,7 @@ import io.quarkus.test.junit.TestProfile
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.testcontainers.shaded.org.awaitility.Awaitility
+import java.time.Duration
 import java.time.OffsetDateTime
 import java.util.*
 
@@ -468,6 +469,11 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
 
         it.setCronKey().workShifts.endUnresolvedWorkshifts()
 
+        Awaitility.await().atMost(Duration.ofMinutes(2)).until {
+            val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
+            shifts.isNotEmpty() && shifts.first().endedAt != null
+        }
+
         val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
         assertEquals(1, shifts.size, "There should be one shift")
         assertNotNull(shifts.first().endedAt, "Shift should have ended")
@@ -503,6 +509,12 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         )
 
         it.setCronKey().workShifts.endUnresolvedWorkshifts()
+
+        Awaitility.await().atMost(Duration.ofMinutes(2)).until {
+            val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
+            shifts.isNotEmpty() && shifts.first().endedAt != null
+        }
+
         val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
         assertEquals(1, shifts.size, "There should be 1 shift")
         assertNotNull(shifts.first().endedAt, "The shift should have ended")
@@ -570,6 +582,11 @@ class WorkShiftsTestIT : AbstractFunctionalTest() {
         )
 
         it.setCronKey().workShifts.endUnresolvedWorkshifts()
+
+        Awaitility.await().atMost(Duration.ofMinutes(2)).until {
+            val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
+            shifts.isNotEmpty() && shifts.first().endedAt != null
+        }
 
         val shifts = it.manager.workShifts.listEmployeeWorkShifts(employeeId = employee.id)
         assertEquals(1, shifts.size, "There should be one work shift for the employee")
