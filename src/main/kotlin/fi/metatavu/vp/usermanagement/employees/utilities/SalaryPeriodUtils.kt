@@ -153,6 +153,21 @@ class SalaryPeriodUtils {
             workType = WorkType.OFFICIAL_DUTIES
         )
 
+        val frozenAllowance = calculateWorkingHoursByWorkType(
+            workShifts = workShifts,
+            workType = WorkType.FROZEN_ALLOWANCE
+        )
+
+        val jobSpecificAllowance = calculateWorkingHoursByWorkType(
+            workShifts = workShifts,
+            workType = WorkType.JOB_SPECIFIC_ALLOWANCE
+        )
+
+        val breakHours = calculateWorkingHoursByWorkType(
+            workShifts = workShifts,
+            workType = WorkType.BREAK
+        )
+
         val fillingHours = if (workingTime != BigDecimal.valueOf(0) ) { calculateFillingHours(
             regularWorkingHours = workingTime,
             workingHours = workingHours,
@@ -169,6 +184,10 @@ class SalaryPeriodUtils {
         val fullDailyAllowance = workShifts.filter { shift ->
             shift.perDiemAllowance == PerDiemAllowanceType.FULL
         }.size
+
+        val amountOfApprovedWorkShifts = workShifts.count {
+            it.approved
+        }
 
         return SalaryPeriodTotalWorkHours(
             workingHours = workingHours,
@@ -188,7 +207,13 @@ class SalaryPeriodUtils {
             trainingDuringWorkTime = trainingHours,
             fillingHours = fillingHours,
             partialDailyAllowance = partialDailyAllowance.toBigDecimal(),
-            fullDailyAllowance = fullDailyAllowance.toBigDecimal()
+            fullDailyAllowance = fullDailyAllowance.toBigDecimal(),
+            salaryPeriodStartDate = startDate,
+            salaryPeriodEndDate = endDate,
+            frozenAllowance = frozenAllowance,
+            jobSpecificAllowance = jobSpecificAllowance,
+            breakHours = breakHours,
+            amountOfApprovedWorkshifts = amountOfApprovedWorkShifts
         )
     }
 
