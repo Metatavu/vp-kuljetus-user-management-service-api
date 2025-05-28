@@ -242,6 +242,11 @@ class PayrollExportController {
             absenceType = AbsenceType.VACATION
         )
 
+        val compensatoryLeaveHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(
+            workShifts = workShiftsForSalaryPeriod,
+            absenceType = AbsenceType.COMPENSATORY_LEAVE
+        )
+
         val regularWorkingHoursAttribute = employee.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat()
         val unpaidHoursDuringSalaryPeriod  = salaryPeriodUtils.calculateWorkingHoursByWorkType(
             workShifts = workShiftsForSalaryPeriod,
@@ -257,8 +262,21 @@ class PayrollExportController {
         val employeeName = "${employee.firstName} ${employee.lastName}"
 
         var paidHoursForDriver = 0f
+        val overTimeReductionForDriver = compensatoryLeaveHours + vacationHours
 
-        val driverOverTimeFullLimit = regularWorkingHours?.plus(if (vacationHours > BigDecimal.valueOf(40)) 10 else 12)
+        var driverOverTimeHalfLimit = regularWorkingHours?.minus(overTimeReductionForDriver.toFloat())
+        if (driverOverTimeHalfLimit != null) {
+            if (driverOverTimeHalfLimit < 0f) {
+                driverOverTimeHalfLimit = 0f
+            }
+        }
+
+        var driverOverTimeFullLimit = driverOverTimeHalfLimit?.plus(if (vacationHours > BigDecimal.valueOf(40)) 10 else 12)
+        if (driverOverTimeFullLimit != null) {
+            if (driverOverTimeFullLimit < 0f) {
+                driverOverTimeFullLimit = 0f
+            }
+        }
 
         workShiftsGroupedByDate.entries.forEach {
             val date = it.key
@@ -280,7 +298,7 @@ class PayrollExportController {
                 vacationHours = vacationHours.toFloat()
             )
 
-            if (isDriver && regularWorkingHours != null && driverOverTimeFullLimit != null) {
+            if (isDriver && driverOverTimeHalfLimit != null && driverOverTimeFullLimit != null) {
                 val regularPaidHours = mutableMapOf<String, Float>()
                 val overTimeHalfHours = mutableMapOf<String, Float>()
                 val overTimeFullHours = mutableMapOf<String, Float>()
@@ -289,10 +307,10 @@ class PayrollExportController {
                     val costCenter = entry.key
                     val hours = entry.value
 
-                    if (paidHoursForDriver + hours < regularWorkingHours) {
+                    if (paidHoursForDriver + hours < driverOverTimeHalfLimit) {
                         regularPaidHours[costCenter] = (regularPaidHours[costCenter] ?: 0f) + hours
                     } else {
-                        var regularHoursPart = regularWorkingHours - paidHoursForDriver
+                        var regularHoursPart = driverOverTimeHalfLimit - paidHoursForDriver
                         if (regularHoursPart < 0) {
                             regularHoursPart = 0f
                         }
@@ -324,6 +342,15 @@ class PayrollExportController {
                     regularPaidHours[trainingHour.key] = (regularPaidHours[trainingHour.key] ?: 0f) + trainingHour.value
                 }
 
+                it.value.forEach { shift ->
+                    val defaultCostCenter = shift.defaultCostCenter ?: ""
+                    if (shift.absence == AbsenceType.COMPENSATORY_LEAVE) {
+                        regularPaidHours[defaultCostCenter] = (regularPaidHours[defaultCostCenter] ?: 0f) + 8f
+                    } else if (shift.absence == AbsenceType.VACATION) {
+                        regularPaidHours[defaultCostCenter] = (regularPaidHours[defaultCostCenter] ?: 0f) + 6.67f
+                    }
+                }
+
                 rows += buildDailyRows(
                     costCenterHours = regularPaidHours,
                     date = date,
@@ -350,6 +377,17 @@ class PayrollExportController {
             } else {
                 trainingHours.entries.forEach { trainingHour ->
                     paidHours[trainingHour.key] = (paidHours[trainingHour.key] ?: 0f) + trainingHour.value
+                }
+
+                if (isDriver) {
+                    it.value.forEach { shift ->
+                        val defaultCostCenter = shift.defaultCostCenter ?: ""
+                        if (shift.absence == AbsenceType.COMPENSATORY_LEAVE) {
+                            paidHours[defaultCostCenter] = (paidHours[defaultCostCenter] ?: 0f) + 8f
+                        } else if (shift.absence == AbsenceType.VACATION) {
+                            paidHours[defaultCostCenter] = (paidHours[defaultCostCenter] ?: 0f) + 6.67f
+                        }
+                    }
                 }
 
                 rows += buildDailyRows(
@@ -551,10 +589,7 @@ class PayrollExportController {
                 workShifts = workShiftsForSalaryPeriod,
                 workType = WorkType.OFFICIAL_DUTIES
             ),
-            compensatoryLeaveHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(
-                workShifts = workShiftsForSalaryPeriod,
-                absenceType = AbsenceType.COMPENSATORY_LEAVE
-            )
+            compensatoryLeaveHours = compensatoryLeaveHours
         ) else BigDecimal.valueOf(0)
 
         if (fillingHours.toFloat() != 0f) {
