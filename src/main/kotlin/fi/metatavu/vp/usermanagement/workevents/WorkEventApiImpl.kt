@@ -102,14 +102,7 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
 
             if (workShift != null) {
                 val events = workEventController.list(employeeWorkShift = workShift).first.filter {
-                    if (it.time.isAfter(workEvent.time)) {
-                        if (workEvent.workEventType == WorkEventType.LOADING || workEvent.workEventType == WorkEventType.UNLOADING) {
-                            workEventController.delete(it)
-                        }
-                        return@filter false
-                    }
-
-                    return@filter true
+                    return@filter !it.time.isAfter(workEvent.time)
                 }
                 val previousEvent = events.firstOrNull()
                 if (previousEvent != null) {
