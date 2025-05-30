@@ -7,10 +7,8 @@ import io.quarkus.test.junit.TestProfile
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
-import java.time.DayOfWeek
-import java.time.OffsetDateTime
-import java.time.ZoneId
-import java.time.ZoneOffset
+import java.time.*
+import java.time.temporal.TemporalAdjusters
 
 /**
  * Tests for Employee API
@@ -276,6 +274,11 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         assertEquals(0.toBigDecimal(), salaryPeriodTotalWorkHours.overTimeFull, "Overtime full should be 0")
         assertEquals(9f.toBigDecimal(), salaryPeriodTotalWorkHours.overTimeHalf, "Overtime half should be 9")
 
+        val (salaryPeriodStart, salaryPeriodEnd) = getDriverSalaryPeriod(now)
+
+        assertEquals(salaryPeriodStart.toString(), salaryPeriodTotalWorkHours.salaryPeriodStartDate, "Salary period start should be $salaryPeriodStart")
+        assertEquals(salaryPeriodEnd.toString(), salaryPeriodTotalWorkHours.salaryPeriodEndDate, "Salary period end should be $salaryPeriodEnd")
+
         it.manager.employees.updateEmployee(
             employeeId = employee.id,
             employee = employee.copy(
@@ -364,6 +367,30 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         val holidayHours = workShiftHours1.first { hours -> hours.workType == WorkType.HOLIDAY_ALLOWANCE }
         val sickHours = workShiftHours1.first { hours -> hours.workType == WorkType.SICK_LEAVE }
         val trainingHours = workShiftHours1.first { hours -> hours.workType == WorkType.TRAINING }
+        val breakHours = workShiftHours1.first { hours -> hours.workType == WorkType.BREAK }
+        val frozenAllowanceHours = workShiftHours1.first { hours -> hours.workType == WorkType.FROZEN_ALLOWANCE }
+        val jobSpecificAllowanceHours = workShiftHours1.first { hours -> hours.workType == WorkType.JOB_SPECIFIC_ALLOWANCE }
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = breakHours.id!!,
+            workShiftHours = breakHours.copy(
+                actualHours = 1f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = frozenAllowanceHours.id!!,
+            workShiftHours = frozenAllowanceHours.copy(
+                actualHours = 1f
+            )
+        )
+
+        it.manager.workShiftHours.updateWorkShiftHours(
+            id = jobSpecificAllowanceHours.id!!,
+            workShiftHours = jobSpecificAllowanceHours.copy(
+                actualHours = 1f
+            )
+        )
 
         it.manager.workShiftHours.updateWorkShiftHours(
             id = sickHours.id!!,
@@ -428,6 +455,14 @@ class EmployeeTestIT : AbstractFunctionalTest() {
             )
         )
 
+        it.manager.workShifts.updateEmployeeWorkShift(
+            id = workShift1.id!!,
+            employeeId = employee.id!!,
+            workShift = workShift1.copy(
+                approved = true
+            )
+        )
+
         val salaryPeriodTotalWorkHours = it.manager.employees.getSalaryPeriodTotalWorkHours(
             employeeId = employee.id,
             dateInSalaryPeriod = now
@@ -445,6 +480,15 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         assertEquals(2f.toBigDecimal(), salaryPeriodTotalWorkHours.unpaid, "Unpaid hours should be 2")
         assertEquals(8f.toBigDecimal(), salaryPeriodTotalWorkHours.sickHours, "Sick leave should be 8")
         assertEquals(8f.toBigDecimal(), salaryPeriodTotalWorkHours.trainingDuringWorkTime, "Training should be 8")
+        assertEquals(1, salaryPeriodTotalWorkHours.amountOfApprovedWorkshifts)
+        assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.breakHours, "Breaks should be 1")
+        assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.frozenAllowance, "Frozen allowance should be 1")
+        assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.jobSpecificAllowance, "Job specific allowance should be 1")
+
+        val (salaryPeriodStart, salaryPeriodEnd) = getOfficeWorkerSalaryPeriod(now)
+
+        assertEquals(salaryPeriodStart.toString(), salaryPeriodTotalWorkHours.salaryPeriodStartDate, "Salary period start should be $salaryPeriodStart")
+        assertEquals(salaryPeriodEnd.toString(), salaryPeriodTotalWorkHours.salaryPeriodEndDate, "Salary period end should be $salaryPeriodEnd")
 
         it.manager.workShifts.createEmployeeWorkShift(
             employeeId = employee.id,
@@ -491,6 +535,85 @@ class EmployeeTestIT : AbstractFunctionalTest() {
             dateInSalaryPeriod = now
         )
         assertEquals(6.66.toBigDecimal(), salaryPeriodTotalWorkHours3.fillingHours, "Filling hours should be 6.66")
+    }
+
+    /**
+     * Get the start and end dates of a salary period for office workers.
+     * This is used by salary period working hours aggregation.
+     *
+     * @param dateTimeInSalaryPeriod a date that exists in a salary period
+     */
+    private fun getOfficeWorkerSalaryPeriod(
+        dateTimeInSalaryPeriod: OffsetDateTime
+    ): Pair<LocalDate, LocalDate> {
+        val dateInSalaryPeriod = dateTimeInSalaryPeriod.toLocalDate()
+
+        if (dateInSalaryPeriod.dayOfMonth < 16) {
+            val start = LocalDate.of(
+                dateInSalaryPeriod.year,
+                dateInSalaryPeriod.monthValue,
+                1,
+            )
+
+            val end = LocalDate.of(
+                dateInSalaryPeriod.year,
+                dateInSalaryPeriod.monthValue,
+                15
+            )
+            return Pair(start, end)
+        } else {
+            val start = LocalDate.of(
+                dateInSalaryPeriod.year,
+                dateInSalaryPeriod.monthValue,
+                16
+            )
+
+            val end = LocalDate.of(
+                dateInSalaryPeriod.year,
+                dateInSalaryPeriod.monthValue,
+                dateInSalaryPeriod.month.length(dateInSalaryPeriod.isLeapYear)
+            )
+
+            return Pair(start, end)
+        }
+    }
+
+    /**
+     * Get the start and end dates of a salary period for drivers.
+     * This is used by salary period working hours aggregation.
+     *
+     * @param dateTimeInSalaryPeriod a date that exists in a salary period
+     */
+    private fun getDriverSalaryPeriod(
+        dateTimeInSalaryPeriod: OffsetDateTime
+    ): Pair<LocalDate, LocalDate> {
+        val dateInSalaryPeriod = dateTimeInSalaryPeriod.toLocalDate()
+        /**
+         * 7.1.2024 was Sunday
+         */
+        val workingTimePeriodStartDate = LocalDate.of(
+            2024,
+            1,
+            7
+        )
+
+        val fullWeeks = (Duration.between(
+            workingTimePeriodStartDate.atStartOfDay(),
+            dateInSalaryPeriod.atStartOfDay()
+        ).toDays() / 7)
+
+        val isStartingWeek = fullWeeks % 2 == 0L
+
+        if (isStartingWeek) {
+            val start = dateInSalaryPeriod.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+            val end = dateInSalaryPeriod.plusWeeks(1).with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY))
+            return Pair(start, end)
+        } else {
+            val start = dateInSalaryPeriod.minusWeeks(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+            val end = dateInSalaryPeriod.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY))
+            return Pair(start, end)
+        }
+
     }
 
 }

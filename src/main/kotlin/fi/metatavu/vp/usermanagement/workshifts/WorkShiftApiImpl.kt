@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.workshifts
 
+import fi.metatavu.vp.usermanagement.messaging.WorkShiftResolvingEvent
 import fi.metatavu.vp.usermanagement.model.EmployeeWorkShift
 import fi.metatavu.vp.usermanagement.model.WorkShiftChangeReason
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
@@ -158,7 +159,8 @@ class WorkShiftApiImpl: EmployeeWorkShiftsApi, AbstractApi() {
             return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
         }
 
-        workShiftScheduledJobs.endUnresolvedWorkshifts()
+        eventBus.send("WORK_SHIFT_RESOLVING", WorkShiftResolvingEvent())
+
         createOk()
     }
 
