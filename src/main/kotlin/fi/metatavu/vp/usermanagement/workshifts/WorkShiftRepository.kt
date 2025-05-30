@@ -125,9 +125,9 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
     }
 
     /**
-     * Lists work shifts that meet the following conditions:
-     * 1. They have not been checked for event duplicates.
-     * 2. They have ended before the given date.
+     * Gets the next work shift that meets the following conditions:
+     * 1. Has not been checked for event duplicates.
+     * 2. Has ended before the given date.
      *
      * @param endedBefore
      */

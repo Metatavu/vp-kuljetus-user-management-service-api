@@ -2,28 +2,32 @@ package fi.metatavu.vp.usermanagement.messaging
 
 import fi.metatavu.vp.messaging.events.DriverWorkEventGlobalEvent
 import fi.metatavu.vp.usermanagement.WithCoroutineScope
+import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
 import fi.metatavu.vp.usermanagement.users.UserController
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.vertx.ConsumeEvent
 import io.smallrye.mutiny.Uni
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.jboss.logging.Logger
-import java.util.*
 
 /**
  * Controller that listens to events sent by messaging service
  */
 @ApplicationScoped
 @Suppress("unused")
-class MessagingController: WithCoroutineScope() {
+class DriverGlobalEventConsumer: WithCoroutineScope() {
 
     @Inject
     lateinit var workEventController: WorkEventController
 
     @Inject
     lateinit var userController: UserController
+
+    @Inject
+    lateinit var workShiftController: WorkShiftController
 
     @Inject
     lateinit var logger: Logger
@@ -45,6 +49,27 @@ class MessagingController: WithCoroutineScope() {
             return@withCoroutineScope false
         }
 
+        val workShift = workShiftController.listEmployeeWorkShifts(
+            employeeId = event.driverId,
+            null,
+            null,
+            null,
+            null
+        ).first.firstOrNull()
+
+        if (workShift != null) {
+            val events = workEventController.list(employeeWorkShift = workShift).first
+            val previousEvent = events.firstOrNull()
+            if (previousEvent != null) {
+                val isPreviousEventTaskEvent = previousEvent.workEventType == WorkEventType.LOADING || previousEvent.workEventType == WorkEventType.UNLOADING
+
+                if (workShift.endedAt == null && isPreviousEventTaskEvent) {
+                    logger.error("Cannot add an event while there is an active loading or unloading task ongoing. Ignoring the event.")
+                    return@withCoroutineScope false
+                }
+            }
+        }
+        
         workEventController.create(
             employee = foundDriver,
             time = event.time,
