@@ -1,5 +1,6 @@
 package fi.metatavu.vp.usermanagement.workevents
 
+import fi.metatavu.vp.usermanagement.messaging.WorkEventDuplicateRemovalEvent
 import fi.metatavu.vp.usermanagement.model.WorkEvent
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
@@ -14,11 +15,13 @@ import fi.metatavu.vp.usermanagement.workshifts.changelogs.changesets.WorkShiftC
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.smallrye.mutiny.Uni
+import io.vertx.mutiny.core.eventbus.EventBus
 import jakarta.annotation.security.RolesAllowed
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.config.inject.ConfigProperty
+import org.jboss.logging.Logger
 import java.time.OffsetDateTime
 import java.util.*
 
@@ -54,8 +57,17 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
     @Inject
     lateinit var workEventScheduledJobs: WorkEventScheduledJobs
 
+    @Inject
+    lateinit var workShiftController: WorkShiftController
+
+    @Inject
+    lateinit var logger: Logger
+
     @ConfigProperty(name = "vp.usermanagement.cron.apiKey")
     lateinit var cronKey: String
+
+    @Inject
+    lateinit var eventBus: EventBus
 
 
     @RolesAllowed(MANAGER_ROLE, EMPLOYEE_ROLE, DRIVER_ROLE)
@@ -79,6 +91,29 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
             isWorkEventCreatable(workEvent)?.let {
                 return@withCoroutineScope createBadRequest(it)
             }
+
+            val workShift = workShiftController.listEmployeeWorkShifts(
+                employeeId = workEvent.employeeId,
+                null,
+                null,
+                null,
+                null
+            ).first.firstOrNull()
+
+            if (workShift != null) {
+                val events = workEventController.list(employeeWorkShift = workShift).first.filter {
+                    return@filter !it.time.isAfter(workEvent.time)
+                }
+                val previousEvent = events.firstOrNull()
+                if (previousEvent != null) {
+                    val isPreviousEventTaskEvent = previousEvent.workEventType == WorkEventType.LOADING || previousEvent.workEventType == WorkEventType.UNLOADING
+                    if (workShift.endedAt == null && isPreviousEventTaskEvent) {
+                        logger.error("Cannot add an event while there is an active loading or unloading task ongoing. Ignoring the event.")
+                        return@withCoroutineScope createBadRequest("Cannot add an event while there is an active loading or unloading task ongoing.")
+                    }
+                }
+            }
+
 
             val created = workEventController.create(
                 employee = employee,
@@ -143,7 +178,8 @@ class WorkEventApiImpl: WorkEventsApi, AbstractApi() {
             return@withCoroutineScope createUnauthorized(UNAUTHORIZED)
         }
 
-        workEventScheduledJobs.removeDuplicateEvents()
+        logger.info("Pushing a job to queue remove duplicate work events")
+        eventBus.send("WORK_EVENT_DUPLICATE_REMOVAL", WorkEventDuplicateRemovalEvent())
 
         createOk()
     }
