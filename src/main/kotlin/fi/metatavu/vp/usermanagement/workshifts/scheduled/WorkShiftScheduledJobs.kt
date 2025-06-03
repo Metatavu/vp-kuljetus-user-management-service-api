@@ -7,6 +7,7 @@ import fi.metatavu.vp.usermanagement.workevents.WorkEventRepository
 import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
+import org.jboss.logging.Logger
 import java.time.OffsetDateTime
 import java.util.*
 
@@ -21,19 +22,27 @@ class WorkShiftScheduledJobs: WithCoroutineScope() {
     @Inject
     lateinit var workShiftHoursController: WorkShiftHoursController
 
+    @Inject
+    lateinit var logger: Logger
+
     /**
      * End unresolved workshifts
      */
     suspend fun endUnresolvedWorkshifts() {
-        val breakEvent = workEventRepository.findLatestShiftEndingBreakEvent()
+        val shiftEndingBreakEvents = workEventRepository.listShiftEndingBreakEvents()
+        logger.info("Found ${shiftEndingBreakEvents.size} shift ending break events")
+
+        val breakEvent = shiftEndingBreakEvents.firstOrNull()
 
         if (breakEvent != null) {
             workEventController.changeToWorkShiftEnd(breakEvent)
+            logger.info("Terminated workshift ${breakEvent.workShift.id}")
             return
         }
 
-        val event = workEventRepository.findLatestShiftEndingEvent() ?: return
-
+        val events = workEventRepository.listShiftEndingEvents()
+        logger.info("Found ${events.size} shift ending events")
+        val event = events.firstOrNull() ?: return
         if (event.workEventType == WorkEventType.SHIFT_START) {
             workEventRepository.create(
                 id = UUID.randomUUID(),
@@ -60,5 +69,7 @@ class WorkShiftScheduledJobs: WithCoroutineScope() {
         workShiftHoursController.recalculateWorkShiftHours(
             workShift = updatedShift,
         )
+
+        logger.info("Terminated workshift ${updatedShift.id}")
     }
 }

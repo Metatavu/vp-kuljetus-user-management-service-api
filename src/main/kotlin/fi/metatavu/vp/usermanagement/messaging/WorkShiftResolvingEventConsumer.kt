@@ -16,7 +16,6 @@ class WorkShiftResolvingEventConsumer: WithCoroutineScope() {
     @WithTransaction
     fun resolveWorkShifts(event: WorkShiftResolvingEvent) = withCoroutineScope(600_000) {
 
-
         workShiftScheduledJobs.endUnresolvedWorkshifts()
 
         return@withCoroutineScope true
