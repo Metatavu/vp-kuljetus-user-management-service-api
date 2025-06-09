@@ -273,7 +273,7 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         assertEquals(21f.toBigDecimal(), salaryPeriodTotalWorkHours.workingHours, "Working hours should be 21")
         assertEquals(0.toBigDecimal(), salaryPeriodTotalWorkHours.overTimeFull, "Overtime full should be 0")
         assertEquals(9f.toBigDecimal(), salaryPeriodTotalWorkHours.overTimeHalf, "Overtime half should be 9")
-
+        assertEquals(employee.id, salaryPeriodTotalWorkHours.employeeId, "Employee ID should match")
         val (salaryPeriodStart, salaryPeriodEnd) = getDriverSalaryPeriod(now)
 
         assertEquals(salaryPeriodStart.toString(), salaryPeriodTotalWorkHours.salaryPeriodStartDate, "Salary period start should be $salaryPeriodStart")
@@ -484,6 +484,7 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.breakHours, "Breaks should be 1")
         assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.frozenAllowance, "Frozen allowance should be 1")
         assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.jobSpecificAllowance, "Job specific allowance should be 1")
+        assertEquals(employee.id, salaryPeriodTotalWorkHours.employeeId, "Employee ID should match")
 
         val (salaryPeriodStart, salaryPeriodEnd) = getOfficeWorkerSalaryPeriod(now)
 
