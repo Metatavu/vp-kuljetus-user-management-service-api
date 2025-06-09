@@ -213,7 +213,8 @@ class SalaryPeriodUtils {
             frozenAllowance = frozenAllowance,
             jobSpecificAllowance = jobSpecificAllowance,
             breakHours = breakHours,
-            amountOfApprovedWorkshifts = amountOfApprovedWorkShifts
+            amountOfApprovedWorkshifts = amountOfApprovedWorkShifts,
+            employeeId = employeeId
         )
     }
 
