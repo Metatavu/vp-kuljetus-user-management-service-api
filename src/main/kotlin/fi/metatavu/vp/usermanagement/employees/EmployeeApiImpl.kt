@@ -71,7 +71,10 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
 
     @RolesAllowed(MANAGER_ROLE)
     @WithTransaction
-    override fun getSalaryPeriodTotalWorkHours(employeeId: UUID, dateInSalaryPeriod: OffsetDateTime): Uni<Response> = withCoroutineScope {
+    override fun getSalaryPeriodTotalWorkHours(
+        employeeId: UUID,
+        dateInSalaryPeriod: OffsetDateTime
+    ): Uni<Response> = withCoroutineScope(60_000) {
         val employee = usersController.find(employeeId, EMPLOYEE_ROLE) ?: return@withCoroutineScope createNotFound("Employee not found")
         val salaryGroup = SalaryGroup.valueOf(employee.attributes!![SALARY_GROUP_ATTRIBUTE]!!.first())
         val isDriver = salaryGroup == SalaryGroup.DRIVER || salaryGroup == SalaryGroup.VPLOGISTICS
@@ -83,7 +86,6 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
             isDriver = isDriver,
             regularWorkingHoursFromAttributes = regularWorkingHours
         ))
-
     }
 
     @RolesAllowed(MANAGER_ROLE)

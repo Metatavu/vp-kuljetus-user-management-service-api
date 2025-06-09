@@ -27,7 +27,7 @@ class SalaryPeriodUtils {
      * This is used by the UI views that show the salary period summary.
      *
      * @param employeeId
-     * @param regularWorkingHours
+     * @param regularWorkingHoursFromAttributes
      * @param isDriver
      * @param dateInSalaryPeriod a date that is within the salary period being requested
      */
