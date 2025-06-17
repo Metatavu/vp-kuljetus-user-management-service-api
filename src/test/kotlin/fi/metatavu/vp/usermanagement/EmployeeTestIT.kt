@@ -485,6 +485,7 @@ class EmployeeTestIT : AbstractFunctionalTest() {
         assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.frozenAllowance, "Frozen allowance should be 1")
         assertEquals(1f.toBigDecimal(), salaryPeriodTotalWorkHours.jobSpecificAllowance, "Job specific allowance should be 1")
         assertEquals(employee.id, salaryPeriodTotalWorkHours.employeeId, "Employee ID should match")
+        assertEquals(2, salaryPeriodTotalWorkHours.amountOfWorkshifts, "Amount of workshifts should be 2")
 
         val (salaryPeriodStart, salaryPeriodEnd) = getOfficeWorkerSalaryPeriod(now)
 

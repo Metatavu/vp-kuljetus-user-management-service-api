@@ -214,7 +214,8 @@ class SalaryPeriodUtils {
             jobSpecificAllowance = jobSpecificAllowance,
             breakHours = breakHours,
             amountOfApprovedWorkshifts = amountOfApprovedWorkShifts,
-            employeeId = employeeId
+            employeeId = employeeId,
+            amountOfWorkshifts = workShifts.size
         )
     }
 
