@@ -15,6 +15,7 @@ import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
 import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 @RequestScoped
@@ -66,11 +67,13 @@ class PayrollExportsApiImpl: PayrollExportsApi, AbstractApi() {
         val fileTitlePrefix = when (salaryGroup) {
             SalaryGroup.TERMINAL -> "13165TERM"
             SalaryGroup.DRIVER -> "13165KULJ"
-            SalaryGroup.VPLOGISTICS -> "13165KULJ"
+            SalaryGroup.VPLOGISTICS_HOURLY_PAY -> "13166TP"
+            SalaryGroup.VPLOGISTICS_MONTHLY_PAY -> "13166KK"
             SalaryGroup.OFFICE -> "13165KK"
         }
 
-        val fileName = "${fileTitlePrefix}_TAPA_$exportTime.csv"
+        val formattedExportTime = exportTime.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")).toString()
+        val fileName = "${fileTitlePrefix}_TAPA_$formattedExportTime.csv"
 
         try {
             payrollExportController.exportPayrollFile(

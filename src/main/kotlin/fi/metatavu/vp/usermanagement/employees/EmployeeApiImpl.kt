@@ -77,7 +77,7 @@ class EmployeeApiImpl: EmployeesApi, AbstractApi() {
     ): Uni<Response> = withCoroutineScope(60_000) {
         val employee = usersController.find(employeeId, EMPLOYEE_ROLE) ?: return@withCoroutineScope createNotFound("Employee not found")
         val salaryGroup = SalaryGroup.valueOf(employee.attributes!![SALARY_GROUP_ATTRIBUTE]!!.first())
-        val isDriver = salaryGroup == SalaryGroup.DRIVER || salaryGroup == SalaryGroup.VPLOGISTICS
+        val isDriver = salaryGroup == SalaryGroup.DRIVER || salaryGroup == SalaryGroup.VPLOGISTICS_HOURLY_PAY
         val regularWorkingHours = employee.attributes[REGULAR_WORKING_HOURS_ATTRIBUTE]?.firstOrNull()?.toFloat()
 
         createOk(salaryPeriodUtils.aggregateSalaryPeriodTotalWorkHours(
