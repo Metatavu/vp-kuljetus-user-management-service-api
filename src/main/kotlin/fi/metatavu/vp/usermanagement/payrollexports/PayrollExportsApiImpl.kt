@@ -1,9 +1,11 @@
 package fi.metatavu.vp.usermanagement.payrollexports
 
 import fi.metatavu.vp.usermanagement.model.PayrollExport
+import fi.metatavu.vp.usermanagement.model.SalaryGroup
 import fi.metatavu.vp.usermanagement.rest.AbstractApi
 import fi.metatavu.vp.usermanagement.spec.PayrollExportsApi
 import fi.metatavu.vp.usermanagement.users.UserController
+import fi.metatavu.vp.usermanagement.users.UserController.Companion.SALARY_GROUP_ATTRIBUTE
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
@@ -13,6 +15,7 @@ import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.ws.rs.core.Response
 import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 @RequestScoped
@@ -60,7 +63,16 @@ class PayrollExportsApiImpl: PayrollExportsApi, AbstractApi() {
 
         val exportTime = OffsetDateTime.now()
         val exportId = UUID.randomUUID()
-        val fileName = "${exportId}.csv"
+        val salaryGroup = SalaryGroup.valueOf(employee.attributes!![SALARY_GROUP_ATTRIBUTE]!!.first())
+        val fileTitlePrefix = when (salaryGroup) {
+            SalaryGroup.TERMINAL -> "13165TERM"
+            SalaryGroup.DRIVER -> "13165KULJ"
+            SalaryGroup.VPLOGISTICS -> "13166TP"
+            SalaryGroup.OFFICE -> "13165KK"
+        }
+
+        val formattedExportTime = exportTime.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")).toString()
+        val fileName = "${fileTitlePrefix}_TAPA_$formattedExportTime.csv"
 
         try {
             payrollExportController.exportPayrollFile(
