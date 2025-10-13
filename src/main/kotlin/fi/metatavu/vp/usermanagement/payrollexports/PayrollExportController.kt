@@ -234,7 +234,7 @@ class PayrollExportController {
 
         val employeeNumber = employee.attributes!!["employeeNumber"]!!.first()
         val salaryGroup = SalaryGroup.valueOf(employee.attributes[SALARY_GROUP_ATTRIBUTE]!!.first())
-        val isDriver = salaryGroup == SalaryGroup.DRIVER || salaryGroup == SalaryGroup.VPLOGISTICS_HOURLY_PAY
+        val isDriver = salaryGroup == SalaryGroup.DRIVER || salaryGroup == SalaryGroup.VPLOGISTICS
         val workShiftsGroupedByDate = workShiftsForSalaryPeriod.sortedBy { it.date }.groupBy { it.date }
 
         val vacationHours = salaryPeriodUtils.calculateTotalWorkHoursByAbsenceType(

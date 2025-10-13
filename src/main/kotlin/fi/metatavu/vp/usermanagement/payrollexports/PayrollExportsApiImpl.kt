@@ -67,8 +67,7 @@ class PayrollExportsApiImpl: PayrollExportsApi, AbstractApi() {
         val fileTitlePrefix = when (salaryGroup) {
             SalaryGroup.TERMINAL -> "13165TERM"
             SalaryGroup.DRIVER -> "13165KULJ"
-            SalaryGroup.VPLOGISTICS_HOURLY_PAY -> "13166TP"
-            SalaryGroup.VPLOGISTICS_MONTHLY_PAY -> "13166KK"
+            SalaryGroup.VPLOGISTICS -> "13166TP"
             SalaryGroup.OFFICE -> "13165KK"
         }
 
