@@ -1,8 +1,10 @@
 package fi.metatavu.vp.usermanagement.workevents.scheduled
 
 import fi.metatavu.vp.usermanagement.workevents.WorkEventController
-import fi.metatavu.vp.usermanagement.workevents.WorkEventEntity
+import fi.metatavu.vp.usermanagement.workevents.WorkEventRepository
+import fi.metatavu.vp.usermanagement.workshifthours.WorkShiftHoursController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
+import fi.metatavu.vp.usermanagement.workshifts.WorkShiftController
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -20,6 +22,15 @@ class WorkEventScheduledJobs {
     lateinit var workEventController: WorkEventController
 
     @Inject
+    lateinit var workEventRepository: WorkEventRepository
+
+    @Inject
+    lateinit var workShiftController: WorkShiftController
+
+    @Inject
+    lateinit var workShiftHoursController: WorkShiftHoursController
+
+    @Inject
     lateinit var logger: Logger
 
     @ConfigProperty(name = "vp.usermanagement.workevents.duplicateremoval.graceperiod.days")
@@ -32,42 +43,41 @@ class WorkEventScheduledJobs {
     suspend fun removeDuplicateEvents() {
         val endedBefore = OffsetDateTime.now().minusDays(gracePeriodDays.toLong())
 
-        val notCheckedWorkShifts = workShiftRepository.listWorkShiftsWithPossibleDuplicateEvents(endedBefore = endedBefore, maxResults = 100000)
+        val notCheckedWorkShifts = workShiftRepository.countWorkShiftsWithPossibleDuplicateEvents(endedBefore = endedBefore)
 
-        logger.info("Amount of shifts that have not been marked as checked for duplicates: ${notCheckedWorkShifts.size}")
+        if (notCheckedWorkShifts > 0L) {
+            logger.info("Amount of shifts that have not been marked as checked for duplicates: $notCheckedWorkShifts")
 
-        if (notCheckedWorkShifts.isEmpty()) {
-            return
+            removeDuplicatesFromWorkShift(
+                workShift = workShiftRepository.listWorkShiftsWithPossibleDuplicateEvents(
+                    endedBefore = endedBefore,
+                    maxResults = 1
+                ).first()
+            )
+        } else {
+            logger.info("No work shifts found that would need duplicate event removal.")
         }
-
-        removeDuplicatesFromWorkShift(notCheckedWorkShifts.first())
     }
 
     /**
-     * Removes all duplicate events from a work shift and marks the work shift as checked for duplicates.
-     * This used by a cron job that runs periodically to clean up duplicate events.
+     * Removes all duplicate events from a work shift via a native MySQL delete that leaves the first event in each
+     * consecutive run of identical types and marks the shift as checked afterwards.
      *
      * @param workShift work shift from which to remove duplicate events
      */
     private suspend fun removeDuplicatesFromWorkShift(workShift: WorkShiftEntity) {
-        val eventsAscendingByTime = workEventController.list(employeeWorkShift = workShift).first.reversed()
+        val removedCount = workEventRepository.deleteConsecutiveDuplicateEvents(workShift.id)
 
-        val eventsToDelete = mutableListOf<WorkEventEntity>()
-
-        for ((index, event) in eventsAscendingByTime.withIndex()) {
-            if (index == 0) continue // Skip the first event as it is the reference for duplicates
-
-            if (event.workEventType == eventsAscendingByTime[index - 1].workEventType) {
-                eventsToDelete.add(event)
-            }
+        val shiftToMark = if (removedCount > 0) {
+            val updatedShift = workEventController.recalculateWorkShiftTimes(workShift = workShift)
+            workShiftHoursController.recalculateWorkShiftHours(workShift = updatedShift)
+            logger.info("Removed $removedCount duplicate events from work shift ${workShift.id}.")
+            updatedShift
+        } else {
+            logger.info("No duplicate events found for work shift ${workShift.id}. Marked it as checked.")
+            workShift
         }
 
-        eventsToDelete.forEachIndexed { index, it ->
-            workEventController.delete(foundWorkEvent = it, recalculate = index == eventsToDelete.lastIndex)
-        }
-
-        logger.info("Removed ${eventsToDelete.size} duplicate events from work shift ${workShift.id}.")
-
-        workShiftRepository.markShiftAsCheckedForDuplicates(workShiftEntity = workShift)
+        workShiftRepository.markShiftAsCheckedForDuplicates(workShiftEntity = shiftToMark)
     }
 }

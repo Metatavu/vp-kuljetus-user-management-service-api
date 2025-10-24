@@ -3,6 +3,7 @@ package fi.metatavu.vp.usermanagement.workevents
 import fi.metatavu.vp.usermanagement.model.WorkEventType
 import fi.metatavu.vp.usermanagement.persistence.AbstractRepository
 import fi.metatavu.vp.usermanagement.workshifts.WorkShiftEntity
+import io.quarkus.hibernate.reactive.panache.Panache
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.smallrye.mutiny.coroutines.awaitSuspending
@@ -106,6 +107,66 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
     }
 
     /**
+     * Deletes consecutive duplicate work events (same type as previous) for a work shift using a native SQL query.
+     *  - Step 1: Identify consecutive duplicates using a CTE and LAG()
+     *  - Step 2: Delete all related workshiftchange entries for those events
+     *  - Step 3: Delete the duplicate events themselves
+     *
+     * @param workShiftId work shift id
+     * @return number of deleted duplicate work events
+     */
+    suspend fun deleteConsecutiveDuplicateEvents(workShiftId: UUID): Int {
+        // Step 1: Build a common subquery that detects duplicates within one shift
+        val duplicateEventsCte = """
+            WITH duplicate_events AS (
+                SELECT id
+                FROM (
+                    SELECT
+                        id,
+                        workshift_id,
+                        workeventtype,
+                        LAG(workeventtype) OVER (
+                            PARTITION BY workshift_id
+                            ORDER BY time ASC, createdat ASC, id ASC
+                        ) AS previous_type
+                    FROM workevent
+                    WHERE workshift_id = :workShiftId
+                ) ordered_events
+                WHERE ordered_events.previous_type = ordered_events.workeventtype
+            )
+        """.trimIndent()
+
+        // Step 2: Delete all dependent workshiftchange entries linked to duplicate events
+        val deleteChangesSql = """
+            $duplicateEventsCte
+            DELETE FROM workshiftchange
+            WHERE workevent_id IN (SELECT id FROM duplicate_events)
+        """.trimIndent()
+
+        // Step 3: Delete the duplicate work events themselves
+        val deleteDuplicateEventsSql = """
+            $duplicateEventsCte
+            DELETE we
+            FROM workevent we
+            INNER JOIN duplicate_events de ON de.id = we.id
+        """.trimIndent()
+
+        val session = Panache.getSession().awaitSuspending()
+
+        // First delete all dependent change records to avoid FK constraint issues
+        val deleteChangesQuery = session.createNativeQuery<Any>(deleteChangesSql)
+        deleteChangesQuery.setParameter("workShiftId", workShiftId)
+        deleteChangesQuery.executeUpdate().awaitSuspending()
+
+        // Then delete the duplicate work events
+        val deleteDuplicatesQuery = session.createNativeQuery<Any>(deleteDuplicateEventsSql)
+        deleteDuplicatesQuery.setParameter("workShiftId", workShiftId)
+        val deletedEvents = deleteDuplicatesQuery.executeUpdate().awaitSuspending()
+
+        return deletedEvents
+    }
+
+    /**
      * Finds latest work event for the user
      *
      * @param employeeId employee id
@@ -124,7 +185,7 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
     suspend fun listShiftEndingEvents(): List<WorkEventEntity> {
         val sb = StringBuilder()
         val parameters = Parameters.with("time", OffsetDateTime.now().minusHours(5))
-        addCondition(sb, "workShift.endedAt is NULL and time < :time");
+        addCondition(sb, "workShift.endedAt is NULL and time < :time")
 
         return find(sb.toString(), Sort.descending("time"), parameters).list<WorkEventEntity>().awaitSuspending()
     }
