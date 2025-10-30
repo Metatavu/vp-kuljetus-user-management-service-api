@@ -359,4 +359,32 @@
     <changeSet id="rechekforduplicates" author="Simeon Platonoc">
         <sql>UPDATE workshift SET checkedforeventduplicates = false</sql>
     </changeSet>
+
+    <changeSet id="index_work_shifts" author="">
+        <createIndex tableName="workshift" indexName="index_work_shift_date_and_employeeId">
+            <column name="date"/>
+            <column name="employeeId"/>
+        </createIndex>
+        <createIndex tableName="workshift" indexName="index_work_shift_employeeId">
+            <column name="employeeId"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="index_work_shift_change_sets" author="">
+        <createIndex tableName="workshiftchangeset" indexName="index_work_shift_change_set_work_shift_id">
+            <column name="workshift_id"/>
+        </createIndex>
+        <createIndex tableName="workshiftchange" indexName="index_work_shift_change_change_set_id">
+            <column name="workshiftchangeset_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="index_work_shift_hours" author="">
+        <createIndex tableName="workshifthours" indexName="index_work_shift_hours_work_shift_id">
+            <column name="workshift_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="index_work_events" author="">
+        <createIndex tableName="workevent" indexName="index_work_event_work_shift_id">
+            <column name="workshift_id"/>
+        </createIndex>
+    </changeSet>
 </databaseChangeLog>
