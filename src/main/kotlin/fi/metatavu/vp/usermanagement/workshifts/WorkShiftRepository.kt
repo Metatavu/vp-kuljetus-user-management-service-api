@@ -89,31 +89,31 @@ class WorkShiftRepository: AbstractRepository<WorkShiftEntity, UUID>() {
         val queryBuilder = StringBuilder()
         val parameters = Parameters()
 
-        queryBuilder.append("employeeId = :employeeId")
-        parameters.and("employeeId", employeeId)
-
         if (startedAfter != null) {
-            queryBuilder.append(" AND startedAt >= :startedAfter")
+            addCondition(queryBuilder, "startedAt >= :startedAfter")
             parameters.and("startedAfter", startedAfter)
         }
 
         if (startedBefore != null) {
-            queryBuilder.append(" AND startedAt <= :startedBefore")
+            addCondition(queryBuilder, "startedAt <= :startedBefore")
             parameters.and("startedBefore", startedBefore)
         }
 
         if (dateAfter != null) {
-            queryBuilder.append(" AND date >= :dateAfter")
+            addCondition(queryBuilder, "date >= :dateAfter")
             parameters.and("dateAfter", dateAfter)
         }
 
         if (dateBefore != null) {
-            queryBuilder.append(" AND date <= :dateBefore")
+            addCondition(queryBuilder, "date <= :dateBefore")
             parameters.and("dateBefore", dateBefore)
         }
 
+        addCondition(queryBuilder, "employeeId = :employeeId")
+        parameters.and("employeeId", employeeId)
+
         if (payrollExport != null) {
-            queryBuilder.append(" AND payrollExport = :payrollExport")
+            addCondition(queryBuilder, "payrollExport = :payrollExport")
             parameters.and("payrollExport", payrollExport)
         }
 

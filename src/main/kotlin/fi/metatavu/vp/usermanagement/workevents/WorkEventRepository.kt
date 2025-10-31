@@ -71,8 +71,13 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
         val sb = StringBuilder()
         val parameters = Parameters()
 
+        if (employeeWorkShift != null) {
+            addCondition(sb, "workShift = :workShift")
+            parameters.and("workShift", employeeWorkShift)
+        }
+
         if (employeeId != null) {
-            sb.append("employeeId = :employeeId")
+            addCondition(sb, "employeeId = :employeeId")
             parameters.and("employeeId", employeeId)
         }
 
@@ -84,11 +89,6 @@ class WorkEventRepository : AbstractRepository<WorkEventEntity, UUID>() {
         if (before != null) {
             addCondition(sb, "time <= :before")
             parameters.and("before", before)
-        }
-
-        if (employeeWorkShift != null) {
-            addCondition(sb, "workShift = :workShift")
-            parameters.and("workShift", employeeWorkShift)
         }
 
         sb.append(" ORDER by time DESC, CASE workEventType WHEN 'SHIFT_START' THEN 1 ")

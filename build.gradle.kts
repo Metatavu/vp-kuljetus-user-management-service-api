@@ -164,6 +164,7 @@ tasks.named("compileTestKotlin") {
 tasks.named<Test>("test") {
     testLogging.showStandardStreams = true
     testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    jvmArgs("-Xmx8g")
 }
 
 tasks.named<Test>("testNative") {

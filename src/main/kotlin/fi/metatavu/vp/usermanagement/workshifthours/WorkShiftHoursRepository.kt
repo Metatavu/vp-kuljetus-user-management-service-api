@@ -56,14 +56,14 @@ class WorkShiftHoursRepository: AbstractRepository<WorkShiftHoursEntity, UUID>()
         val queryBuilder = StringBuilder()
         val parameters = Parameters()
 
-        if (employeeId != null) {
-            addCondition(queryBuilder, "workShift.employeeId = :employeeId")
-            parameters.and("employeeId", employeeId)
-        }
-
         if (workShift != null) {
             addCondition(queryBuilder, "workShift = :workShift")
             parameters.and("workShift", workShift)
+        }
+
+        if (employeeId != null) {
+            addCondition(queryBuilder, "workShift.employeeId = :employeeId")
+            parameters.and("employeeId", employeeId)
         }
 
         if (workType != null) {
