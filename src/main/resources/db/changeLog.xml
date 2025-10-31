@@ -361,10 +361,6 @@
     </changeSet>
 
     <changeSet id="index_work_shifts" author="">
-        <createIndex tableName="workshift" indexName="index_work_shift_date_and_employeeId">
-            <column name="date"/>
-            <column name="employeeId"/>
-        </createIndex>
         <createIndex tableName="workshift" indexName="index_work_shift_employeeId">
             <column name="employeeId"/>
         </createIndex>
